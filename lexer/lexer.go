@@ -8,7 +8,7 @@ type Lexer struct {
 	input        string
 	position     int
 	readPosition int
-	ch           byte
+	ch           rune
 }
 
 func New(input string) *Lexer {
@@ -143,18 +143,23 @@ func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
-		l.ch = l.input[l.readPosition]
+		r := []rune(l.input[l.readPosition:])[0]
+		l.ch = r
 	}
 	l.position = l.readPosition
-	l.readPosition += 1
+
+	if l.ch != 0 {
+		l.readPosition += len(string(l.ch))
+	} else {
+		l.readPosition += 1
+	}
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekChar() rune {
 	if l.readPosition >= len(l.input) {
 		return 0
-	} else {
-		return l.input[l.readPosition]
 	}
+	return []rune(l.input[l.readPosition:])[0]
 }
 
 func (l *Lexer) readIdentifier() string {
@@ -196,14 +201,15 @@ func (l *Lexer) readString() string {
 	return l.input[start:l.position]
 }
 
-func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+func isLetter(ch rune) bool {
+	return ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == '_' ||
+		(ch >= 0x80 && ch <= 0x10FFFF)
 }
 
-func isDigit(ch byte) bool {
+func isDigit(ch rune) bool {
 	return '0' <= ch && ch <= '9'
 }
 
-func newToken(tokenType token.TokenType, ch byte) token.Token {
+func newToken(tokenType token.TokenType, ch rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
 }

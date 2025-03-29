@@ -19,7 +19,7 @@ fn greet(person) {
 }
 
 fn greet2(person) {
-  return "Hello, " + person + "!"
+  return "Hello, " + person + "! 😀"
 }
 
 if name == "Targa" {
@@ -94,7 +94,7 @@ repeat i in 1..3 {
 		{token.PLUS, "+"},
 		{token.IDENT, "person"},
 		{token.PLUS, "+"},
-		{token.STRING, "!"},
+		{token.STRING, "! 😀"},
 		{token.RBRACE, "}"},
 		{token.IF, "if"},
 		{token.IDENT, "name"},

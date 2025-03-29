@@ -16,6 +16,7 @@ TargaScript is a modern, expressive programming language implemented entirely in
 - Conditionals with `if/else`
 - Property access with dot notation
 - Method calls
+- Unicode and emoji support ✨
 - No semicolons required!
 
 ## 📝 Code Examples
