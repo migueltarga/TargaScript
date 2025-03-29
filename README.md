@@ -1,3 +1,5 @@
+![TargaScript Logo](logo.png)
+
 # TargaScript 🚀
 
 > If TypeScript can be rewritten in Go, why not create our own language with Go?
