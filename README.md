@@ -4,26 +4,29 @@
 
 > If TypeScript can be rewritten in Go, why not create our own language with Go?
 
-TargaScript is a modern, expressive programming language implemented entirely in Go.
+TargaScript is a modern, expressive programming language implemented entirely in Go. TargaScript files use the `.tg` extension.
 
 ## 🌟 Features
 
 - Clean, intuitive syntax
 - First-class functions
-- Object literals
+- Object literals and arrays
 - Module loading with imports
 - Loop constructs like `repeat...in`
 - Conditionals with `if/else`
+- Property access with dot notation
+- Method calls
+- No semicolons required!
 
 ## 📝 Code Examples
 
 Hello World:
-```ts
+```
 print("Hello, World!")
 ```
 
 Variables and Functions:
-```ts
+```
 let name = "Targa"
 const version = 1.0
 let isCool = true
@@ -35,44 +38,61 @@ fn greet(person) {
 greet(name)  // Prints: Hello, Targa
 ```
 
+Arrays and Objects:
+```
+// Arrays
+let numbers = [1, 2, 3, 4, 5]
+let mixed = [1, "a", true]
+
+// Objects
+let person = {
+  name: "Targa",
+  age: 30,
+  hobbies: ["coding", "languages"]
+}
+
+// Property access
+person.name = "Miguel"
+let hobby = person.hobbies[0]
+```
+
 Conditional Logic:
-```ts
-if name == "Targa" {
+```
+if (name == "Targa") {
   greet(name)
 } else {
   print("Who are you?")
 }
 ```
 
-Objects:
-```ts
-let app = {
-  name: name,
-  version: version,
-  greeting: greet(name)
-}
-```
-
 Loops:
-```ts
-repeat i in 1..3 {
+```
+repeat i in numbers {
   print("number: " + i)
 }
 ```
 
 Importing Modules:
-```ts
+```
 load math
 load fs as file
 ```
 
 ## 🚧 Project Status
 
-TargaScript is currently in early development. The lexer is functional and the parser is being developed.
+TargaScript is currently in early development. The parser is functional with support for arrays, objects, property access, method calls, and more.
 
 ## 🔨 Building & Running
 
-*Instructions coming soon!*
+To run the TargaScript REPL:
+```sh
+go run main.go
+```
+
+To run a TargaScript (`.tg`) file:
+```sh
+go run main.go path/to/script.tg
+```
 
 ## 🤔 Why TargaScript?
 
@@ -80,7 +100,27 @@ Because creating a programming language is one of the most fun and educational p
 
 ## 📚 License
 
-TBD
+MIT License
+
+Copyright (c) 2025 Miguel Targa
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ---
 
