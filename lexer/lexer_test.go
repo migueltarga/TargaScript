@@ -196,3 +196,52 @@ repeat i in 1..3 {
 		}
 	}
 }
+
+func TestIncrementDecrementTokens(t *testing.T) {
+	input := `
+let count = 10
+count++
+count--
+
+// Test on same line
+x++ y--
+`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENT, "count"},
+		{token.ASSIGN, "="},
+		{token.INT, "10"},
+		{token.IDENT, "count"},
+		{token.INCREMENT, "++"},
+		{token.IDENT, "count"},
+		{token.DECREMENT, "--"},
+		{token.IDENT, "x"},
+		{token.INCREMENT, "++"},
+		{token.IDENT, "y"},
+		{token.DECREMENT, "--"},
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		t.Logf("Token %d: Type=%q, Literal=%q, Line=%d, Column=%d",
+			i, tok.Type, tok.Literal, tok.Line, tok.Column)
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
+				i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
+				i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
