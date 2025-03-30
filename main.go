@@ -6,16 +6,18 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/migueltarga/TargaScript/ast"
-	"github.com/migueltarga/TargaScript/lexer"
-	"github.com/migueltarga/TargaScript/parser"
 	"github.com/migueltarga/TargaScript/repl"
 )
 
 func main() {
-	noColor := flag.Bool("no-color", false, "Disable colored output")
+	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
+	debugNoColor := flag.Bool("debug-no-color", false, "Enable debug mode with AST pretty printing (no colors)")
 
 	flag.Parse()
+
+	// Calculate if we should use colors based on which debug flag was used
+	noColor := *debugNoColor
+	debugEnabled := *debug || *debugNoColor
 
 	fmt.Printf("Welcome to TargaScript v0.0.1\n")
 
@@ -36,31 +38,20 @@ func main() {
 			os.Exit(1)
 		}
 
-		l := lexer.New(string(input))
-		p := parser.New(l)
-		program := p.ParseProgram()
+		fmt.Printf("Executing file '%s'...\n", filename)
 
-		if len(p.Errors()) != 0 {
-			fmt.Println("Parser errors:")
-			for _, msg := range p.Errors() {
-				fmt.Printf("\t%s\n", msg)
-			}
+		// Use the common evaluation function from repl package
+		err = repl.EvalSource(string(input), os.Stdout, noColor, debugEnabled)
+		if err != nil {
 			os.Exit(1)
 		}
 
-		fmt.Printf("File '%s' parsed successfully!\n", filename)
-		fmt.Println("AST Structure:")
-
-		if *noColor {
-			fmt.Println(ast.NoColorPrettyPrint(program))
-		} else {
-			ast.PrettyPrintToTerminal(program)
-		}
 		return
 	}
+
 	fmt.Println("")
 	fmt.Println("Type commands and press Enter to execute")
 	fmt.Println("Press Ctrl+C to exit")
 
-	repl.Start(os.Stdin, os.Stdout, *noColor)
+	repl.Start(os.Stdin, os.Stdout, noColor, debugEnabled)
 }
