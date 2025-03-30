@@ -99,6 +99,10 @@ go run main.go path/to/script.tg
 
 Because creating a programming language is one of the most fun and educational projects a developer can undertake! TargaScript is an experiment in language design, compiler construction, and a way to better understand how programming languages work under the hood.
 
+## 💡 Inspiration
+
+This project is inspired by and based on the concepts from the excellent book [**"Writing An Interpreter In Go"**](https://interpreterbook.com/) by Thorsten Ball. If you're interested in learning how programming languages work or want to create your own, I highly recommend this resource. The book takes you step-by-step through the process of building an interpreter for the Monkey programming language, from lexing and parsing to evaluation.
+
 ## 📚 License
 
 MIT License
