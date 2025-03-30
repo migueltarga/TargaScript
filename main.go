@@ -1,21 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/parser"
 	"github.com/migueltarga/TargaScript/repl"
 )
 
 func main() {
+	noColor := flag.Bool("no-color", false, "Disable colored output")
+
+	flag.Parse()
+
 	fmt.Printf("Welcome to TargaScript v0.0.1\n")
 
-	if len(os.Args) > 1 {
+	args := flag.Args()
+	if len(args) > 0 {
 		// Run file provided as argument
-		filename := os.Args[1]
+		filename := args[0]
 
 		// Check file extension
 		ext := filepath.Ext(filename)
@@ -43,11 +50,17 @@ func main() {
 
 		fmt.Printf("File '%s' parsed successfully!\n", filename)
 		fmt.Println("AST Structure:")
-		fmt.Println(program.String())
+
+		if *noColor {
+			fmt.Println(ast.NoColorPrettyPrint(program))
+		} else {
+			ast.PrettyPrintToTerminal(program)
+		}
 		return
 	}
 	fmt.Println("")
 	fmt.Println("Type commands and press Enter to execute")
 	fmt.Println("Press Ctrl+C to exit")
-	repl.Start(os.Stdin, os.Stdout)
+
+	repl.Start(os.Stdin, os.Stdout, *noColor)
 }
