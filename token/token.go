@@ -58,6 +58,7 @@ const (
 	PRINT    = "PRINT"
 	REPEAT   = "REPEAT"
 	IN       = "IN"
+	NULL     = "NULL"
 )
 
 type Token struct {
@@ -81,6 +82,7 @@ var keywords = map[string]TokenType{
 	"print":  PRINT,
 	"repeat": REPEAT,
 	"in":     IN,
+	"null":   NULL,
 }
 
 func LookupIdent(ident string) TokenType {
