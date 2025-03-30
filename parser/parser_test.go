@@ -322,6 +322,38 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
 		},
 		{
+			"true && false",
+			"(true && false)",
+		},
+		{
+			"true || false",
+			"(true || false)",
+		},
+		{
+			"3 > 5 && 5 < 10",
+			"((3 > 5) && (5 < 10))",
+		},
+		{
+			"3 > 5 || 5 < 10",
+			"((3 > 5) || (5 < 10))",
+		},
+		{
+			"a + b || c - d",
+			"((a + b) || (c - d))",
+		},
+		{
+			"3 > 5 == true && 5 < 10 == true",
+			"(((3 > 5) == true) && ((5 < 10) == true))",
+		},
+		{
+			"true && false || true && false",
+			"(((true && false) || true) && false)",
+		},
+		{
+			"(true && false) || (true && false)",
+			"((true && false) || (true && false))",
+		},
+		{
 			"true",
 			"true",
 		},
@@ -426,7 +458,7 @@ func TestBooleanExpression(t *testing.T) {
 }
 
 func TestIfExpression(t *testing.T) {
-	input := `if (x < y) { x }`
+	input := `if x < y { x }`
 
 	l := lexer.New(input)
 	p := New(l)
@@ -475,7 +507,7 @@ func TestIfExpression(t *testing.T) {
 }
 
 func TestIfElseExpression(t *testing.T) {
-	input := `if (x < y) { x } else { y }`
+	input := `if x < y { x } else { y }`
 
 	l := lexer.New(input)
 	p := New(l)
@@ -530,6 +562,67 @@ func TestIfElseExpression(t *testing.T) {
 
 	if !testIdentifier(t, alternative.Expression, "y") {
 		return
+	}
+}
+
+func TestIfExpressionWithComplexCondition(t *testing.T) {
+	input := `if x > 5 && y < 10 { x + y }`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement. got=%d",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.IfExpression. got=%T", stmt.Expression)
+	}
+
+	condition, ok := exp.Condition.(*ast.InfixExpression)
+	if !ok {
+		t.Fatalf("exp.Condition is not ast.InfixExpression. got=%T", exp.Condition)
+	}
+
+	if condition.Operator != "&&" {
+		t.Fatalf("condition.Operator is not '&&'. got=%s", condition.Operator)
+	}
+
+	if !testInfixExpression(t, condition.Left, "x", ">", 5) {
+		return
+	}
+
+	if !testInfixExpression(t, condition.Right, "y", "<", 10) {
+		return
+	}
+
+	if len(exp.Consequence.Statements) != 1 {
+		t.Errorf("consequence is not 1 statement. got=%d\n",
+			len(exp.Consequence.Statements))
+	}
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("exp.Consequence.Statements[0] is not ast.ExpressionStatement. got=%T",
+			exp.Consequence.Statements[0])
+	}
+
+	if !testInfixExpression(t, consequence.Expression, "x", "+", "y") {
+		return
+	}
+
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative was not nil. got=%+v", exp.Alternative)
 	}
 }
 
@@ -1044,7 +1137,6 @@ func TestIndexExpressions(t *testing.T) {
 		return
 	}
 }
-
 func TestHashLiteral(t *testing.T) {
 	input := `{name: "miguel", age: 30}`
 
@@ -1431,6 +1523,41 @@ func TestArrayAndObjectExamples(t *testing.T) {
 			for _, msg := range errors {
 				t.Errorf("parser error: %q", msg)
 			}
+		}
+	}
+}
+
+func TestLogicalOperators(t *testing.T) {
+	tests := []struct {
+		input string
+	}{
+		{"true && false"},
+		{"true || false"},
+		{"5 > 3 && 2 < 4"},
+		{"5 > 3 || 2 < 4"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statement. got=%d",
+				len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+				program.Statements[0])
+		}
+
+		_, ok = stmt.Expression.(*ast.InfixExpression)
+		if !ok {
+			t.Fatalf("stmt.Expression is not ast.InfixExpression. got=%T",
+				stmt.Expression)
 		}
 	}
 }

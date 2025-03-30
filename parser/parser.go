@@ -12,6 +12,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	LOGICAL     // && or ||
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -27,6 +28,8 @@ var precedences = map[token.TokenType]int{
 	token.NOT_EQ:   EQUALS,
 	token.LT:       LESSGREATER,
 	token.GT:       LESSGREATER,
+	token.LT_EQ:    LESSGREATER,
+	token.GT_EQ:    LESSGREATER,
 	token.PLUS:     SUM,
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
@@ -35,6 +38,8 @@ var precedences = map[token.TokenType]int{
 	token.LBRACKET: INDEX,
 	token.DOT:      INDEX,
 	token.ASSIGN:   ASSIGN,
+	token.AND:      LOGICAL,
+	token.OR:       LOGICAL,
 }
 
 type (
@@ -85,6 +90,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.GT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT_EQ, p.parseInfixExpression)
+	p.registerInfix(token.AND, p.parseInfixExpression)
+	p.registerInfix(token.OR, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 	p.registerInfix(token.DOT, p.parseDotExpression)
@@ -347,15 +354,17 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curToken}
 
-	if !p.expectPeek(token.LPAREN) {
-		return nil
-	}
+	if p.peekTokenIs(token.LPAREN) {
+		p.nextToken()
+		p.nextToken()
+		expression.Condition = p.parseExpression(LOWEST)
 
-	p.nextToken()
-	expression.Condition = p.parseExpression(LOWEST)
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
+		if !p.expectPeek(token.RPAREN) {
+			return nil
+		}
+	} else {
+		p.nextToken()
+		expression.Condition = p.parseExpression(LOWEST)
 	}
 
 	if !p.expectPeek(token.LBRACE) {
