@@ -31,6 +31,7 @@ Variables and Functions:
 let name = "Targa"
 const version = 1.0
 let isCool = true
+let emptyValue = null
 
 fn greet(person) {
   print("Hello, " + person)
