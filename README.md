@@ -59,7 +59,7 @@ let hobby = person.hobbies[0]
 
 Conditional Logic:
 ```
-if (name == "Targa") {
+if name == "Targa" {
   greet(name)
 } else {
   print("Who are you?")

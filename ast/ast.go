@@ -210,7 +210,8 @@ func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IfExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("if ")
+	out.WriteString("if")
+	out.WriteString("(")
 	out.WriteString(ie.Condition.String())
 	out.WriteString(" ")
 	out.WriteString(ie.Consequence.String())
@@ -244,6 +245,7 @@ func (bs *BlockStatement) String() string {
 
 type FunctionLiteral struct {
 	Token      token.Token
+	Name       *Identifier
 	Parameters []*Identifier
 	Body       *BlockStatement
 }
@@ -259,6 +261,12 @@ func (fl *FunctionLiteral) String() string {
 	}
 
 	out.WriteString(fl.TokenLiteral())
+
+	if fl.Name != nil {
+		out.WriteString(" ")
+		out.WriteString(fl.Name.String())
+	}
+
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") ")
