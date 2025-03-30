@@ -245,3 +245,51 @@ x++ y--
 		}
 	}
 }
+
+func TestIllegalIdentifiers(t *testing.T) {
+	input := `
+let x = 5;
+let 123abc = 10;
+let valid = 15;
+123invalid
+`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENT, "x"},
+		{token.ASSIGN, "="},
+		{token.INT, "5"},
+		{token.ILLEGAL, ";"},
+		{token.LET, "let"},
+		{token.ILLEGAL, "123abc"},
+		{token.ASSIGN, "="},
+		{token.INT, "10"},
+		{token.ILLEGAL, ";"},
+		{token.LET, "let"},
+		{token.IDENT, "valid"},
+		{token.ASSIGN, "="},
+		{token.INT, "15"},
+		{token.ILLEGAL, ";"},
+		{token.ILLEGAL, "123invalid"},
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
+				i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
+				i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}

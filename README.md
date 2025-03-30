@@ -11,6 +11,7 @@ TargaScript is a modern, expressive programming language implemented entirely in
 - Clean, intuitive syntax
 - First-class functions
 - Object literals and arrays
+- Array and object methods with dot notation
 - Module loading with imports
 - Loop constructs like `repeat...in`
 - Conditionals with `if/else`
@@ -33,6 +34,14 @@ const version = 1.0
 let isCool = true
 let emptyValue = null
 
+// Variable naming rules:
+// - Must start with a letter or underscore (not a digit)
+// - Can contain letters, digits, and underscores after the first character
+let validName = 123       // Valid
+let _alsoValid = true     // Valid
+let with2numbers = "ok"   // Valid
+// let 3invalid = "error"  // Invalid: cannot start with a digit
+
 fn greet(person) {
   print("Hello, " + person)
 }
@@ -46,16 +55,46 @@ Arrays and Objects:
 let numbers = [1, 2, 3, 4, 5]
 let mixed = [1, "a", true]
 
+// Array methods with dot notation
+let first = numbers.first()  // 1
+let last = numbers.last()    // 5
+let length = numbers.length  // 5
+let newArray = numbers.insert(6)  // [1, 2, 3, 4, 5, 6]
+let remaining = numbers.rest()    // [2, 3, 4, 5]
+
+// Array indexing
+let third = numbers[2]       // Accessing element (zero-based, returns 3)
+numbers[0] = 10              // Modify array element
+
+// Strings with dot notation
+let greeting = "Hello"
+let strLength = greeting.length  // 5
+
 // Objects
 let person = {
-  name: "Targa",
-  age: 30,
-  hobbies: ["coding", "languages"]
+  "name": "Targa",
+  "age": 30,
+  "skills": ["coding", "languages"]
 }
 
-// Property access
-person.name = "Miguel"
-let hobby = person.hobbies[0]
+// Property access using dot notation
+let name = person.name      // "Targa"
+let skill = person.skills[0]  // "coding"
+
+// Property access using bracket notation
+let key = "age"  
+let age = person[key]        // 30
+
+// Property assignment (dot notation)
+person.name = "Miguel"         // Update existing property
+person.location = "New York"   // Add new property
+
+// Property assignment (bracket notation)
+person["active"] = true        // Add new property
+
+// Array access by index
+let item = numbers[0]     // Access first item
+numbers[1] = 20           // Modify array element
 ```
 
 Conditional Logic:
@@ -80,6 +119,30 @@ load math
 load fs as file
 ```
 
+## 📦 Built-in Functions
+
+TargaScript includes several built-in functions for common operations:
+
+- `print(value)` - Prints the value to the console
+
+Additionally, arrays, strings, and objects support properties and methods via dot notation:
+
+For arrays:
+- `array.first()` - Returns the first element of an array
+- `array.last()` - Returns the last element of an array
+- `array.rest()` - Returns a new array containing all elements except the first
+- `array.insert(element)` - Returns a new array with the element added to the end
+- `array.length` - Property that returns the length of the array
+
+For strings:
+- `string.length` - Property that returns the length of the string
+
+For objects:
+- `object.keys()` - Returns an array of all keys in the object
+- `object.values()` - Returns an array of all values in the object
+- `object.has(key)` - Returns a boolean indicating if the object has the specified key
+- `object.length` - Property that returns the number of key-value pairs in the object
+
 ## 🚧 Project Status
 
 TargaScript is currently in early development. The parser is functional with support for arrays, objects, property access, method calls, and more.
@@ -94,6 +157,16 @@ go run main.go
 To run a TargaScript (`.tg`) file:
 ```sh
 go run main.go path/to/script.tg
+```
+
+Debug mode with AST visualization (with syntax highlighting):
+```sh
+go run main.go --debug path/to/script.tg
+```
+
+Debug mode with AST visualization (no colors, better for terminals that don't support ANSI colors):
+```sh
+go run main.go --debug-no-color path/to/script.tg
 ```
 
 ## 🤔 Why TargaScript?

@@ -8,14 +8,13 @@ import (
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/lexer"
+	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
 )
 
 const PROMPT = ">> "
 
-// EvalSource evaluates a source string and returns any errors
-// It can be used for both REPL and file execution
-func EvalSource(source string, out io.Writer, noColor bool, debug bool) error {
+func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl bool) error {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParseProgram()
@@ -25,7 +24,6 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool) error {
 		return fmt.Errorf("parser errors")
 	}
 
-	// Pretty print AST in debug mode
 	if debug {
 		if noColor {
 			io.WriteString(out, ast.NoColorPrettyPrint(program))
@@ -35,8 +33,10 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool) error {
 		io.WriteString(out, "\n")
 	}
 
-	evaluated := evaluator.Eval(program)
-	if evaluated != nil {
+	env := object.NewEnvironment()
+	evaluated := evaluator.Eval(program, env)
+
+	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 		io.WriteString(out, evaluated.Inspect())
 		io.WriteString(out, "\n")
 	}
@@ -55,8 +55,7 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 		}
 
 		line := scanner.Text()
-		// Use the common evaluation function
-		EvalSource(line, out, noColor, debug)
+		EvalSource(line, out, noColor, debug, true)
 	}
 }
 

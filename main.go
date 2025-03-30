@@ -15,11 +15,9 @@ func main() {
 
 	flag.Parse()
 
-	// Calculate if we should use colors based on which debug flag was used
+	// Calculate color and debug settings
 	noColor := *debugNoColor
 	debugEnabled := *debug || *debugNoColor
-
-	fmt.Printf("Welcome to TargaScript v0.0.1\n")
 
 	args := flag.Args()
 	if len(args) > 0 {
@@ -28,7 +26,7 @@ func main() {
 
 		// Check file extension
 		ext := filepath.Ext(filename)
-		if ext != ".tg" {
+		if ext != ".tg" && debugEnabled {
 			fmt.Printf("Warning: '%s' does not have the .tg extension. TargaScript files should use the .tg extension.\n", filename)
 		}
 
@@ -38,10 +36,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Printf("Executing file '%s'...\n", filename)
+		if debugEnabled {
+			fmt.Printf("Welcome to TargaScript v0.0.1\n")
+			fmt.Printf("Executing file '%s'...\n", filename)
+		}
 
-		// Use the common evaluation function from repl package
-		err = repl.EvalSource(string(input), os.Stdout, noColor, debugEnabled)
+		err = executeFile(string(input), debugEnabled, noColor)
 		if err != nil {
 			os.Exit(1)
 		}
@@ -49,9 +49,14 @@ func main() {
 		return
 	}
 
+	fmt.Printf("Welcome to TargaScript v0.0.1\n")
 	fmt.Println("")
 	fmt.Println("Type commands and press Enter to execute")
 	fmt.Println("Press Ctrl+C to exit")
 
 	repl.Start(os.Stdin, os.Stdout, noColor, debugEnabled)
+}
+
+func executeFile(input string, debug bool, noColor bool) error {
+	return repl.EvalSource(input, os.Stdout, noColor, debug, false)
 }

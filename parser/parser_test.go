@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -1617,4 +1618,35 @@ func TestNamedFunctionLiteral(t *testing.T) {
 	}
 
 	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestInvalidVariableNames(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedError string
+	}{
+		{"let 123abc = 5;", "invalid variable name '123abc': variable names cannot start with a digit"},
+		{"repeat 2xyz in [1, 2, 3] {}", "invalid iterator name '2xyz': variable names cannot start with a digit"},
+		{"fn(5var) {}", "invalid parameter name '5var': parameter names cannot start with a digit"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		p.ParseProgram()
+		errors := p.Errors()
+
+		errorFound := false
+		for _, err := range errors {
+			if strings.Contains(err, tt.expectedError) {
+				errorFound = true
+				break
+			}
+		}
+
+		if !errorFound {
+			t.Errorf("Expected error message containing '%s', but got: %v",
+				tt.expectedError, errors)
+		}
+	}
 }

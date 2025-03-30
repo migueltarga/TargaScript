@@ -141,6 +141,11 @@ func (l *Lexer) NextToken() token.Token {
 			tok = l.newToken(tokenType, literal, tokenLine, tokenColumn)
 			return tok
 		} else if isDigit(l.ch) {
+			if l.isStartingWithDigitFollowedByLetter() {
+				invalidIdent := l.readInvalidIdentifier()
+				tok = l.newToken(token.ILLEGAL, invalidIdent, tokenLine, tokenColumn)
+				return tok
+			}
 			tokenType, literal := l.readNumber()
 			tok = l.newToken(tokenType, literal, tokenLine, tokenColumn)
 			return tok
@@ -199,6 +204,33 @@ func (l *Lexer) peekChar() rune {
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for isLetter(l.ch) || (isDigit(l.ch) && l.position > position) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) isStartingWithDigitFollowedByLetter() bool {
+	pos := l.position
+	readPos := l.readPosition
+	ch := l.ch
+
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+
+	isInvalidIdent := isLetter(l.ch)
+
+	l.position = pos
+	l.readPosition = readPos
+	l.ch = ch
+
+	return isInvalidIdent
+}
+
+func (l *Lexer) readInvalidIdentifier() string {
+	position := l.position
+	l.readChar()
+	for isLetter(l.ch) || isDigit(l.ch) {
 		l.readChar()
 	}
 	return l.input[position:l.position]

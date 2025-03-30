@@ -176,6 +176,13 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
 	if !p.expectPeek(token.IDENT) {
+		if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
+			p.nextToken()
+			msg := fmt.Sprintf("line %d:%d: invalid variable name '%s': variable names cannot start with a digit",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
 		return nil
 	}
 
@@ -194,6 +201,14 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	}
 
 	return stmt
+}
+
+func isStartingWithDigit(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	firstChar := []rune(s)[0]
+	return '0' <= firstChar && firstChar <= '9'
 }
 
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
@@ -427,7 +442,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-	identifiers := []*ast.Identifier{}
+	var identifiers []*ast.Identifier
 
 	if p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
@@ -436,12 +451,27 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 	p.nextToken()
 
+	if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
+		msg := fmt.Sprintf("line %d:%d: invalid parameter name '%s': parameter names cannot start with a digit",
+			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
 	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	identifiers = append(identifiers, ident)
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
+
+		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
+			msg := fmt.Sprintf("line %d:%d: invalid parameter name '%s': parameter names cannot start with a digit",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
+
 		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		identifiers = append(identifiers, ident)
 	}
@@ -534,6 +564,13 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	p.nextToken()
 
 	if !p.curTokenIs(token.IDENT) {
+		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
+			msg := fmt.Sprintf("line %d:%d: invalid iterator name '%s': variable names cannot start with a digit",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
+
 		msg := fmt.Sprintf("line %d:%d: expected identifier after 'repeat', got %s",
 			p.curToken.Line, p.curToken.Column, p.curToken.Type)
 		p.errors = append(p.errors, msg)
@@ -691,7 +728,6 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 	propertyName := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
-	// Check if this is a method call
 	if p.peekTokenIs(token.LPAREN) {
 		methodCall := &ast.MethodCallExpression{
 			Token:     expression.Token,
@@ -700,7 +736,7 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 			Arguments: []ast.Expression{},
 		}
 
-		p.nextToken() // consume the '('
+		p.nextToken()
 
 		if !p.peekTokenIs(token.RPAREN) {
 			p.nextToken()
@@ -743,14 +779,13 @@ func (p *Parser) parsePrintStatement() *ast.PrintStatement {
 		return nil
 	}
 
-	p.nextToken() // Skip the '('
+	p.nextToken()
 	stmt.Value = p.parseExpression(LOWEST)
 
 	if !p.expectPeek(token.RPAREN) {
 		return nil
 	}
 
-	// Make semicolons optional
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
