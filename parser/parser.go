@@ -576,44 +576,24 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 
 	p.nextToken()
 
-	if !p.curTokenIs(token.IDENT) {
-		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
-			msg := fmt.Sprintf("line %d:%d: invalid iterator name '%s': variable names cannot start with a digit",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-			p.errors = append(p.errors, msg)
-			return nil
-		}
-
-		msg := fmt.Sprintf("line %d:%d: expected identifier after 'repeat', got %s",
-			p.curToken.Line, p.curToken.Column, p.curToken.Type)
-		p.errors = append(p.errors, msg)
-		return nil
+	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.IN) {
+		stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		p.nextToken()
+		p.nextToken()
+		stmt.Collection = p.parseExpression(LOWEST)
+	} else {
+		stmt.Iterator = nil
+		stmt.Collection = p.parseExpression(LOWEST)
 	}
-
-	stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-
-	p.nextToken()
-
-	if !p.curTokenIs(token.IN) {
-		msg := fmt.Sprintf("line %d:%d: expected 'in' after iterator, got %s",
-			p.curToken.Line, p.curToken.Column, p.curToken.Type)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	p.nextToken()
-
-	stmt.Collection = p.parseExpression(LOWEST)
 
 	if !p.peekTokenIs(token.LBRACE) {
-		msg := fmt.Sprintf("line %d:%d: expected '{' after collection, got %s",
+		msg := fmt.Sprintf("line %d:%d: expected '{' after repeat expression, got %s",
 			p.peekToken.Line, p.peekToken.Column, p.peekToken.Type)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
 
 	p.nextToken()
-
 	stmt.Body = p.parseBlockStatement()
 
 	return stmt

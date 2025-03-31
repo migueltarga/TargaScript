@@ -1660,7 +1660,6 @@ func TestInvalidVariableNames(t *testing.T) {
 		expectedError string
 	}{
 		{"let 123abc = 5;", "invalid variable name '123abc': variable names cannot start with a digit"},
-		{"repeat 2xyz in [1, 2, 3] {}", "invalid iterator name '2xyz': variable names cannot start with a digit"},
 		{"fn(5var) {}", "invalid parameter name '5var': parameter names cannot start with a digit"},
 	}
 

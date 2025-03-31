@@ -385,8 +385,12 @@ func (rs *RepeatStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(rs.TokenLiteral() + " ")
-	out.WriteString(rs.Iterator.String())
-	out.WriteString(" in ")
+
+	if rs.Iterator != nil {
+		out.WriteString(rs.Iterator.String())
+		out.WriteString(" in ")
+	}
+
 	out.WriteString(rs.Collection.String())
 	out.WriteString(" ")
 	out.WriteString(rs.Body.String())

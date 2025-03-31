@@ -19,6 +19,8 @@ var (
 
 	// Default output to stdout
 	output io.Writer = os.Stdout
+	// Trace mode for debugging
+	traceMode bool = false
 )
 
 // SetOutput sets the writer to use for print statements
@@ -26,11 +28,28 @@ func SetOutput(w io.Writer) {
 	output = w
 }
 
+// SetTraceMode enables or disables trace logging
+func SetTraceMode(enabled bool) {
+	traceMode = enabled
+}
+
 // Eval evaluates the AST node and returns an object
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	if node == nil {
 		fmt.Fprintf(output, "WARNING: Eval received nil node\n")
 		return NULL
+	}
+
+	// Set up panic recovery to debug any runtime errors
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stdout, "PANIC in Eval: %v\n", r)
+		}
+	}()
+
+	nodeType := fmt.Sprintf("%T", node)
+	if traceMode {
+		fmt.Fprintf(os.Stdout, "TRACE: Evaluating %s: %s\n", nodeType, node.String())
 	}
 
 	switch node := node.(type) {
@@ -254,7 +273,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 	}
 
-	nodeType := fmt.Sprintf("%T", node)
 	fmt.Fprintf(output, "WARNING: Unhandled node type: %s\n", nodeType)
 	return NULL
 }
@@ -805,8 +823,24 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			return collection
 		}
 
+		if traceMode {
+			fmt.Fprintf(os.Stdout, "TRACE: Repeat collection evaluated to type: %s\n", collection.Type())
+			if collection.Type() == object.ARRAY_OBJ {
+				arr := collection.(*object.Array)
+				fmt.Fprintf(os.Stdout, "TRACE: Array has %d elements\n", len(arr.Elements))
+				for i, elem := range arr.Elements {
+					fmt.Fprintf(os.Stdout, "TRACE: Element %d: %s (%s)\n",
+						i, elem.Type(), elem.Inspect())
+				}
+			}
+		}
+
 		switch collection := collection.(type) {
 		case *object.Array:
+			if len(collection.Elements) == 0 && traceMode {
+				fmt.Fprintf(os.Stdout, "TRACE: Empty array in repeat statement\n")
+			}
+
 			for _, element := range collection.Elements {
 				loopEnv.Set(rs.Iterator.Value, element)
 
@@ -892,26 +926,40 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 }
 
 func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object.Object {
+	if traceMode {
+		fmt.Fprintf(os.Stdout, "TRACE: evalPrintExpression - arguments: %d\n", len(pe.Arguments))
+	}
+
 	args := []object.Object{}
 
-	for _, arg := range pe.Arguments {
+	for i, arg := range pe.Arguments {
+		if traceMode {
+			fmt.Fprintf(os.Stdout, "TRACE: Evaluating print arg %d: %s\n", i, arg.String())
+		}
+
 		evaluated := Eval(arg, env)
+
+		if traceMode && evaluated != nil {
+			fmt.Fprintf(os.Stdout, "TRACE: Print arg %d evaluated to: %s (%s)\n",
+				i, evaluated.Type(), evaluated.Inspect())
+		}
+
 		if isError(evaluated) {
 			return evaluated
 		}
 		args = append(args, evaluated)
 	}
 
-	outputs := make([]string, len(args))
+	values := make([]string, len(args))
 	for i, arg := range args {
-		outputs[i] = arg.Inspect()
+		if arg == nil {
+			values[i] = "nil"
+		} else {
+			values[i] = arg.Inspect()
+		}
 	}
 
-	if len(outputs) > 0 {
-		fmt.Fprintln(os.Stdout, strings.Join(outputs, " "))
-	} else {
-		fmt.Fprintln(os.Stdout)
-	}
+	fmt.Fprintln(os.Stdout, strings.Join(values, " "))
 
 	return NULL
 }
