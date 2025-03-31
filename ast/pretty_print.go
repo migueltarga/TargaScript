@@ -200,8 +200,11 @@ func prettyPrintNode(node Node, level int) string {
 
 	case *PrintStatement:
 		result += "print("
-		if n.Value != nil {
-			result += prettyPrintNode(n.Value, 0)
+		for i, arg := range n.Arguments {
+			if i > 0 {
+				result += ", "
+			}
+			result += prettyPrintNode(arg, 0)
 		}
 		result += ")"
 

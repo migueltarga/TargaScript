@@ -485,8 +485,8 @@ func (ae *AssignmentExpression) String() string {
 }
 
 type PrintStatement struct {
-	Token token.Token
-	Value Expression
+	Token     token.Token
+	Arguments []Expression
 }
 
 func (ps *PrintStatement) statementNode()       {}
@@ -494,11 +494,61 @@ func (ps *PrintStatement) TokenLiteral() string { return ps.Token.Literal }
 func (ps *PrintStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(ps.TokenLiteral() + "(")
-	if ps.Value != nil {
-		out.WriteString(ps.Value.String())
+	args := []string{}
+	for _, a := range ps.Arguments {
+		args = append(args, a.String())
 	}
+
+	out.WriteString(ps.TokenLiteral() + "(")
+	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
+
+	return out.String()
+}
+
+type BreakStatement struct {
+	Token token.Token
+}
+
+func (bs *BreakStatement) statementNode()       {}
+func (bs *BreakStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BreakStatement) String() string {
+	return bs.TokenLiteral()
+}
+
+type ContinueStatement struct {
+	Token token.Token
+}
+
+func (cs *ContinueStatement) statementNode()       {}
+func (cs *ContinueStatement) TokenLiteral() string { return cs.Token.Literal }
+func (cs *ContinueStatement) String() string {
+	return cs.TokenLiteral()
+}
+
+type FunctionStatement struct {
+	Token      token.Token
+	Name       *Identifier
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fs *FunctionStatement) statementNode()       {}
+func (fs *FunctionStatement) TokenLiteral() string { return fs.Token.Literal }
+func (fs *FunctionStatement) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range fs.Parameters {
+		params = append(params, p.String())
+	}
+
+	out.WriteString(fs.TokenLiteral() + " ")
+	out.WriteString(fs.Name.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") ")
+	out.WriteString(fs.Body.String())
 
 	return out.String()
 }

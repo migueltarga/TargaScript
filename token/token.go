@@ -32,6 +32,8 @@ const (
 	DOT       = "."
 	INCREMENT = "++"
 	DECREMENT = "--"
+	MODULO    = "%"
+	XOR       = "^"
 
 	// Delimiters
 	COMMA     = ","
@@ -59,6 +61,8 @@ const (
 	REPEAT   = "REPEAT"
 	IN       = "IN"
 	NULL     = "NULL"
+	BREAK    = "BREAK"
+	CONTINUE = "CONTINUE"
 )
 
 type Token struct {
@@ -69,20 +73,22 @@ type Token struct {
 }
 
 var keywords = map[string]TokenType{
-	"fn":     FUNCTION,
-	"let":    LET,
-	"const":  CONST,
-	"true":   TRUE,
-	"false":  FALSE,
-	"if":     IF,
-	"else":   ELSE,
-	"return": RETURN,
-	"load":   LOAD,
-	"as":     AS,
-	"print":  PRINT,
-	"repeat": REPEAT,
-	"in":     IN,
-	"null":   NULL,
+	"fn":       FUNCTION,
+	"let":      LET,
+	"const":    CONST,
+	"true":     TRUE,
+	"false":    FALSE,
+	"if":       IF,
+	"else":     ELSE,
+	"return":   RETURN,
+	"load":     LOAD,
+	"as":       AS,
+	"print":    PRINT,
+	"repeat":   REPEAT,
+	"in":       IN,
+	"null":     NULL,
+	"break":    BREAK,
+	"continue": CONTINUE,
 }
 
 func LookupIdent(ident string) TokenType {

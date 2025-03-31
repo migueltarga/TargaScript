@@ -2,21 +2,34 @@ package evaluator
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/object"
 )
 
 var (
-	NULL  = &object.Null{}
-	TRUE  = &object.Boolean{Value: true}
-	FALSE = &object.Boolean{Value: false}
+	NULL     = &object.Null{}
+	TRUE     = &object.Boolean{Value: true}
+	FALSE    = &object.Boolean{Value: false}
+	BREAK    = &object.Break{}
+	CONTINUE = &object.Continue{}
+
+	// Default output to stdout
+	output io.Writer = os.Stdout
 )
+
+// SetOutput sets the writer to use for print statements
+func SetOutput(w io.Writer) {
+	output = w
+}
 
 // Eval evaluates the AST node and returns an object
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	if node == nil {
-		fmt.Printf("WARNING: Eval received nil node\n")
+		fmt.Fprintf(output, "WARNING: Eval received nil node\n")
 		return NULL
 	}
 
@@ -27,6 +40,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
+
+	case *ast.RepeatStatement:
+		return evalRepeatStatement(node, env)
 
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
@@ -45,6 +61,22 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		env.Set(node.Name.Value, val)
 		return val
+
+	case *ast.FunctionStatement:
+		fn := &object.Function{
+			Parameters: node.Parameters,
+			Body:       node.Body,
+			Env:        env,
+			Name:       node.Name.Value,
+		}
+		env.Set(node.Name.Value, fn)
+		return fn
+
+	case *ast.BreakStatement:
+		return BREAK
+
+	case *ast.ContinueStatement:
+		return CONTINUE
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -99,12 +131,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(function) {
 			return function
 		}
-
 		args := evalExpressions(node.Arguments, env)
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]
 		}
-
 		return applyFunction(function, args)
 
 	case *ast.ArrayLiteral:
@@ -129,12 +159,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalHashLiteral(node, env)
 
 	case *ast.PrintStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-		fmt.Println(val.Inspect())
-		return NULL
+		return evalPrintExpression(node, env)
 
 	case *ast.DotExpression:
 		left := Eval(node.Left, env)
@@ -230,7 +255,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	}
 
 	nodeType := fmt.Sprintf("%T", node)
-	fmt.Printf("WARNING: Unhandled node type: %s\n", nodeType)
+	fmt.Fprintf(output, "WARNING: Unhandled node type: %s\n", nodeType)
 	return NULL
 }
 
@@ -248,10 +273,6 @@ func evalProgram(statements []ast.Statement, env *object.Environment) object.Obj
 		}
 	}
 
-	if result == nil {
-		return NULL
-	}
-
 	return result
 }
 
@@ -263,14 +284,14 @@ func evalBlockStatements(statements []ast.Statement, env *object.Environment) ob
 
 		if result != nil {
 			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ || rt == object.BREAK_OBJ || rt == object.CONTINUE_OBJ {
 				return result
 			}
 		}
 	}
 
 	if result == nil {
-		fmt.Printf("WARNING: evalBlockStatements returning NULL because result is nil\n")
+		fmt.Fprintf(output, "WARNING: evalBlockStatements returning NULL because result is nil\n")
 		return NULL
 	}
 
@@ -362,7 +383,17 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 	case "*":
 		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
+		if rightVal == 0 {
+			return newError(line, column, "division by zero")
+		}
 		return &object.Integer{Value: leftVal / rightVal}
+	case "%":
+		if rightVal == 0 {
+			return newError(line, column, "modulo by zero")
+		}
+		return &object.Integer{Value: leftVal % rightVal}
+	case "^":
+		return &object.Integer{Value: leftVal ^ rightVal}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -403,7 +434,15 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 	case "*":
 		return &object.Float{Value: leftVal * rightVal}
 	case "/":
+		if rightVal == 0 {
+			return newError(line, column, "division by zero")
+		}
 		return &object.Float{Value: leftVal / rightVal}
+	case "%":
+		if rightVal == 0 {
+			return newError(line, column, "modulo by zero")
+		}
+		return &object.Float{Value: float64(int64(leftVal) % int64(rightVal))}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -518,7 +557,9 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 			return newError(0, 0, "function object is nil")
 		}
 		extendedEnv := extendFunctionEnv(fn, args)
+
 		evaluated := Eval(fn.Body, extendedEnv)
+
 		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
 		if fn == nil || fn.Fn == nil {
@@ -753,4 +794,124 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 	default:
 		return newError(line, column, "method call not supported for %s", obj.Type())
 	}
+}
+
+func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) object.Object {
+	loopEnv := object.NewEnclosedEnvironment(env)
+
+	if rs.Iterator != nil && rs.Collection != nil {
+		collection := Eval(rs.Collection, env)
+		if isError(collection) {
+			return collection
+		}
+
+		switch collection := collection.(type) {
+		case *object.Array:
+			for _, element := range collection.Elements {
+				loopEnv.Set(rs.Iterator.Value, element)
+
+				result := Eval(rs.Body, loopEnv)
+
+				if result != nil {
+					if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
+						return result
+					}
+
+					if result.Type() == object.BREAK_OBJ {
+						break
+					}
+
+					if result.Type() == object.CONTINUE_OBJ {
+						continue
+					}
+				}
+			}
+
+		case *object.Integer:
+			end := collection.Value
+
+			for i := int64(1); i <= end; i++ {
+				loopEnv.Set(rs.Iterator.Value, &object.Integer{Value: i})
+
+				result := Eval(rs.Body, loopEnv)
+				if result != nil {
+					if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
+						return result
+					}
+
+					if result.Type() == object.BREAK_OBJ {
+						break
+					}
+
+					if result.Type() == object.CONTINUE_OBJ {
+						continue
+					}
+				}
+			}
+
+		default:
+			return newError(rs.Token.Line, rs.Token.Column,
+				"cannot iterate over %s", collection.Type())
+		}
+
+		return NULL
+	}
+
+	if rs.Collection != nil && rs.Iterator == nil {
+		for {
+			condition := Eval(rs.Collection, env)
+			if isError(condition) {
+				return condition
+			}
+
+			if !isTruthy(condition) {
+				break
+			}
+
+			result := Eval(rs.Body, env)
+			if result != nil {
+				if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
+					return result
+				}
+
+				if result.Type() == object.BREAK_OBJ {
+					break
+				}
+
+				if result.Type() == object.CONTINUE_OBJ {
+					continue
+				}
+			}
+		}
+
+		return NULL
+	}
+
+	return newError(rs.Token.Line, rs.Token.Column,
+		"invalid repeat statement: missing iterator or condition")
+}
+
+func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object.Object {
+	args := []object.Object{}
+
+	for _, arg := range pe.Arguments {
+		evaluated := Eval(arg, env)
+		if isError(evaluated) {
+			return evaluated
+		}
+		args = append(args, evaluated)
+	}
+
+	outputs := make([]string, len(args))
+	for i, arg := range args {
+		outputs[i] = arg.Inspect()
+	}
+
+	if len(outputs) > 0 {
+		fmt.Fprintln(os.Stdout, strings.Join(outputs, " "))
+	} else {
+		fmt.Fprintln(os.Stdout)
+	}
+
+	return NULL
 }

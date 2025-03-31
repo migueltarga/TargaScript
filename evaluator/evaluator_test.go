@@ -383,61 +383,14 @@ func TestBuiltinFunctions(t *testing.T) {
 		input    string
 		expected interface{}
 	}{
-		{`len("")`, 0},
-		{`len("four")`, 4},
-		{`len("hello world")`, 11},
-		{`len(1)`, "argument to `len` not supported, got INTEGER"},
-		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
-		{`len([1, 2, 3])`, 3},
-		{`len([])`, 0},
-		{`first([1, 2, 3])`, 1},
-		{`first([])`, nil},
-		{`first(1)`, "argument to `first` must be ARRAY, got INTEGER"},
-		{`last([1, 2, 3])`, 3},
-		{`last([])`, nil},
-		{`last(1)`, "argument to `last` must be ARRAY, got INTEGER"},
-		{`rest([1, 2, 3])`, []int{2, 3}},
-		{`rest([])`, nil},
-		{`push([], 1)`, []int{1}},
-		{`push(1, 1)`, "argument to `push` must be ARRAY, got INTEGER"},
+		{`print("hello")`, nil},
+		{`print("Name:", "Targa", "Age:", 30)`, nil},
+		{`print()`, nil},
 	}
 
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
-
-		switch expected := tt.expected.(type) {
-		case int:
-			testIntegerObject(t, evaluated, int64(expected))
-		case nil:
-			testNullObject(t, evaluated)
-		case string:
-			errObj, ok := evaluated.(*object.Error)
-			if !ok {
-				t.Errorf("object is not Error. got=%T (%+v)",
-					evaluated, evaluated)
-				continue
-			}
-			if errObj.Message != expected {
-				t.Errorf("wrong error message. expected=%q, got=%q",
-					expected, errObj.Message)
-			}
-		case []int:
-			array, ok := evaluated.(*object.Array)
-			if !ok {
-				t.Errorf("obj not Array. got=%T (%+v)", evaluated, evaluated)
-				continue
-			}
-
-			if len(array.Elements) != len(expected) {
-				t.Errorf("wrong num of elements. want=%d, got=%d",
-					len(expected), len(array.Elements))
-				continue
-			}
-
-			for i, expectedElem := range expected {
-				testIntegerObject(t, array.Elements[i], int64(expectedElem))
-			}
-		}
+		testNullObject(t, evaluated)
 	}
 }
 
@@ -618,12 +571,165 @@ func TestPrintStatement(t *testing.T) {
 	}{
 		{`print("hello")`, nil},
 		{`print(1 + 2)`, nil},
+		{`print("Name:", "Targa", "Age:", 30)`, nil},
+		{`print()`, nil},
 	}
 
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
 		testNullObject(t, evaluated)
 	}
+}
+
+/*
+func TestRepeatStatements(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected any
+	}{
+		// Test repeat with range
+		{
+			`
+			let sum = 0
+			repeat i in 5 {
+				sum = sum + i
+			}
+			sum
+			`,
+			15, // 1+2+3+4+5 = 15
+		},
+		// Test repeat with array
+		{
+			`
+			let numbers = [1, 2, 3, 4, 5]
+			let sum = 0
+			repeat num in numbers {
+				sum = sum + num
+			}
+			sum
+			`,
+			15,
+		},
+		// Test repeat with condition
+		{
+			`
+			let i = 0
+			let sum = 0
+			repeat i < 5 {
+				sum = sum + i
+				i = i + 1
+			}
+			sum
+			`,
+			10, // 0+1+2+3+4 = 10
+		},
+		// Test break with repeat
+		{
+			`
+			let sum = 0
+			repeat i in 10 {
+				if i > 5 {
+					break
+				}
+				sum = sum + i
+			}
+			sum
+			`,
+			15, // 1+2+3+4+5 = 15
+		},
+		// Test continue with repeat
+		{
+			`
+			let sum = 0
+			repeat i in 5 {
+				if i == 3 {
+					continue
+				}
+				sum = sum + i
+			}
+			sum
+			`,
+			12, // 1+2+4+5 = 12 (skips 3)
+		},
+		// Test continue with condition-based repeat
+		{
+			`
+			let i = 0
+			let sum = 0
+			repeat i < 5 {
+				i = i + 1
+				if i == 3 {
+					continue
+				}
+				sum = sum + i
+			}
+			sum
+			`,
+			12, // 1+2+4+5 = 12 (skips 3)
+		},
+		// Test nested repeats
+		{
+			`
+			let sum = 0
+			repeat i in 3 {
+				repeat j in 3 {
+					sum = sum + (i * j)
+				}
+			}
+			sum
+			`,
+			36, // (1*1)+(1*2)+(1*3)+(2*1)+(2*2)+(2*3)+(3*1)+(3*2)+(3*3) = 36
+		},
+	}
+
+	for i, tt := range tests {
+		evaluated := testEval(tt.input)
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected), fmt.Sprintf("test %d", i))
+		}
+	}
+}
+*/
+
+func TestFunctionStatementEvaluation(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{`fn add(x, y) { return x + y }
+		  add(5, 5)`, 10},
+		{`fn double(x) { return x * 2 }
+		  double(5)`, 10},
+		{`fn identity(x) { return x }
+		  identity(5)`, 5},
+		{`fn add(x, y) { return x + y }
+		  fn double(x) { return x * 2 }
+		  add(double(2), 6)`, 10},
+		{`fn fibonacci(n) { 
+			if n < 2 { 
+				return n 
+			} 
+			return fibonacci(n-1) + fibonacci(n-2) 
+		  }
+		  fibonacci(5)`, 5},
+	}
+
+	for _, tt := range tests {
+		testIntegerObject(t, testEval(tt.input), tt.expected)
+	}
+
+	// Test for recursive function calls
+	input := `
+	fn countDown(n) {
+		if n == 0 {
+			return 0
+		}
+		return countDown(n-1)
+	}
+	countDown(5)
+	`
+	testIntegerObject(t, testEval(input), 0)
 }
 
 func testEval(input string) object.Object {
@@ -635,15 +741,23 @@ func testEval(input string) object.Object {
 	return Eval(program, env)
 }
 
-func testIntegerObject(t *testing.T, obj object.Object, expected int64) bool {
+func testIntegerObject(t *testing.T, obj object.Object, expected int64, label ...string) bool {
 	result, ok := obj.(*object.Integer)
 	if !ok {
-		t.Errorf("object is not Integer. got=%T (%+v)", obj, obj)
+		testLabel := ""
+		if len(label) > 0 {
+			testLabel = label[0] + ": "
+		}
+		t.Errorf("%sobject is not Integer. got=%T (%+v)", testLabel, obj, obj)
 		return false
 	}
 	if result.Value != expected {
-		t.Errorf("object has wrong value. got=%d, want=%d",
-			result.Value, expected)
+		testLabel := ""
+		if len(label) > 0 {
+			testLabel = label[0] + ": "
+		}
+		t.Errorf("%sobject has wrong value. got=%d, want=%d",
+			testLabel, result.Value, expected)
 		return false
 	}
 

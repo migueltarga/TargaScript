@@ -58,5 +58,17 @@ func main() {
 }
 
 func executeFile(input string, debug bool, noColor bool) error {
-	return repl.EvalSource(input, os.Stdout, noColor, debug, false)
+	// Set up panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Panic during execution: %v\n", r)
+		}
+	}()
+
+	err := repl.EvalSource(input, os.Stdout, noColor, debug, false)
+	if err != nil {
+		fmt.Printf("Error during execution: %v\n", err)
+		return err
+	}
+	return nil
 }

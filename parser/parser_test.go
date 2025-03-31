@@ -1484,17 +1484,61 @@ func TestPrintStatement(t *testing.T) {
 			program.Statements[0])
 	}
 
-	if stmt.TokenLiteral() != "print" {
-		t.Fatalf("stmt.TokenLiteral() not 'print'. got=%q", stmt.TokenLiteral())
+	if len(stmt.Arguments) != 1 {
+		t.Fatalf("print statement doesn't have 1 argument. got=%d",
+			len(stmt.Arguments))
 	}
 
-	infixExp, ok := stmt.Value.(*ast.InfixExpression)
+	infixExp, ok := stmt.Arguments[0].(*ast.InfixExpression)
 	if !ok {
-		t.Fatalf("stmt.Value is not ast.InfixExpression. got=%T", stmt.Value)
+		t.Fatalf("stmt.Arguments[0] is not ast.InfixExpression. got=%T", stmt.Arguments[0])
 	}
 
 	if !testInfixExpression(t, infixExp, 5, "+", 5) {
 		return
+	}
+}
+
+func TestMultiArgumentPrintStatement(t *testing.T) {
+	input := `print("the number is", test)`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain 1 statement. got=%d",
+			len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.PrintStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.PrintStatement. got=%T",
+			program.Statements[0])
+	}
+
+	if len(stmt.Arguments) != 2 {
+		t.Fatalf("print statement doesn't have 2 arguments. got=%d",
+			len(stmt.Arguments))
+	}
+
+	// First argument should be a string literal
+	strLit, ok := stmt.Arguments[0].(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("stmt.Arguments[0] is not ast.StringLiteral. got=%T", stmt.Arguments[0])
+	}
+	if strLit.Value != "the number is" {
+		t.Errorf("string literal value not %q. got=%q", "the number is", strLit.Value)
+	}
+
+	// Second argument should be an identifier
+	ident, ok := stmt.Arguments[1].(*ast.Identifier)
+	if !ok {
+		t.Fatalf("stmt.Arguments[1] is not ast.Identifier. got=%T", stmt.Arguments[1])
+	}
+	if ident.Value != "test" {
+		t.Errorf("identifier value not %q. got=%q", "test", ident.Value)
 	}
 }
 
@@ -1576,45 +1620,35 @@ func TestNamedFunctionLiteral(t *testing.T) {
 			len(program.Statements))
 	}
 
-	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	stmt, ok := program.Statements[0].(*ast.FunctionStatement)
 	if !ok {
-		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+		t.Fatalf("program.Statements[0] is not ast.FunctionStatement. got=%T",
 			program.Statements[0])
 	}
 
-	function, ok := stmt.Expression.(*ast.FunctionLiteral)
-	if !ok {
-		t.Fatalf("stmt.Expression is not ast.FunctionLiteral. got=%T",
-			stmt.Expression)
-	}
-
-	if function.Name == nil {
-		t.Fatalf("function.Name is nil. Expected a name.")
-	}
-
-	if function.Name.Value != "add" {
-		t.Fatalf("function.Name.Value not 'add'. got=%s", function.Name.Value)
+	if stmt.Name.Value != "add" {
+		t.Fatalf("function name not 'add'. got=%s", stmt.Name.Value)
 	}
 
 	// Check parameters
-	if len(function.Parameters) != 2 {
-		t.Fatalf("function literal parameters wrong. want 2, got=%d",
-			len(function.Parameters))
+	if len(stmt.Parameters) != 2 {
+		t.Fatalf("function parameters wrong. want 2, got=%d",
+			len(stmt.Parameters))
 	}
 
-	testLiteralExpression(t, function.Parameters[0], "x")
-	testLiteralExpression(t, function.Parameters[1], "y")
+	testLiteralExpression(t, stmt.Parameters[0], "x")
+	testLiteralExpression(t, stmt.Parameters[1], "y")
 
 	// Check body
-	if len(function.Body.Statements) != 1 {
+	if len(stmt.Body.Statements) != 1 {
 		t.Fatalf("function.Body.Statements has not 1 statement. got=%d",
-			len(function.Body.Statements))
+			len(stmt.Body.Statements))
 	}
 
-	bodyStmt, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	bodyStmt, ok := stmt.Body.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Fatalf("function body stmt is not ast.ExpressionStatement. got=%T",
-			function.Body.Statements[0])
+			stmt.Body.Statements[0])
 	}
 
 	testInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
@@ -1647,6 +1681,49 @@ func TestInvalidVariableNames(t *testing.T) {
 		if !errorFound {
 			t.Errorf("Expected error message containing '%s', but got: %v",
 				tt.expectedError, errors)
+		}
+	}
+}
+
+func TestFunctionStatementParsing(t *testing.T) {
+	tests := []struct {
+		input              string
+		expectedName       string
+		expectedParameters []string
+	}{
+		{"fn test() {}", "test", []string{}},
+		{"fn add(x, y) { x + y }", "add", []string{"x", "y"}},
+		{"fn fibonacci(n) { if n < 2 { return n } return fibonacci(n-1) + fibonacci(n-2) }", "fibonacci", []string{"n"}},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statement. got=%d",
+				len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.FunctionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.FunctionStatement. got=%T",
+				program.Statements[0])
+		}
+
+		if stmt.Name.Value != tt.expectedName {
+			t.Errorf("stmt.Name.Value not '%s'. got=%s", tt.expectedName, stmt.Name.Value)
+		}
+
+		if len(stmt.Parameters) != len(tt.expectedParameters) {
+			t.Fatalf("length parameters wrong. want %d, got=%d\n",
+				len(tt.expectedParameters), len(stmt.Parameters))
+		}
+
+		for i, ident := range tt.expectedParameters {
+			testLiteralExpression(t, stmt.Parameters[i], ident)
 		}
 	}
 }

@@ -10,6 +10,7 @@ TargaScript is a modern, expressive programming language implemented entirely in
 
 - Clean, intuitive syntax
 - First-class functions
+- Direct function declarations with `fn` keyword
 - Object literals and arrays
 - Array and object methods with dot notation
 - Module loading with imports
@@ -42,11 +43,18 @@ let _alsoValid = true     // Valid
 let with2numbers = "ok"   // Valid
 // let 3invalid = "error"  // Invalid: cannot start with a digit
 
+// Direct function declaration
 fn greet(person) {
   print("Hello, " + person)
 }
 
-greet(name)  // Prints: Hello, Targa
+// Function expression assigned to a variable
+let double = fn(x) {
+  return x * 2
+}
+
+greet(name)    // Prints: Hello, Targa
+print(double(5))  // Prints: 10
 ```
 
 Arrays and Objects:
@@ -117,6 +125,32 @@ Importing Modules:
 ```
 load math
 load fs as file
+```
+
+Operators:
+```
+// Arithmetic operators
+let a = 10 + 5  // Addition: 15
+let b = 10 - 5  // Subtraction: 5
+let c = 10 * 5  // Multiplication: 50
+let d = 10 / 5  // Division: 2
+let e = 10 % 3  // Modulo (remainder): 1
+
+// Bitwise operators
+let f = 10 ^ 5  // Bitwise XOR: 15 (1010 ^ 0101 = 1111)
+
+// Comparison operators
+let g = 10 == 5 // Equality: false
+let h = 10 != 5 // Inequality: true
+let i = 10 > 5  // Greater than: true
+let j = 10 < 5  // Less than: false
+let k = 10 >= 5 // Greater than or equal: true
+let l = 10 <= 5 // Less than or equal: false
+
+// Logical operators
+let m = true && false // Logical AND: false
+let n = true || false // Logical OR: true
+let o = !true         // Logical NOT: false
 ```
 
 ## 📦 Built-in Functions

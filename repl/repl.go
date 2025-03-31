@@ -33,9 +33,12 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl b
 		io.WriteString(out, "\n")
 	}
 
+	evaluator.SetOutput(out)
+
 	env := object.NewEnvironment()
 	evaluated := evaluator.Eval(program, env)
 
+	// Only print the final result in REPL mode
 	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ {
 		io.WriteString(out, evaluated.Inspect())
 		io.WriteString(out, "\n")
