@@ -344,7 +344,7 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return evalIntegerInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
 		return evalFloatInfixExpression(operator, left, right, line, column)
-	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+	case left.Type() == object.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right, line, column)
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right)
@@ -486,7 +486,28 @@ func evalStringInfixExpression(operator string, left, right object.Object, line,
 	}
 
 	leftVal := left.(*object.String).Value
-	rightVal := right.(*object.String).Value
+
+	// Handle concatenation with different types
+	var rightVal string
+	switch right.Type() {
+	case object.STRING_OBJ:
+		rightVal = right.(*object.String).Value
+	case object.INTEGER_OBJ:
+		rightVal = fmt.Sprintf("%d", right.(*object.Integer).Value)
+	case object.FLOAT_OBJ:
+		rightVal = fmt.Sprintf("%g", right.(*object.Float).Value)
+	case object.BOOLEAN_OBJ:
+		rightVal = fmt.Sprintf("%t", right.(*object.Boolean).Value)
+	case object.NULL_OBJ:
+		rightVal = "null"
+	case object.ARRAY_OBJ:
+		rightVal = right.Inspect()
+	case object.HASH_OBJ:
+		rightVal = right.Inspect()
+	default:
+		return newError(line, column, "cannot concatenate string with %s", right.Type())
+	}
+
 	return &object.String{Value: leftVal + rightVal}
 }
 
@@ -815,7 +836,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 }
 
 func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) object.Object {
-	loopEnv := object.NewEnclosedEnvironment(env)
+	// Use the parent environment directly for "repeat...in" loops to allow modifications to persist
+	loopEnv := env
+
+	if traceMode {
+		fmt.Fprintf(os.Stdout, "TRACE: Entering repeat statement\n")
+	}
 
 	if rs.Iterator != nil && rs.Collection != nil {
 		collection := Eval(rs.Collection, env)
@@ -844,20 +870,42 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			for _, element := range collection.Elements {
 				loopEnv.Set(rs.Iterator.Value, element)
 
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with element: %s\n", element.Inspect())
+				}
+
 				result := Eval(rs.Body, loopEnv)
 
-				if result != nil {
-					if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
-						return result
+				if traceMode {
+					if result == nil {
+						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
+					} else {
+						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
+							result.Type(), result.Inspect())
 					}
+				}
 
-					if result.Type() == object.BREAK_OBJ {
-						break
+				// Only propagate error or return objects
+				// Break and Continue should only affect the current loop
+				if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
 					}
+					return result
+				}
 
-					if result.Type() == object.CONTINUE_OBJ {
-						continue
+				if result != nil && result.Type() == object.BREAK_OBJ {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
 					}
+					break
+				}
+
+				if result != nil && result.Type() == object.CONTINUE_OBJ {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
+					}
+					continue
 				}
 			}
 
@@ -867,19 +915,42 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			for i := int64(1); i <= end; i++ {
 				loopEnv.Set(rs.Iterator.Value, &object.Integer{Value: i})
 
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with i = %d\n", i)
+				}
+
 				result := Eval(rs.Body, loopEnv)
-				if result != nil {
-					if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
-						return result
-					}
 
-					if result.Type() == object.BREAK_OBJ {
-						break
+				if traceMode {
+					if result == nil {
+						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
+					} else {
+						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
+							result.Type(), result.Inspect())
 					}
+				}
 
-					if result.Type() == object.CONTINUE_OBJ {
-						continue
+				// Only propagate error or return objects
+				// Break and Continue should only affect the current loop
+				if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
 					}
+					return result
+				}
+
+				if result != nil && result.Type() == object.BREAK_OBJ {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
+					}
+					break
+				}
+
+				if result != nil && result.Type() == object.CONTINUE_OBJ {
+					if traceMode {
+						fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
+					}
+					continue
 				}
 			}
 
@@ -888,36 +959,73 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 				"cannot iterate over %s", collection.Type())
 		}
 
+		if traceMode {
+			fmt.Fprintf(os.Stdout, "TRACE: Exiting repeat statement normally\n")
+		}
 		return NULL
 	}
 
 	if rs.Collection != nil && rs.Iterator == nil {
+		// Use the parent environment directly for condition loops as well
+		conditionEnv := env
+
 		for {
-			condition := Eval(rs.Collection, env)
+			// Evaluate condition in the same environment where loop body runs
+			condition := Eval(rs.Collection, conditionEnv)
 			if isError(condition) {
 				return condition
 			}
 
 			if !isTruthy(condition) {
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Condition is falsy, exiting loop\n")
+				}
 				break
 			}
 
-			result := Eval(rs.Body, env)
-			if result != nil {
-				if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
-					return result
-				}
+			if traceMode {
+				fmt.Fprintf(os.Stdout, "TRACE: Condition is truthy, continuing loop\n")
+			}
 
-				if result.Type() == object.BREAK_OBJ {
-					break
-				}
+			// Run loop body in the same environment where condition is evaluated
+			result := Eval(rs.Body, conditionEnv)
 
-				if result.Type() == object.CONTINUE_OBJ {
-					continue
+			if traceMode {
+				if result == nil {
+					fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
+				} else {
+					fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
+						result.Type(), result.Inspect())
 				}
+			}
+
+			// Only propagate error or return objects
+			// Break and Continue should only affect the current loop
+			if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
+				}
+				return result
+			}
+
+			if result != nil && result.Type() == object.BREAK_OBJ {
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
+				}
+				break
+			}
+
+			if result != nil && result.Type() == object.CONTINUE_OBJ {
+				if traceMode {
+					fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
+				}
+				continue
 			}
 		}
 
+		if traceMode {
+			fmt.Fprintf(os.Stdout, "TRACE: Exiting repeat statement normally\n")
+		}
 		return NULL
 	}
 
@@ -950,16 +1058,40 @@ func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object
 		args = append(args, evaluated)
 	}
 
+	// Convert all arguments to strings for printing
 	values := make([]string, len(args))
 	for i, arg := range args {
 		if arg == nil {
 			values[i] = "nil"
 		} else {
-			values[i] = arg.Inspect()
+			values[i] = formatPrintValue(arg)
 		}
 	}
 
-	fmt.Fprintln(os.Stdout, strings.Join(values, " "))
+	fmt.Fprintln(output, strings.Join(values, " "))
 
 	return NULL
+}
+
+func formatPrintValue(obj object.Object) string {
+	if obj == nil {
+		return "nil"
+	}
+
+	switch obj.Type() {
+	case object.INTEGER_OBJ:
+		return fmt.Sprintf("%d", obj.(*object.Integer).Value)
+	case object.FLOAT_OBJ:
+		return fmt.Sprintf("%g", obj.(*object.Float).Value)
+	case object.BOOLEAN_OBJ:
+		return fmt.Sprintf("%t", obj.(*object.Boolean).Value)
+	case object.STRING_OBJ:
+		return obj.(*object.String).Value // Don't add quotes for print output
+	case object.NULL_OBJ:
+		return "null"
+	case object.ARRAY_OBJ, object.HASH_OBJ:
+		return obj.Inspect()
+	default:
+		return obj.Inspect()
+	}
 }
