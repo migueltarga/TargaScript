@@ -69,7 +69,7 @@ func executeFile(input string, debug bool, noColor bool, trace bool) error {
 
 	err := repl.EvalSource(input, os.Stdout, noColor, debug, false, trace)
 	if err != nil {
-		fmt.Printf("Error during execution: %v\n", err)
+		fmt.Printf("\033[31mExecution Error: %v\033[0m\n", err)
 		return err
 	}
 	return nil

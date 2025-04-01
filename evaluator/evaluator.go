@@ -118,6 +118,30 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right, node.Token.Line, node.Token.Column)
 
 	case *ast.InfixExpression:
+		if node.Operator == "&&" || node.Operator == "||" {
+			left := Eval(node.Left, env)
+			if isError(left) {
+				return left
+			}
+
+			if node.Operator == "&&" {
+				if !isTruthy(left) {
+					return left
+				}
+			} else if node.Operator == "||" {
+				if isTruthy(left) {
+					return left
+				}
+			}
+
+			right := Eval(node.Right, env)
+			if isError(right) {
+				return right
+			}
+
+			return right
+		}
+
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
@@ -339,13 +363,21 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return newError(line, column, "cannot evaluate infix expression: one of the operands is nil")
 	}
 
+	if operator == "&&" || operator == "||" {
+		return evalLogicalInfixExpression(operator, left, right, line, column)
+	}
+
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
 		return evalFloatInfixExpression(operator, left, right, line, column)
-	case left.Type() == object.STRING_OBJ:
-		return evalStringInfixExpression(operator, left, right, line, column)
+	case left.Type() == object.STRING_OBJ && operator == "+":
+		leftVal := left.(*object.String).Value
+		rightVal := objectToString(right)
+		return &object.String{Value: leftVal + rightVal}
+	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
+		return evalBooleanInfixExpression(operator, left, right, line, column)
 	case operator == "==":
 		return nativeBoolToBooleanObject(left == right)
 	case operator == "!=":
@@ -356,6 +388,23 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
+	}
+}
+
+func evalLogicalInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
+	switch operator {
+	case "&&":
+		if !isTruthy(left) {
+			return left
+		}
+		return right
+	case "||":
+		if isTruthy(left) {
+			return left
+		}
+		return right
+	default:
+		return newError(line, column, "unknown logical operator: %s", operator)
 	}
 }
 
@@ -473,42 +522,20 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 		return nativeBoolToBooleanObject(leftVal <= rightVal)
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
+	case "&&":
+		if leftVal != 0 && rightVal != 0 {
+			return TRUE
+		}
+		return FALSE
+	case "||":
+		if leftVal != 0 || rightVal != 0 {
+			return TRUE
+		}
+		return FALSE
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
-}
-
-func evalStringInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
-	if operator != "+" {
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
-	}
-
-	leftVal := left.(*object.String).Value
-
-	// Handle concatenation with different types
-	var rightVal string
-	switch right.Type() {
-	case object.STRING_OBJ:
-		rightVal = right.(*object.String).Value
-	case object.INTEGER_OBJ:
-		rightVal = fmt.Sprintf("%d", right.(*object.Integer).Value)
-	case object.FLOAT_OBJ:
-		rightVal = fmt.Sprintf("%g", right.(*object.Float).Value)
-	case object.BOOLEAN_OBJ:
-		rightVal = fmt.Sprintf("%t", right.(*object.Boolean).Value)
-	case object.NULL_OBJ:
-		rightVal = "null"
-	case object.ARRAY_OBJ:
-		rightVal = right.Inspect()
-	case object.HASH_OBJ:
-		rightVal = right.Inspect()
-	default:
-		return newError(line, column, "cannot concatenate string with %s", right.Type())
-	}
-
-	return &object.String{Value: leftVal + rightVal}
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
@@ -550,6 +577,14 @@ func isTruthy(obj object.Object) bool {
 		switch obj.Type() {
 		case object.INTEGER_OBJ:
 			return obj.(*object.Integer).Value != 0
+		case object.FLOAT_OBJ:
+			return obj.(*object.Float).Value != 0.0
+		case object.STRING_OBJ:
+			return len(obj.(*object.String).Value) > 0
+		case object.ARRAY_OBJ:
+			return len(obj.(*object.Array).Elements) > 0
+		case object.HASH_OBJ:
+			return len(obj.(*object.Hash).Pairs) > 0
 		default:
 			return true
 		}
@@ -736,6 +771,64 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 
 func evalMethodCallExpression(obj object.Object, method string, args []object.Object, line, column int) object.Object {
 	switch obj := obj.(type) {
+	case *object.String:
+		switch method {
+		case "trim":
+			if len(args) != 0 {
+				return newError(line, column, "wrong number of arguments for string.trim(): got %d, want 0", len(args))
+			}
+			return &object.String{Value: strings.TrimSpace(obj.Value)}
+
+		case "lower":
+			if len(args) != 0 {
+				return newError(line, column, "wrong number of arguments for string.lower(): got %d, want 0", len(args))
+			}
+			return &object.String{Value: strings.ToLower(obj.Value)}
+
+		case "upper":
+			if len(args) != 0 {
+				return newError(line, column, "wrong number of arguments for string.upper(): got %d, want 0", len(args))
+			}
+			return &object.String{Value: strings.ToUpper(obj.Value)}
+
+		case "replace":
+			if len(args) != 2 {
+				return newError(line, column, "wrong number of arguments for string.replace(): got %d, want 2", len(args))
+			}
+
+			oldStr, ok := args[0].(*object.String)
+			if !ok {
+				return newError(line, column, "first argument to string.replace() must be STRING, got %s", args[0].Type())
+			}
+
+			newStr, ok := args[1].(*object.String)
+			if !ok {
+				return newError(line, column, "second argument to string.replace() must be STRING, got %s", args[1].Type())
+			}
+
+			return &object.String{Value: strings.Replace(obj.Value, oldStr.Value, newStr.Value, -1)}
+
+		case "split":
+			if len(args) != 1 {
+				return newError(line, column, "wrong number of arguments for string.split(): got %d, want 1", len(args))
+			}
+
+			delimiter, ok := args[0].(*object.String)
+			if !ok {
+				return newError(line, column, "argument to string.split() must be STRING, got %s", args[0].Type())
+			}
+
+			parts := strings.Split(obj.Value, delimiter.Value)
+			elements := make([]object.Object, len(parts))
+			for i, part := range parts {
+				elements[i] = &object.String{Value: part}
+			}
+
+			return &object.Array{Elements: elements}
+
+		default:
+			return newError(line, column, "string has no method '%s'", method)
+		}
 	case *object.Array:
 		switch method {
 		case "first":
@@ -778,6 +871,86 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return &object.Array{Elements: newElements}
 			}
 			return NULL
+		case "join":
+			if len(args) != 1 {
+				return newError(line, column, "wrong number of arguments for array.join(): got %d, want 1", len(args))
+			}
+
+			separator, ok := args[0].(*object.String)
+			if !ok {
+				return newError(line, column, "argument to array.join() must be STRING, got %s", args[0].Type())
+			}
+
+			strs := make([]string, len(obj.Elements))
+			for i, elem := range obj.Elements {
+				strs[i] = elem.Inspect()
+			}
+
+			return &object.String{Value: strings.Join(strs, separator.Value)}
+		case "map":
+			if len(args) != 1 {
+				return newError(line, column, "wrong number of arguments for array.map(): got %d, want 1", len(args))
+			}
+
+			fn, ok := args[0].(*object.Function)
+			if !ok {
+				return newError(line, column, "argument to array.map() must be FUNCTION, got %s", args[0].Type())
+			}
+
+			result := make([]object.Object, 0, len(obj.Elements))
+			for _, elem := range obj.Elements {
+				mappedValue := applyFunction(fn, []object.Object{elem})
+				if isError(mappedValue) {
+					return mappedValue
+				}
+				result = append(result, mappedValue)
+			}
+
+			return &object.Array{Elements: result}
+		case "filter":
+			if len(args) != 1 {
+				return newError(line, column, "wrong number of arguments for array.filter(): got %d, want 1", len(args))
+			}
+
+			fn, ok := args[0].(*object.Function)
+			if !ok {
+				return newError(line, column, "argument to array.filter() must be FUNCTION, got %s", args[0].Type())
+			}
+
+			result := make([]object.Object, 0)
+			for _, elem := range obj.Elements {
+				predicate := applyFunction(fn, []object.Object{elem})
+				if isError(predicate) {
+					return predicate
+				}
+
+				if isTruthy(predicate) {
+					result = append(result, elem)
+				}
+			}
+
+			return &object.Array{Elements: result}
+		case "reduce":
+			if len(args) != 2 {
+				return newError(line, column, "wrong number of arguments for array.reduce(): got %d, want 2", len(args))
+			}
+
+			fn, ok := args[0].(*object.Function)
+			if !ok {
+				return newError(line, column, "first argument to array.reduce() must be FUNCTION, got %s", args[0].Type())
+			}
+
+			initialValue := args[1]
+			accumulator := initialValue
+
+			for _, elem := range obj.Elements {
+				accumulator = applyFunction(fn, []object.Object{accumulator, elem})
+				if isError(accumulator) {
+					return accumulator
+				}
+			}
+
+			return accumulator
 		default:
 			return newError(line, column, "array has no method '%s'", method)
 		}
@@ -828,6 +1001,19 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Integer{Value: int64(len(obj.Pairs))}
 
 		default:
+			key := &object.String{Value: method}
+			hashKey := key.HashKey()
+
+			if pair, ok := obj.Pairs[hashKey]; ok {
+				if function, ok := pair.Value.(*object.Function); ok {
+					return applyFunction(function, args)
+				} else if builtin, ok := pair.Value.(*object.Builtin); ok {
+					return builtin.Fn(args...)
+				} else {
+					return newError(line, column, "property '%s' is not a function or method", method)
+				}
+			}
+
 			return newError(line, column, "object has no method '%s'", method)
 		}
 	default:
@@ -1073,7 +1259,7 @@ func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object
 	return NULL
 }
 
-func formatPrintValue(obj object.Object) string {
+func objectToString(obj object.Object) string {
 	if obj == nil {
 		return "nil"
 	}
@@ -1086,12 +1272,35 @@ func formatPrintValue(obj object.Object) string {
 	case object.BOOLEAN_OBJ:
 		return fmt.Sprintf("%t", obj.(*object.Boolean).Value)
 	case object.STRING_OBJ:
-		return obj.(*object.String).Value // Don't add quotes for print output
+		return obj.(*object.String).Value
 	case object.NULL_OBJ:
 		return "null"
-	case object.ARRAY_OBJ, object.HASH_OBJ:
+	case object.ARRAY_OBJ, object.HASH_OBJ, object.FUNCTION_OBJ, object.BUILTIN_OBJ:
 		return obj.Inspect()
 	default:
 		return obj.Inspect()
+	}
+}
+
+func formatPrintValue(obj object.Object) string {
+	return objectToString(obj)
+}
+
+func evalBooleanInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
+	leftVal := left.(*object.Boolean).Value
+	rightVal := right.(*object.Boolean).Value
+
+	switch operator {
+	case "&&":
+		return nativeBoolToBooleanObject(leftVal && rightVal)
+	case "||":
+		return nativeBoolToBooleanObject(leftVal || rightVal)
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return newError(line, column, "unknown operator: %s %s %s",
+			left.Type(), operator, right.Type())
 	}
 }

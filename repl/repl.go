@@ -38,11 +38,44 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl b
 
 	env := object.NewEnvironment()
 	env.Set("NULL", evaluator.NULL)
-	evaluated := evaluator.Eval(program, env)
 
-	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ {
+	var evaluated object.Object
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				errMsg := fmt.Sprintf("Runtime panic: %v", r)
+				if isRepl {
+					fmt.Fprintf(out, "\033[31m%s\033[0m\n", errMsg)
+				}
+				evaluated = &object.Error{
+					Message: errMsg,
+					Line:    0,
+					Column:  0,
+				}
+			}
+		}()
+
+		evaluated = evaluator.Eval(program, env)
+
+		// Check if we got an error and print it only in REPL mode
+		if isRepl && evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
+			errObj := evaluated.(*object.Error)
+			fmt.Fprintf(out, "\033[31mRuntime Error: %s (line %d, column %d)\033[0m\n",
+				errObj.Message, errObj.Line, errObj.Column)
+		}
+	}()
+
+	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ &&
+		evaluated.Type() != object.ERROR_OBJ {
 		io.WriteString(out, evaluated.Inspect())
 		io.WriteString(out, "\n")
+	}
+
+	// If the evaluation resulted in an error, return it
+	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
+		errObj := evaluated.(*object.Error)
+		return fmt.Errorf("%s (line %d, column %d)",
+			errObj.Message, errObj.Line, errObj.Column)
 	}
 
 	return nil
