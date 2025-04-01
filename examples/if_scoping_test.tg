@@ -1,0 +1,54 @@
+// This example demonstrates variable scoping in if blocks in TargaScript
+// We're testing how variables in if blocks interact with outer variables
+
+// Set up initial variables
+let x = "outer-x"
+let y = "outer-y"
+
+print("Initial values:")
+print("x =", x)
+print("y =", y)
+
+// Create an if block that shadows the outer variable and adds a new one
+if (true) {
+  print("\nInside first if block:")
+  
+  // Shadow outer 'x'
+  let x = "if-block-x"
+  // Create new variable 'z' that only exists in this block
+  let z = "if-block-z"
+  
+  print("x =", x, "(should be 'if-block-x' - shadowing outer x)")
+  print("y =", y, "(should be 'outer-y' - using outer y)")
+  print("z =", z, "(should be 'if-block-z' - new variable)")
+  
+  // Nested if block demonstrates another level of shadowing
+  if (true) {
+    print("\nInside nested if block:")
+    
+    // Shadow the outer 'x' again
+    let x = "nested-if-x"
+    
+    print("x =", x, "(should be 'nested-if-x' - shadowing previous x)")
+    print("y =", y, "(should be 'outer-y' - still using outer y)")
+    print("z =", z, "(should be 'if-block-z' - using z from outer block)")
+  }
+  
+  print("\nAfter nested if block:")
+  print("x =", x, "(should be 'if-block-x' - reverted to first shadow)")
+  print("z =", z, "(should be 'if-block-z' - still accessible)")
+}
+
+print("\nAfter exiting if block:")
+print("x =", x, "(should be 'outer-x' - reverted to original)")
+print("y =", y, "(should be 'outer-y' - unchanged)")
+
+// Try to access the block-scoped variable 'z'
+print("\nAttempting to access 'z' outside its scope:")
+if (true) {
+  print("This should generate an error if scope is working correctly:")
+  // Uncommenting the next line would cause a runtime error since 'z' should not be accessible here
+  // print("z =", z)
+}
+
+print("\nTest completed successfully!") 

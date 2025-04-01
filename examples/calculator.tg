@@ -1,0 +1,79 @@
+// calculator.tg
+// ===============================================================
+// A scientific calculator implementation in TargaScript
+// This example demonstrates objects, functions, and mathematical operations
+// ===============================================================
+
+print("TargaScript Simple Calculator")
+print("==========================")
+
+// Define calculator functions
+fn add(a, b) {
+  return a + b
+}
+
+fn subtract(a, b) {
+  return a - b
+}
+
+fn multiply(a, b) {
+  return a * b
+}
+
+fn divide(a, b) {
+  if b == 0 {
+    print("Error: Division by zero")
+    return 0
+  }
+  return a / b
+}
+
+fn square(a) {
+  return a * a
+}
+
+fn sqrt_func(a) {
+  if a < 0 {
+    print("Error: Cannot calculate square root of negative number")
+    return 0
+  }
+  return sqrt(a)
+}
+
+// Demonstration values
+let a = 10
+let b = 5
+
+// Basic arithmetic operations
+print("")
+print("Basic Arithmetic:")
+print("a = " + a + ", b = " + b)
+print("Addition:       " + add(a, b))
+print("Subtraction:    " + subtract(a, b))
+print("Multiplication: " + multiply(a, b))
+print("Division:       " + divide(a, b))
+
+// Scientific operations
+print("")
+print("Scientific Operations:")
+print("Square of a:    " + square(a))
+print("Square root of a: " + sqrt_func(a))
+print("Power (a^b):    " + pow(a, b))
+
+// Using built-in functions
+print("")
+print("Rounding Operations:")
+let pi = 3.14159
+print("Original value: " + pi)
+print("Rounded:        " + round(pi))
+print("Floor:          " + floor(pi))
+print("Ceiling:        " + ceil(pi))
+
+// Formula calculation example
+print("")
+print("Formula Calculation:")
+let formula_result = add(multiply(a, b), divide(square(a), b))
+print("a × b + (a² ÷ b) = " + formula_result)
+
+print("")
+print("Calculator demonstration completed!") 

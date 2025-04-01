@@ -1,0 +1,291 @@
+// loops.tg
+// ===============================================================
+// Comprehensive demonstration of various loop constructs in TargaScript
+// This example covers different ways to iterate over collections, 
+// ranges, and how to control loop flow.
+// ===============================================================
+
+print("TargaScript Loop Constructs")
+print("===========================")
+
+// SECTION 1: Collection-based loops
+// --------------------------------
+// Iterating over elements of an array
+
+print("")
+print("1. Collection-based Loops:")
+let fruits = ["Apple", "Banana", "Cherry", "Dragonfruit"]
+
+print("  Basic loop over an array:")
+let i = 0
+repeat i < fruits.length {
+    print("  -", fruits[i])
+    i = i + 1
+}
+
+// SECTION 2: Range-based loops
+// ---------------------------
+// Iterating over a numerical range
+
+print("")
+print("2. Range-based Loops:")
+print("  Looping through a range of numbers:")
+let j = 1
+repeat j <= 5 {
+    print("  - Number:", j)
+    j = j + 1
+}
+
+// SECTION 3: Condition-based loops
+// -------------------------------
+// Traditional while loops controlled by a condition
+
+print("")
+print("3. Condition-based Loops:")
+print("  Countdown with a condition loop:")
+let countdown = 5
+repeat countdown > 0 {
+    print("  -", countdown)
+    countdown = countdown - 1
+}
+print("  - Blast off!")
+
+// SECTION 4: Nested loops
+// ----------------------
+// Loops within loops
+
+print("")
+print("4. Nested Loops:")
+print("  Multiplication table (3x3):")
+let i1 = 1
+repeat i1 <= 4 {
+    let row = "  "
+    let j1 = 1
+    repeat j1 <= 4 {
+        row = row + (i1 * j1) + "\t"
+        j1 = j1 + 1
+    }
+    print(row)
+    i1 = i1 + 1
+}
+
+// SECTION 5: Loop control statements
+// --------------------------------
+// Breaking out of loops and skipping iterations
+
+print("")
+print("5. Loop Control:")
+print("  Early termination with break:")
+let i2 = 1
+repeat i2 <= 10 {
+    if i2 > 5 {
+        print("  - Breaking at", i2)
+        break
+    }
+    print("  - Number:", i2)
+    i2 = i2 + 1
+}
+
+print("  Skipping iterations with continue:")
+let i3 = 1
+repeat i3 <= 10 {
+    if i3 % 2 == 0 {
+        i3 = i3 + 1
+        continue
+    }
+    print("  - Odd number:", i3)
+    i3 = i3 + 1
+}
+
+// SECTION 6: Iterating over object properties
+// -----------------------------------------
+// Looping through key-value pairs in an object
+
+print("")
+print("6. Iterating Over Object Properties:")
+let person = {
+    "name": "Alice",
+    "age": 30,
+    "city": "Wonderland",
+    "occupation": "Explorer"
+}
+
+print("  Object key-value pairs:")
+// Since there's no keys function, manually list the keys
+let personKeys = ["name", "age", "city", "occupation"]
+let k = 0
+repeat k < personKeys.length {
+    let key = personKeys[k]
+    print("  -", key + ":", person[key])
+    k = k + 1
+}
+
+// SECTION 7: Finding elements in collections
+// ----------------------------------------
+// Using loops to search for items
+
+print("")
+print("7. Finding Elements:")
+let numbers = [10, 20, 30, 40, 50]
+let target = 30
+let found = false
+
+print("  Searching for", target, "in", numbers)
+let n = 0
+repeat n < numbers.length {
+    if numbers[n] == target {
+        found = true
+        break
+    }
+    n = n + 1
+}
+
+if found {
+    print("  - Found the target number!")
+} else {
+    print("  - Target number not found.")
+}
+
+// SECTION 8: Transforming arrays with loops
+// ---------------------------------------
+// Building new collections with loops
+
+print("")
+print("8. Transforming Arrays:")
+let originalArray = [1, 2, 3, 4, 5]
+let doubledArray = []
+
+print("  Original array:", originalArray)
+print("  Doubling each element:")
+
+// Build the array using manual assignments
+let m = 0
+repeat m < originalArray.length {
+    // For each index, use a separate if statement
+    if m == 0 {
+        doubledArray = [originalArray[0] * 2]
+    }
+    if m == 1 {
+        doubledArray = [doubledArray[0], originalArray[1] * 2]
+    }
+    if m == 2 {
+        doubledArray = [doubledArray[0], doubledArray[1], originalArray[2] * 2]
+    }
+    if m == 3 {
+        doubledArray = [doubledArray[0], doubledArray[1], doubledArray[2], originalArray[3] * 2]
+    }
+    if m == 4 {
+        doubledArray = [doubledArray[0], doubledArray[1], doubledArray[2], doubledArray[3], originalArray[4] * 2]
+    }
+    m = m + 1
+}
+
+print("  - Result:", doubledArray)
+
+// SECTION 9: Filtering arrays with loops
+// ------------------------------------
+// Creating filtered collections
+
+print("")
+print("9. Filtering Arrays:")
+let mixedNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let evenNumbers = []
+let evenCount = 0
+
+print("  Original array:", mixedNumbers)
+print("  Filtering even numbers:")
+
+// Build the array using manual assignments
+let p = 0
+repeat p < mixedNumbers.length {
+    if mixedNumbers[p] % 2 == 0 {
+        // For each possible position, use a separate if statement
+        if evenCount == 0 {
+            evenNumbers = [mixedNumbers[p]]
+        }
+        if evenCount == 1 {
+            evenNumbers = [evenNumbers[0], mixedNumbers[p]]
+        }
+        if evenCount == 2 {
+            evenNumbers = [evenNumbers[0], evenNumbers[1], mixedNumbers[p]]
+        }
+        if evenCount == 3 {
+            evenNumbers = [evenNumbers[0], evenNumbers[1], evenNumbers[2], mixedNumbers[p]]
+        }
+        if evenCount == 4 {
+            evenNumbers = [evenNumbers[0], evenNumbers[1], evenNumbers[2], evenNumbers[3], mixedNumbers[p]]
+        }
+        evenCount = evenCount + 1
+    }
+    p = p + 1
+}
+
+print("  - Result:", evenNumbers)
+
+// SECTION 10: Loop control in nested contexts
+// -----------------------------------------
+// Breaking out of nested loops
+
+print("")
+print("10. Breaking from Nested Loops:")
+let found_outer = false
+
+print("  Finding the first pair of numbers that sum to 10:")
+let i4 = 1
+repeat i4 <= 10 {
+    let j4 = 1
+    repeat j4 <= 10 {
+        if i4 + j4 == 10 {
+            print("  - Found pair:", i4, "+", j4, "=", i4 + j4)
+            found_outer = true
+            break
+        }
+        j4 = j4 + 1
+    }
+    if found_outer {
+        break
+    }
+    i4 = i4 + 1
+}
+
+// SECTION 11: Combining filtering with early termination
+// ---------------------------------------------------
+// Complex loop patterns
+
+print("")
+print("11. Combined Techniques:")
+let items = [2, 5, 7, 10, 15, 20, 25]
+
+print("  Finding the first number greater than 10 that is divisible by 5:")
+let q = 0
+repeat q < items.length {
+    if items[q] <= 10 {
+        q = q + 1
+        continue
+    }
+    
+    if items[q] % 5 == 0 {
+        print("  - Found:", items[q])
+        break
+    }
+    q = q + 1
+}
+
+// SECTION 12: Using printf for formatted output in loops
+// ---------------------------------------------------
+// Better presentation with formatted strings
+
+print("")
+print("12. Formatted Output in Loops:")
+print("  Displaying a formatted table:")
+
+print("  Index | Value | Squared")
+print("  ------------------")
+let i5 = 1
+repeat i5 <= 6 {
+    printf("  %-5d | %-5d | %-7d\n", i5, i5 * 10, i5 * i5 * 100)
+    i5 = i5 + 1
+}
+
+print("")
+print("Loop constructs demonstration completed!") 

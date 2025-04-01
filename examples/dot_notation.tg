@@ -1,0 +1,115 @@
+// dot_notation.tg - Method Style Dot Notation Example
+//
+// This example demonstrates using the method-style dot notation
+// for string and array functions in TargaScript.
+
+print("TargaScript Method-Style Dot Notation")
+print("====================================")
+
+// SECTION 1: String Methods
+// -----------------------
+
+print("")
+print("1. String Methods:")
+
+let greeting = "  Hello, World!  "
+print("Original string:", "\"" + greeting + "\"")
+
+// Method chaining - the methods can be chained together
+let processed = greeting.trim().upper()
+print("After trim().upper():", "\"" + processed + "\"")
+
+// Split example
+print("")
+let csv = "apple,banana,cherry,date"
+print("Original CSV string:", csv)
+let fruits = csv.split(",")
+print("After split(\",\"):", fruits)
+
+// Replace example
+print("")
+let sentence = "The quick brown fox jumps over the lazy dog"
+print("Original sentence:", sentence)
+let replaced = sentence.replace("fox", "cat")
+print("After replace(\"fox\", \"cat\"):", replaced)
+
+// Additional chaining example
+print("")
+let complex = "  mixed CASE string with EXTRA   spaces  "
+print("Original complex string:", "\"" + complex + "\"")
+let simplified = complex.trim().lower()
+print("After trim().lower():", "\"" + simplified + "\"")
+
+// SECTION 2: Array Methods
+// ----------------------
+
+print("")
+print("2. Array Methods:")
+
+let numbers = [1, 2, 3, 4, 5]
+print("Original array:", numbers)
+
+// Join example
+let joined = numbers.join("-")
+print("After join(\"-\"):", joined)
+
+// Map example
+let doubled = numbers.map(fn(x) { return x * 2 })
+print("After map(double):", doubled)
+
+// Filter example
+let evens = numbers.filter(fn(x) { return x % 2 == 0 })
+print("After filter(even):", evens)
+
+// Reduce example
+let sum = numbers.reduce(fn(acc, x) { return acc + x }, 0)
+print("After reduce(sum, 0):", sum)
+
+// Method chaining
+print("")
+let oddSquares = numbers
+  .filter(fn(x) { return x % 2 != 0 })
+  .map(fn(x) { return x * x })
+print("Odd numbers squared:", oddSquares)
+
+// Complex chaining example
+let result = numbers
+  .map(fn(x) { return x * 2 })
+  .filter(fn(x) { return x > 5 })
+  .reduce(fn(acc, x) { return acc + x }, 0)
+print("Result of complex chaining:", result)
+
+// SECTION 3: Mixed Methods
+// ----------------------
+
+print("")
+print("3. Mixed Method Types:")
+
+// Chain array and string methods
+let words = ["hello", "WORLD", "  TargaScript  "]
+print("Original array of strings:", words)
+
+// Process each element and join
+let processed_string = words
+  .map(fn(word) { return word.trim().lower() })
+  .join(" ")
+print("After processing and joining:", "\"" + processed_string + "\"")
+
+// Split and then process each part
+print("")
+let data = "NAME:John,AGE:30,CITY:New York"
+print("Original data string:", data)
+
+let entries = data
+  .split(",")
+  .map(fn(entry) { 
+    let parts = entry.split(":")
+    return {
+      "key": parts[0].lower(),
+      "value": parts[1].trim()
+    }
+  })
+print("Processed data entries:", entries)
+
+print("")
+print("Method-style dot notation examples completed!") 

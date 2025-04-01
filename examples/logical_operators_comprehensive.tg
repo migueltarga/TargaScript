@@ -1,0 +1,232 @@
+// logical_operators_comprehensive.tg
+// ===============================================================
+// Comprehensive testing of logical operators in TargaScript
+// This example covers various operand types with logical operations
+// ===============================================================
+
+print("TargaScript Logical Operators Test")
+print("=================================")
+
+// SECTION 1: Basic Boolean Operands
+// --------------------------------
+// Testing with standard boolean values
+
+print("")
+print("1. Boolean Operands:")
+
+let true_val = true
+let false_val = false
+
+print("  Logical AND (&&):")
+print("    true && true =", true_val && true_val)
+print("    true && false =", true_val && false_val)
+print("    false && true =", false_val && true_val)
+print("    false && false =", false_val && false_val)
+
+print("  Logical OR (||):")
+print("    true || true =", true_val || true_val)
+print("    true || false =", true_val || false_val)
+print("    false || true =", false_val || true_val)
+print("    false || false =", false_val || false_val)
+
+print("  Logical NOT (!):")
+print("    !true =", !true_val)
+print("    !false =", !false_val)
+print("    !!true =", !!true_val)
+print("    !!false =", !!false_val)
+
+// SECTION 2: Integer Operands
+// --------------------------
+// Testing with integer values (0 is falsy, non-zero is truthy)
+
+print("")
+print("2. Integer Operands:")
+
+let zero = 0
+let one = 1
+let negative = -10
+
+print("  Integer truthiness:")
+print("    0 evaluates as:", if zero { "truthy" } else { "falsy" })
+print("    1 evaluates as:", if one { "truthy" } else { "falsy" })
+print("    -10 evaluates as:", if negative { "truthy" } else { "falsy" })
+
+print("  Logical operations with integers:")
+print("    1 && 5 =", one && 5)
+print("    0 && 5 =", zero && 5)
+print("    5 && 0 =", 5 && zero)
+print("    1 || 5 =", one || 5)
+print("    0 || 5 =", zero || 5)
+print("    5 || 0 =", 5 || zero)
+print("    !0 =", !zero)
+print("    !1 =", !one)
+
+// SECTION 3: Float Operands
+// ------------------------
+// Testing with floating point values (0.0 is falsy, non-zero is truthy)
+
+print("")
+print("3. Float Operands:")
+
+let zero_float = 0.0
+let pi = 3.14159
+
+print("  Float truthiness:")
+print("    0.0 evaluates as:", if zero_float { "truthy" } else { "falsy" })
+print("    3.14159 evaluates as:", if pi { "truthy" } else { "falsy" })
+
+print("  Logical operations with floats:")
+print("    3.14 && 2.71 =", pi && 2.71)
+print("    0.0 && 2.71 =", zero_float && 2.71)
+print("    3.14 && 0.0 =", pi && zero_float)
+print("    3.14 || 2.71 =", pi || 2.71)
+print("    0.0 || 2.71 =", zero_float || 2.71)
+print("    3.14 || 0.0 =", pi || zero_float)
+print("    !0.0 =", !zero_float)
+print("    !3.14 =", !pi)
+
+// SECTION 4: String Operands
+// -------------------------
+// Testing with string values (empty string is falsy, non-empty is truthy)
+
+print("")
+print("4. String Operands:")
+
+let empty_str = ""
+let hello_str = "Hello"
+
+print("  String truthiness:")
+print("    \"\" evaluates as:", if empty_str { "truthy" } else { "falsy" })
+print("    \"Hello\" evaluates as:", if hello_str { "truthy" } else { "falsy" })
+
+print("  Logical operations with strings:")
+print("    \"Hello\" && \"World\" =", hello_str && "World")
+print("    \"\" && \"World\" =", empty_str && "World")
+print("    \"Hello\" && \"\" =", hello_str && empty_str)
+print("    \"Hello\" || \"World\" =", hello_str || "World")
+print("    \"\" || \"World\" =", empty_str || "World")
+print("    \"Hello\" || \"\" =", hello_str || empty_str)
+print("    !\"\" =", !empty_str)
+print("    !\"Hello\" =", !hello_str)
+
+// SECTION 5: Array Operands
+// ------------------------
+// Testing with array values (empty array is falsy, non-empty is truthy)
+
+print("")
+print("5. Array Operands:")
+
+let empty_arr = []
+let sample_arr = [1, 2, 3]
+
+print("  Array truthiness:")
+print("    [] evaluates as:", if empty_arr { "truthy" } else { "falsy" })
+print("    [1, 2, 3] evaluates as:", if sample_arr { "truthy" } else { "falsy" })
+
+print("  Logical operations with arrays:")
+print("    [1, 2, 3] && [4, 5] =", sample_arr && [4, 5])
+print("    [] && [4, 5] =", empty_arr && [4, 5])
+print("    [1, 2, 3] && [] =", sample_arr && empty_arr)
+print("    [1, 2, 3] || [4, 5] =", sample_arr || [4, 5])
+print("    [] || [4, 5] =", empty_arr || [4, 5])
+print("    [1, 2, 3] || [] =", sample_arr || empty_arr)
+print("    ![] =", !empty_arr)
+print("    ![1, 2, 3] =", !sample_arr)
+
+// SECTION 6: Object Operands
+// -------------------------
+// Testing with object values (objects are always truthy)
+
+print("")
+print("6. Object Operands:")
+
+let empty_obj = {}
+let person = {"name": "Alice", "age": 30}
+
+print("  Object truthiness:")
+print("    {} evaluates as:", if empty_obj { "truthy" } else { "falsy" })
+print("    {\"name\": \"Alice\"} evaluates as:", if person { "truthy" } else { "falsy" })
+
+print("  Logical operations with objects:")
+print("    {\"name\": \"Alice\"} && {\"city\": \"NY\"} =", person && {"city": "NY"})
+print("    {} && {\"city\": \"NY\"} =", empty_obj && {"city": "NY"})
+print("    {\"name\": \"Alice\"} && {} =", person && empty_obj)
+print("    {\"name\": \"Alice\"} || {\"city\": \"NY\"} =", person || {"city": "NY"})
+print("    {} || {\"city\": \"NY\"} =", empty_obj || {"city": "NY"})
+print("    {\"name\": \"Alice\"} || {} =", person || empty_obj)
+print("    !{} =", !empty_obj)
+print("    !{\"name\": \"Alice\"} =", !person)
+
+// SECTION 7: Mixed Type Operations
+// ------------------------------
+// Testing logical operations with different types of operands
+
+print("")
+print("7. Mixed Type Operations:")
+
+print("  Logical AND between different types:")
+print("    true && 1 =", true && 1)
+print("    true && \"Hello\" =", true && "Hello")
+print("    0 && \"Hello\" =", 0 && "Hello")
+print("    \"Hello\" && [1, 2, 3] =", "Hello" && [1, 2, 3])
+print("    [] && {\"key\": \"value\"} =", [] && {"key": "value"})
+print("    5 && 3.14 =", 5 && 3.14)
+
+print("  Logical OR between different types:")
+print("    false || 1 =", false || 1)
+print("    false || \"Hello\" =", false || "Hello")
+print("    0 || \"Hello\" =", 0 || "Hello")
+print("    \"\" || [1, 2, 3] =", "" || [1, 2, 3])
+print("    [] || {\"key\": \"value\"} =", [] || {"key": "value"})
+print("    0 || 3.14 =", 0 || 3.14)
+
+// SECTION 8: Short-Circuit Evaluation
+// ---------------------------------
+// Demonstrating short-circuit behavior
+
+print("")
+print("8. Short-Circuit Evaluation:")
+
+// Define a function with a side effect to demonstrate short-circuit
+let function_was_called = false
+let side_effect_function = fn() {
+    function_was_called = true
+    return "Function Called"
+}
+
+// AND short-circuit (second operand not evaluated if first is falsy)
+function_was_called = false
+let and_result = false && side_effect_function()
+print("  false && function(): result =", and_result, ", function called =", function_was_called)
+
+function_was_called = false
+and_result = true && side_effect_function()
+print("  true && function(): result =", and_result, ", function called =", function_was_called)
+
+// OR short-circuit (second operand not evaluated if first is truthy)
+function_was_called = false
+let or_result = true || side_effect_function()
+print("  true || function(): result =", or_result, ", function called =", function_was_called)
+
+function_was_called = false
+or_result = false || side_effect_function()
+print("  false || function(): result =", or_result, ", function called =", function_was_called)
+
+// SECTION 9: Complex Expressions
+// ----------------------------
+// Testing complex logical expressions with multiple operators
+
+print("")
+print("9. Complex Expressions:")
+
+print("  Complex boolean logic:")
+print("    (true || false) && !(false || false) =", (true || false) && !(false || false))
+print("    !(true && true) || (!false && true) =", !(true && true) || (!false && true))
+
+print("  Mixed types in complex expressions:")
+print("    (5 > 3) && (\"Hello\" || \"\") =", (5 > 3) && ("Hello" || ""))
+print("    ([] || [1, 2, 3]) && (0 || true) =", ([] || [1, 2, 3]) && (0 || true))
+print("    !(\"\" || 0) && (!false && \"success\") =", !("" || 0) && (!false && "success"))
+
+print("")
+print("Logical operators comprehensive test completed!") 

@@ -1,0 +1,176 @@
+// string_operations.tg - String Operations in TargaScript
+//
+// This example demonstrates various string operations including:
+// - String concatenation with different data types
+// - String manipulation using method-style dot notation
+// - String formatting with printf
+// - Working with string properties
+
+// ======================================================================
+// String Concatenation
+// ======================================================================
+// TargaScript supports concatenating strings with various data types
+// using the + operator
+
+print("TargaScript String Operations")
+print("============================")
+
+// SECTION 1: String Concatenation
+// -----------------------------
+// Demonstrating basic string concatenation with various types
+
+print("")
+print("1. String Concatenation:")
+
+let str = "Hello"
+print("  Base string:", str)
+
+print("  Concatenating different types with strings:")
+print("    String + String:", str + " World")
+print("    String + Integer:", str + " " + 42)
+print("    String + Float:", str + " " + 3.14)
+print("    String + Boolean:", str + " " + true)
+print("    String + Array:", str + " " + [1, 2, 3])
+print("    String + Object:", str + " " + {"name": "TargaScript"})
+
+// SECTION 2: String Properties
+// --------------------------
+// Working with string properties
+
+print("")
+print("2. String Properties:")
+
+let message = "Hello, TargaScript!"
+print("  Original string:", message)
+print("  Length:", message.length)
+
+// SECTION 3: String Methods
+// -------------------------
+// Using method-style dot notation for string manipulation
+
+print("")
+print("3. String Methods:")
+
+print("  Transformation methods:")
+print("    message.upper():", message.upper())
+print("    message.lower():", message.lower())
+
+print("  Trimming methods:")
+let padded = "  spaced content  "
+print("    Original padded string: \"" + padded + "\"")
+print("    padded.trim(): \"" + padded.trim() + "\"")
+
+print("  Replacement:")
+print("    message.replace(\"Hello\", \"Hi\"):", message.replace("Hello", "Hi"))
+
+// SECTION 4: Working with Substrings
+// --------------------------------
+// Manipulating parts of strings
+
+print("")
+print("4. Working with Substrings:")
+
+let csv_data = "apple,banana,cherry,date,elderberry"
+print("  Original CSV string:", csv_data)
+
+print("  Splitting string:")
+let fruits = csv_data.split(",")
+print("    csv_data.split(\",\"):", fruits)
+
+print("  Joining array back to string:")
+let joined = fruits.join(" | ")
+print("    fruits.join(\" | \"):", joined)
+
+// SECTION 5: String Formatting with printf
+// --------------------------------------
+// Using printf for formatted strings
+
+print("")
+print("5. String Formatting with printf:")
+
+print("  Basic formatting:")
+printf("  Integer: %d, Float: %f, String: %s\n", 42, 3.14159, "Hello")
+
+print("  Number formatting:")
+printf("  Default float: %f\n", 3.14159)
+printf("  Rounded to 2 decimal places: %.2f\n", 3.14159)
+printf("  Padded integer: %5d\n", 42)
+printf("  Zero-padded integer: %05d\n", 42)
+
+print("  Width and alignment:")
+printf("  Right-aligned: %10s\n", "right")
+printf("  Left-aligned: %-10s\n", "left")
+
+print("  Multiple values:")
+let name = "Alice"
+let age = 30
+printf("  %s is %d years old\n", name, age)
+
+// SECTION 6: Complex String Operations
+// ---------------------------------
+// Demonstrating more advanced string manipulations
+
+print("")
+print("6. Complex String Operations:")
+
+print("  Formatting data in columns:")
+print("  Name       | Age | City")
+print("  -----------|-----|------------")
+printf("  %-10s | %3d | %-10s\n", "Alice", 30, "New York")
+printf("  %-10s | %3d | %-10s\n", "Bob", 25, "Boston")
+printf("  %-10s | %3d | %-10s\n", "Charlie", 35, "Chicago")
+
+print("  Creating formatted strings with variables:")
+let product = "Laptop"
+let price = 999.99
+let in_stock = true
+let stock_message = ""
+if in_stock {
+    stock_message = "In Stock"
+} else {
+    stock_message = "Out of Stock"
+}
+printf("  Product: %s, Price: $%.2f, Status: %s\n", product, price, stock_message)
+
+// SECTION 7: Practical Examples
+// ---------------------------
+// Real-world examples of string manipulation
+
+print("")
+print("7. Practical Examples:")
+
+print("  Email validation (simple check):")
+let email = "user@example.com"
+// Using a simple check without string indexing
+let containsAt = email.replace("@", "#") != email
+let containsDot = email.replace(".", "#") != email
+
+// Splitting the email by @ to check positions
+let emailParts = email.split("@")
+let validFormat = false
+
+if emailParts.length == 2 && emailParts[0].length > 0 {
+    // Check if the domain part contains a dot
+    let domainPart = emailParts[1]
+    let domainHasDot = domainPart.replace(".", "#") != domainPart
+    validFormat = domainHasDot
+}
+
+print("    Email:", email)
+print("    Contains @ and . in correct order?", validFormat)
+
+print("  URL parsing:")
+let url = "https://www.example.com/path?param=value"
+let parts = url.split("://")
+let protocol = parts[0]
+let without_protocol = parts[1]
+let domain_and_path = without_protocol.split("/")
+print("    URL:", url)
+print("    Protocol:", protocol)
+print("    Domain:", domain_and_path[0])
+if domain_and_path.length > 1 {
+    print("    Path:", "/" + domain_and_path[1])
+}
+
+print("")
+print("String operations demonstration completed!") 

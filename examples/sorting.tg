@@ -1,0 +1,73 @@
+// sorting.tg - Sorting algorithm examples in TargaScript
+
+// Bubble Sort implementation
+fn bubble_sort(arr) {
+  let length = arr.length
+  let swapped = false
+  
+  repeat i in range(0, length - 1) {
+    swapped = false
+    
+    repeat j in range(0, length - i - 2) {
+      if arr[j] > arr[j + 1] {
+        // Swap elements
+        let temp = arr[j]
+        arr[j] = arr[j + 1]
+        arr[j + 1] = temp
+        swapped = true
+      }
+    }
+    
+    // If no swapping occurred in this pass, array is sorted
+    if !swapped {
+      break
+    }
+  }
+  
+  return arr
+}
+
+// Helper function to generate range
+fn range(start, end) {
+  // Base case
+  if start > end {
+    return []
+  }
+  
+  // Create range from start+1 to end, then add start at the beginning
+  let rest = range(start + 1, end)
+  let result = [start]
+  
+  // Add all elements from rest to result
+  repeat item in rest {
+    result = result.insert(item)
+  }
+  
+  return result
+}
+
+// Example usage
+let numbers = [64, 34, 25, 12, 22, 11, 90]
+print("Original array:")
+repeat num in numbers {
+  print(num)
+}
+
+let sorted = bubble_sort(numbers)
+print("\nSorted array:")
+repeat num in sorted {
+  print(num)
+}
+
+// Test with random number array
+let unsorted = [42, 8, 16, 4, 23, 15, 35, 9, 26, 1]
+print("\nUnsorted random array:")
+repeat num in unsorted {
+  print(num)
+}
+
+let sorted_random = bubble_sort(unsorted)
+print("\nSorted random array:")
+repeat num in sorted_random {
+  print(num)
+} 

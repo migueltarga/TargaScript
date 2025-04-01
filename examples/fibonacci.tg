@@ -1,0 +1,118 @@
+// fibonacci.tg - Fibonacci Sequence Implementations in TargaScript
+//
+// This example demonstrates multiple ways to calculate Fibonacci numbers and sequences.
+// The Fibonacci sequence is defined as: F(0) = 0, F(1) = 1, F(n) = F(n-1) + F(n-2) for n > 1
+// The sequence starts: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, ...
+
+// ======================================================================
+// Recursive Implementation of Fibonacci
+// ======================================================================
+// Time Complexity: O(2^n) - exponential
+// Space Complexity: O(n) - from the call stack depth
+// Strengths: Simple, elegant implementation
+// Weaknesses: Very inefficient for large n due to redundant calculations
+fn fibonacci_recursive(num) {
+  // Base cases
+  if num <= 1 {
+    return num
+  }
+  
+  // Recursive case: F(n) = F(n-1) + F(n-2)
+  let fib1 = fibonacci_recursive(num-1)
+  let fib2 = fibonacci_recursive(num-2)
+  let result = fib1 + fib2
+  
+  return result
+}
+
+// ======================================================================
+// Iterative Implementation of Fibonacci
+// ======================================================================
+// Time Complexity: O(n) - linear
+// Space Complexity: O(1) - constant
+// Strengths: Efficient, works well for large values of n
+// Weaknesses: Not as mathematically elegant as the recursive version
+fn fibonacci_iterative(num) {
+  // Base cases
+  if num <= 1 {
+    return num
+  }
+  
+  // Initialize variables for iterative calculation
+  let a = 0  // F(0)
+  let b = 1  // F(1)
+  let result = 0
+  
+  // Calculate F(n) iteratively by summing the previous two numbers
+  let counter = 2
+  repeat counter <= num {
+    result = a + b  // New Fibonacci number
+    a = b           // Shift values for next iteration
+    b = result
+    counter = counter + 1
+  }
+  
+  return result
+}
+
+// ======================================================================
+// Generate Complete Fibonacci Sequence
+// ======================================================================
+// Time Complexity: O(n) - linear
+// Space Complexity: O(n) - for storing the sequence
+// Returns an array containing the first 'term_count' Fibonacci numbers
+fn generate_fibonacci_sequence(term_count) {
+  // Handle edge cases
+  if term_count <= 0 {
+    return []
+  }
+  if term_count == 1 {
+    return [0]
+  }
+  if term_count == 2 {
+    return [0, 1]
+  }
+  
+  // Start with the first two Fibonacci numbers
+  let sequence = [0, 1]
+  let idx = 2
+  
+  // Generate the rest of the sequence
+  repeat idx < term_count {
+    // Add the next Fibonacci number to the sequence
+    let next = sequence[idx-1] + sequence[idx-2]
+    sequence = sequence.insert(next)
+    idx = idx + 1
+  }
+  
+  return sequence
+}
+
+// ======================================================================
+// Demonstration Examples
+// ======================================================================
+
+// 1. Calculate the 10th Fibonacci number using both methods
+print("Fibonacci Number Examples:")
+print("Recursive Fibonacci of 10:", fibonacci_recursive(10))
+print("Iterative Fibonacci of 10:", fibonacci_iterative(10))
+
+// 2. Generate and display the first 10 Fibonacci numbers
+print("\nFibonacci sequence (10 terms):")
+let seq = generate_fibonacci_sequence(10)
+repeat val in seq {
+  print(val)
+}
+
+// 3. Performance comparison between methods
+// Note: For larger values, the recursive method becomes very slow
+let test_size = 20
+print("\nPerformance comparison for n =", test_size)
+print("Recursive result:", fibonacci_recursive(test_size))
+print("Iterative result:", fibonacci_iterative(test_size))
+
+// 4. Verification of selected Fibonacci values
+print("\nVerification of Fibonacci values:")
+print("Fib(10) =", fibonacci_recursive(10))  // Should be 55
+print("Fib(15) =", fibonacci_iterative(15))  // Should be 610
+print("Fib(20) =", fibonacci_iterative(20))  // Should be 6765 

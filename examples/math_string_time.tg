@@ -1,0 +1,121 @@
+// math_string_time.tg
+// ===============================================================
+// Demonstration of extended built-in functions in TargaScript:
+// - Math functions (sqrt, pow, round, random)
+// - String methods (trim, upper, lower, etc.)
+// - Time functions (now, format)
+// ===============================================================
+
+print("TargaScript Extended Built-in Functions")
+print("=======================================")
+
+// ===============================================================
+// 1. Math Functions
+// ===============================================================
+
+print("")
+print("1. Math Functions:")
+
+// Square Root Function
+print("  Square Root:")
+print("    sqrt(16) =", sqrt(16))
+print("    sqrt(2) =", sqrt(2))
+print("    sqrt(0) =", sqrt(0))
+
+// Power Function
+print("  Power Function:")
+print("    pow(2, 3) =", pow(2, 3))
+print("    pow(5, 2) =", pow(5, 2))
+print("    pow(4, 0.5) =", pow(4, 0.5))
+
+// Rounding Functions
+print("  Rounding Functions:")
+print("    floor(3.7) =", floor(3.7))
+print("    ceil(3.2) =", ceil(3.2))
+print("    round(3.5) =", round(3.5))
+print("    round(3.4) =", round(3.4))
+
+// Random Number Generation
+print("  Random Number Generation:")
+let random_val = random()
+print("    random() =", random_val, "(value should be between 0 and 1)")
+
+// ===============================================================
+// 2. String Methods
+// ===============================================================
+
+print("")
+print("2. String Methods:")
+
+// Trimming Method
+print("  Trimming Method:")
+let padded_string = "  Hello, World!  "
+print("    Original string:", "\"" + padded_string + "\"")
+print("    Trimmed string:", "\"" + padded_string.trim() + "\"")
+
+// Case Conversion Methods
+print("  Case Conversion:")
+let mixed_case = "Hello, World!"
+print("    Original string:", "\"" + mixed_case + "\"")
+print("    Uppercase:", "\"" + mixed_case.upper() + "\"")
+print("    Lowercase:", "\"" + mixed_case.lower() + "\"")
+
+// String Length Property
+print("  String Length:")
+let test_string = "Hello, TargaScript!"
+print("    String:", "\"" + test_string + "\"")
+print("    Length:", test_string.length)
+
+// String Splitting Method
+print("  String Splitting:")
+let csv_data = "apple,banana,cherry,date"
+print("    Original CSV:", "\"" + csv_data + "\"")
+let fruits = csv_data.split(",")
+print("    Split into array:", fruits)
+
+// String Replacement Method
+print("  String Replacement:")
+let sentence = "The quick brown fox jumps over the lazy dog"
+print("    Original sentence:", "\"" + sentence + "\"")
+print("    Replaced words:", "\"" + sentence.replace("fox", "cat") + "\"")
+
+// ===============================================================
+// 3. Time Functions
+// ===============================================================
+
+print("")
+print("3. Time Functions:")
+
+// Current Time
+print("  Current Time:")
+let current_time = now()
+print("    Current timestamp:", current_time)
+
+// Formatting Time
+print("  Time Formatting:")
+let formatted_time = timeFormat(current_time, "2006-01-02 15:04:05")
+print("    Formatted time:", formatted_time)
+print("    Date only:", timeFormat(current_time, "2006-01-02"))
+print("    Time only:", timeFormat(current_time, "15:04:05"))
+
+// ===============================================================
+// 4. Combined Examples
+// ===============================================================
+
+print("")
+print("4. Combined Examples:")
+
+// Math and String Combination
+print("  Combining Math and String Functions:")
+let num = 12.3456
+print("    Original number:", num)
+print("    Rounded number:", round(num))
+
+// Time Calculation
+print("  Time Calculation:")
+let future_time = current_time + 3600  // Add one hour (3600 seconds)
+print("    Current time:", timeFormat(current_time, "15:04:05"))
+print("    One hour later:", timeFormat(future_time, "15:04:05"))
+
+print("")
+print("Extended Built-in Functions demonstration completed!") 

@@ -1,0 +1,163 @@
+// format_test.tg
+// ===============================================================
+// Comprehensive demonstration of format specifiers and printf function
+// This example showcases various formatting options available in TargaScript
+// ===============================================================
+
+print("TargaScript Format Specifiers and printf")
+print("=======================================")
+
+// SECTION 1: Basic Format Specifiers
+// --------------------------------
+// Fundamental format specifiers for different data types
+
+print("")
+print("1. Basic Format Specifiers:")
+
+print("  Integer (%d):")
+printf("    Decimal: %d\n", 42)
+printf("    Negative: %d\n", -42)
+
+print("  Float (%f):")
+printf("    Default precision: %f\n", 3.14159)
+printf("    Two decimal places: %.2f\n", 3.14159)
+printf("    Zero decimal places: %.0f\n", 3.14159)
+
+print("  Boolean (%t):")
+printf("    True: %t\n", true)
+printf("    False: %t\n", false)
+
+print("  String (%s):")
+printf("    Hello: %s\n", "Hello, World!")
+printf("    Empty string: '%s'\n", "")
+
+// SECTION 2: Multiple Values
+// -----------------------
+// Formatting multiple values in a single string
+
+print("")
+print("2. Multiple Values:")
+
+let name = "Alice"
+let age = 30
+let height = 5.8
+
+printf("  %s is %d years old and %.1f feet tall.\n", name, age, height)
+
+// SECTION 3: Expressions in Format
+// -----------------------------
+// Using expressions within format strings
+
+print("")
+print("3. Expressions in Format:")
+
+printf("  5 + 10 = %d\n", 5 + 10)
+printf("  Current length of name: %d\n", name.length)
+printf("  Age in 5 years: %d\n", age + 5)
+
+// SECTION 4: Formatting Composite Types
+// ----------------------------------
+// Formatting arrays and objects
+
+print("")
+print("4. Formatting Composite Types:")
+
+print("  Array Formatting:")
+let numbers = [1, 2, 3, 4, 5]
+printf("    Complete array: %v\n", numbers)
+printf("    First element: %d\n", numbers[0])
+printf("    Array length: %d\n", numbers.length)
+
+print("  Object Formatting:")
+let person = {"name": "Bob", "age": 25, "city": "New York"}
+printf("    Complete object: %v\n", person)
+printf("    Person's name: %s\n", person["name"])
+printf("    Person's age: %d\n", person["age"])
+
+// SECTION 5: Width and Alignment
+// ---------------------------
+// Controlling field width and alignment
+
+print("")
+print("5. Width and Alignment:")
+
+print("  Right Alignment (Default):")
+printf("    |%5d|\n", 42)
+printf("    |%10s|\n", "hello")
+
+print("  Left Alignment:")
+printf("    |%-5d|\n", 42)
+printf("    |%-10s|\n", "hello")
+
+print("  Zero Padding (Numbers):")
+printf("    |%05d|\n", 42)
+printf("    |%07.2f|\n", 3.14)
+
+// SECTION 6: Precision
+// ------------------
+// Controlling precision for floating-point numbers
+
+print("")
+print("6. Precision for Floating Point:")
+
+let pi = 3.14159265359
+printf("  Default: %f\n", pi)
+printf("  One decimal: %.1f\n", pi)
+printf("  Four decimals: %.4f\n", pi)
+printf("  Zero decimals: %.0f\n", pi)
+
+// SECTION 7: Width and Precision Combined
+// ------------------------------------
+// Combining width and precision specifications
+
+print("")
+print("7. Width and Precision Combined:")
+
+printf("  |%10.2f|\n", pi)
+printf("  |%-10.2f|\n", pi)
+
+// SECTION 8: Practical Example
+// -------------------------
+// A real-world example using printf for tabular data
+
+print("")
+print("8. Practical Example - Product Inventory:")
+
+print("  PRODUCT INVENTORY REPORT")
+print("  ========================")
+print("  ID  | Name            | Price    | Stock | Value")
+print("  ----|-----------------|----------|-------|----------")
+
+// Product 1
+let id1 = 101
+let name1 = "Laptop"
+let price1 = 1299.99
+let stock1 = 15
+let value1 = price1 * toFloat(stock1)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
+       id1, name1, price1, stock1, value1)
+
+// Product 2
+let id2 = 205
+let name2 = "Smartphone"
+let price2 = 699.50
+let stock2 = 42
+let value2 = price2 * toFloat(stock2)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
+       id2, name2, price2, stock2, value2)
+
+// Product 3
+let id3 = 316
+let name3 = "Wireless Earbuds"
+let price3 = 149.00
+let stock3 = 78
+let value3 = price3 * toFloat(stock3)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
+       id3, name3, price3, stock3, value3)
+
+print("  ========================")
+let total_value = value1 + value2 + value3
+printf("  TOTAL INVENTORY VALUE: $%11.2f\n", total_value)
+
+print("")
+print("Format specifiers and printf demonstration completed!") 

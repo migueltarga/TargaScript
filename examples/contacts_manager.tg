@@ -1,0 +1,140 @@
+// Simple Contacts Manager
+
+// Declare a global variable to hold the contacts
+let contacts = []
+
+// Add a contact to the global array
+fn add_contact(name, email, phone) {
+  let contact = {
+    "name": name,
+    "email": email,
+    "phone": phone
+  }
+  
+  print("DEBUG: Adding contact:", name)
+  contacts = contacts.insert(contact)
+  print("DEBUG: Current contacts count:", contacts.length)
+  return contact
+}
+
+// Find a contact by name and return it
+fn find_contact(name) {
+  print("DEBUG: Searching for contact:", name)
+  print("DEBUG: Current contacts count:", contacts.length)
+  
+  repeat contact in contacts {
+    print("DEBUG: Checking contact:", contact.name)
+    if contact.name == name {
+      return contact
+    }
+  }
+  return NULL
+}
+
+// Update a contact's phone number
+fn update_phone(name, new_phone) {
+  print("DEBUG: Updating phone for:", name, "to", new_phone)
+  print("DEBUG: Current contacts count:", contacts.length)
+  
+  // Create a new array for the updated contacts
+  let updated_contacts = []
+  let found = false
+  
+  repeat contact in contacts {
+    print("DEBUG: Checking contact:", contact.name)
+    if contact.name == name {
+      // Create a new contact with the updated phone
+      let updated_contact = {
+        "name": contact.name,
+        "email": contact.email,
+        "phone": new_phone
+      }
+      updated_contacts = updated_contacts.insert(updated_contact)
+      found = true
+      print("DEBUG: Updated contact:", name)
+    } else {
+      // Keep the original contact
+      updated_contacts = updated_contacts.insert(contact)
+    }
+  }
+  
+  // Update the global contacts array
+  contacts = updated_contacts
+  return found
+}
+
+// Delete a contact by name
+fn delete_contact(name) {
+  print("DEBUG: Deleting contact:", name)
+  print("DEBUG: Current contacts count:", contacts.length)
+  
+  let new_contacts = []
+  let deleted = false
+  
+  repeat contact in contacts {
+    print("DEBUG: Checking contact:", contact.name)
+    if contact.name != name {
+      new_contacts = new_contacts.insert(contact)
+    } else {
+      deleted = true
+      print("DEBUG: Found contact to delete:", name)
+    }
+  }
+  
+  contacts = new_contacts
+  print("DEBUG: After deletion, contacts count:", contacts.length)
+  return deleted
+}
+
+// Count contacts
+fn count_contacts() {
+  return contacts.length
+}
+
+// List all contacts
+fn list_contacts() {
+  return contacts
+}
+
+// Example usage
+print("Adding contacts...")
+add_contact("John Doe", "john@example.com", "555-1234")
+add_contact("Jane Smith", "jane@example.com", "555-5678")
+add_contact("Bob Jones", "bob@example.com", "555-9012")
+
+// List all contacts
+print("\nAll Contacts:")
+let all = list_contacts()
+repeat contact in all {
+  print(contact.name + " - " + contact.email + " - " + contact.phone)
+}
+print("Contact count:", count_contacts())
+
+// Find a contact
+let contact = find_contact("Jane Smith")
+if contact == NULL {
+  print("\nJane Smith was not found!")
+} else {
+  print("\nFound contact:")
+  print(contact.name + " - " + contact.email)
+}
+
+// Update a contact
+let updated = update_phone("Bob Jones", "555-NEW-NUMBER")
+print("\nUpdated Bob's phone number:", updated)
+let bob = find_contact("Bob Jones")
+if bob != NULL {
+  print(bob.name + " - " + bob.phone)
+}
+
+// Delete a contact
+let deleted = delete_contact("John Doe")
+print("\nDeleted John Doe:", deleted)
+print("Contact count after deletion:", count_contacts())
+
+// Show all contacts after deletion
+print("\nAll Contacts after deletion:")
+let remaining = list_contacts()
+repeat contact in remaining {
+  print(contact.name + " - " + contact.email + " - " + contact.phone)
+} 

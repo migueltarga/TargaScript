@@ -1,0 +1,132 @@
+// array_transformations.tg - Array Transformation Methods in TargaScript
+//
+// This example demonstrates how to use the built-in methods for
+// transforming arrays: map, filter, and reduce.
+
+// ======================================================================
+// Map Method
+// ======================================================================
+// The map method applies a transformation to each element in an array
+// and returns a new array with the transformed values.
+// Syntax: array.map(function)
+
+print("=== Map Method Examples ===")
+
+// Example 1: Squaring numbers
+let numbers = range(1, 5)
+print("Original numbers:", numbers)
+
+// Using anonymous function for transformation
+let squared = numbers.map(fn(num) {
+  return num * num
+})
+print("Squared numbers:", squared)
+
+// Example 2: Converting strings to uppercase
+let names = ["alice", "bob", "charlie", "david"]
+print("Original names:", names)
+
+let uppercase = names.map(fn(name) {
+  return name.upper()
+})
+print("Uppercase names:", uppercase)
+
+// Example 3: Adding a prefix to each name
+let prefixed = names.map(fn(name) {
+  return "user_" + name
+})
+print("Names with prefix:", prefixed)
+
+// ======================================================================
+// Filter Method
+// ======================================================================
+// The filter method creates a new array with elements that pass a test
+// implemented by the provided function.
+// Syntax: array.filter(function)
+
+print("=== Filter Method Examples ===")
+
+// Example 1: Filtering even numbers
+let mixed_numbers = range(1, 10)
+print("Original numbers:", mixed_numbers)
+
+let even_numbers = mixed_numbers.filter(fn(num) {
+  return num % 2 == 0
+})
+print("Even numbers only:", even_numbers)
+
+// Example 2: Filtering by string length
+print("Original names:", names)
+let long_names = names.filter(fn(name) {
+  return name.length > 4
+})
+print("Names longer than 4 characters:", long_names)
+
+// Example 3: Compound filtering
+let special_numbers = mixed_numbers.filter(fn(num) {
+  return (num > 3) && (num < 8)
+})
+print("Numbers between 3 and 8:", special_numbers)
+
+// ======================================================================
+// Reduce Method
+// ======================================================================
+// The reduce method applies a function against an accumulator and each
+// element in the array to reduce it to a single value.
+// Syntax: array.reduce(function, initial_value)
+
+print("=== Reduce Method Examples ===")
+
+// Example 1: Sum of numbers
+print("Numbers:", mixed_numbers)
+let sum = mixed_numbers.reduce(fn(acc, num) {
+  return acc + num
+}, 0)
+print("Sum of all numbers:", sum)
+
+// Example 2: Finding maximum value
+let max_val = mixed_numbers.reduce(fn(acc, num) {
+  if (num > acc) {
+    return num
+  }
+  return acc
+}, mixed_numbers[0])
+print("Maximum value:", max_val)
+
+// Example 3: Joining strings
+print("Names:", names)
+let joined = names.join(", ")
+print("Joined names:", joined)
+
+// ======================================================================
+// Chaining Transformations
+// ======================================================================
+// You can chain multiple array methods to create complex
+// data processing pipelines.
+
+print("=== Chained Transformations ===")
+
+// Example: Square numbers, filter those greater than 20, then sum them
+let original = range(1, 10)
+print("Original numbers:", original)
+
+// One-line method chaining
+let result = original
+  .map(fn(x) { return x * x })
+  .filter(fn(x) { return x > 20 })
+  .reduce(fn(acc, x) { return acc + x }, 0)
+
+print("Final result from chained operations:", result)
+
+// For clarity, we can also see each step:
+// Step 1: Square the numbers
+let squares = original.map(fn(x) { return x * x })
+print("After map (squares):", squares)
+
+// Step 2: Filter squares > 20
+let filtered = squares.filter(fn(x) { return x > 20 })
+print("After filter (> 20):", filtered)
+
+// Step 3: Sum the remaining values
+let total = filtered.reduce(fn(acc, x) { return acc + x }, 0)
+print("After reduce (sum):", total) 

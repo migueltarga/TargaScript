@@ -1,0 +1,226 @@
+// todo_list.tg - A Todo List Application in TargaScript
+// This example demonstrates object creation, method calls, and state management
+
+print("Starting Todo List Application...")
+
+// Create a todo list manager function that returns an object with methods
+fn create_todo_list() {
+  // Private state
+  let todos = []
+  let last_id = 0
+  
+  // Helper function to generate a new ID
+  fn get_next_id() {
+    last_id = last_id + 1
+    return last_id
+  }
+  
+  // Return an object with methods to manipulate the todo list
+  return {
+    // Add a new todo item
+    "add": fn(title, description, priority) {
+      let id = get_next_id()
+      let todo = {
+        "id": id,
+        "title": title,
+        "description": description,
+        "priority": priority,
+        "completed": false,
+        "date_created": "2025-04-01"
+      }
+      todos = todos.insert(todo)
+      return id
+    },
+    
+    // Get a todo by ID
+    "get": fn(id) {
+      repeat todo in todos {
+        if todo.id == id {
+          return todo
+        }
+      }
+      return NULL
+    },
+    
+    // Mark a todo as completed
+    "complete": fn(id) {
+      repeat i in range(0, todos.length - 1) {
+        if todos[i].id == id {
+          todos[i].completed = true
+          return true
+        }
+      }
+      return false
+    },
+    
+    // Mark a todo as incomplete
+    "uncomplete": fn(id) {
+      repeat i in range(0, todos.length - 1) {
+        if todos[i].id == id {
+          todos[i].completed = false
+          return true
+        }
+      }
+      return false
+    },
+    
+    // Update a todo's priority
+    "update_priority": fn(id, priority) {
+      repeat i in range(0, todos.length - 1) {
+        if todos[i].id == id {
+          todos[i].priority = priority
+          return true
+        }
+      }
+      return false
+    },
+    
+    // Delete a todo
+    "delete": fn(id) {
+      let new_todos = []
+      let deleted = false
+      
+      repeat todo in todos {
+        if todo.id != id {
+          new_todos = new_todos.insert(todo)
+        } else {
+          deleted = true
+        }
+      }
+      
+      todos = new_todos
+      return deleted
+    },
+    
+    // List all todos
+    "list_all": fn() {
+      return todos
+    },
+    
+    // List completed todos
+    "list_completed": fn() {
+      let completed = []
+      
+      repeat todo in todos {
+        if todo.completed {
+          completed = completed.insert(todo)
+        }
+      }
+      
+      return completed
+    },
+    
+    // List incomplete todos
+    "list_incomplete": fn() {
+      let incomplete = []
+      
+      repeat todo in todos {
+        if !todo.completed {
+          incomplete = incomplete.insert(todo)
+        }
+      }
+      
+      return incomplete
+    },
+    
+    // Get todos by priority
+    "get_by_priority": fn(priority) {
+      let filtered = []
+      
+      repeat todo in todos {
+        if todo.priority == priority {
+          filtered = filtered.insert(todo)
+        }
+      }
+      
+      return filtered
+    },
+    
+    // Count todos
+    "count": fn() {
+      return todos.length
+    }
+  }
+}
+
+// Helper function to generate range (needed for array indexing)
+fn range(start, end) {
+  // Base case
+  if start > end {
+    return []
+  }
+  
+  // Create range from start+1 to end, then add start at the beginning
+  let rest = range(start + 1, end)
+  let result = [start]
+  
+  // Add all elements from rest to result
+  repeat item in rest {
+    result = result.insert(item)
+  }
+  
+  return result
+}
+
+// Create a new todo list
+print("Creating todo list...")
+let todo_list = create_todo_list()
+
+// Add some todos
+print("Adding todo items...")
+let id1 = todo_list.add("Buy groceries", "Milk, eggs, bread", "high")
+let id2 = todo_list.add("Call dentist", "Schedule annual checkup", "medium")
+let id3 = todo_list.add("Fix bug in code", "The login function has an issue", "high")
+let id4 = todo_list.add("Read book", "Finish chapter 5", "low")
+
+// Display all todos
+print("All Todo Items:")
+let all_todos = todo_list.list_all()
+repeat todo in all_todos {
+  let status = ""
+  if todo.completed {
+    status = "✓"
+  } else {
+    status = "✗"
+  }
+  print("[" + status + "] " + todo.title + " (" + todo.priority + ")")
+}
+
+// Mark some as completed
+print("Marking items as completed...")
+todo_list.complete(id1)
+todo_list.complete(id4)
+
+// List completed todos
+print("Completed Todo Items:")
+let completed = todo_list.list_completed()
+repeat todo in completed {
+  print("✓ " + todo.title)
+}
+
+// List high priority todos
+print("High Priority Todo Items:")
+let high_priority = todo_list.get_by_priority("high")
+repeat todo in high_priority {
+  let status = ""
+  if todo.completed {
+    status = "✓"
+  } else {
+    status = "✗"
+  }
+  print("[" + status + "] " + todo.title)
+}
+
+// Update a todo's priority
+print("Updating todo priority...")
+todo_list.update_priority(id2, "high")
+let updated = todo_list.get(id2)
+print(updated.title + " - New Priority: " + updated.priority)
+
+// Delete a todo
+print("Deleting a todo item...")
+let deleted = todo_list.delete(id3)
+print("Deleted todo with ID " + id3 + ": " + deleted)
+print("Todo count: " + todo_list.count())
+
+print("Todo list application completed successfully.") 

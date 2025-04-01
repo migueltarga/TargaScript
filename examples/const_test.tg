@@ -1,0 +1,34 @@
+// const_test.tg - Testing the const keyword behavior
+//
+// This file tests the behavior of constants in TargaScript
+// to ensure they can't be reassigned after declaration.
+
+print("TargaScript Const Keyword Test")
+print("============================")
+print("")
+
+// Test 1: Basic constant declaration
+const PI = 3.14159
+print("PI =", PI)
+
+// Test 2: Constants with different types
+const NAME = "Alice"
+const AGE = 30
+const IS_VALID = true
+const ITEMS = [1, 2, 3]
+const CONFIG = {"debug": true, "timeout": 30}
+
+print("Various constants:")
+print("NAME =", NAME) 
+print("AGE =", AGE)
+print("IS_VALID =", IS_VALID)
+print("ITEMS =", ITEMS)
+print("CONFIG =", CONFIG)
+print("")
+
+// Test 3: Try to reassign a constant (should cause an error)
+print("Attempting to reassign PI from 3.14159 to 3.0:")
+print("(This should generate an error)")
+PI = 3.0  // This should cause an error
+
+print("This line should not be reached if constants are working correctly.") 

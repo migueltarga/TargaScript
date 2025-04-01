@@ -40,17 +40,26 @@ func (e *Environment) Set(name string, val Object) (Object, bool) {
 		return val, true
 	}
 
-	// Check if the variable exists in an outer environment
-	if e.outer != nil {
-		if _, exists := e.outer.Get(name); exists {
-			// Update in outer environment
-			return e.outer.Set(name, val)
-		}
+	if e.outer == nil {
+		e.store[name] = val
+		return val, true
 	}
 
-	// Not found anywhere, create in current environment
+	if _, ok := e.outer.Get(name); ok {
+		return e.outer.Set(name, val)
+	}
+
 	e.store[name] = val
 	return val, true
+}
+
+func (e *Environment) existsInOuterScope(name string) bool {
+	if e.outer == nil {
+		return false
+	}
+
+	_, exists := e.outer.Get(name)
+	return exists
 }
 
 func (e *Environment) SetConst(name string, val Object) Object {
@@ -124,4 +133,15 @@ func (e *Environment) IsConstant(name string) bool {
 		return e.outer.IsConstant(name)
 	}
 	return exists && isConst
+}
+
+func (e *Environment) SetLocal(name string, val Object) Object {
+	if isConst, exists := e.constants[name]; exists && isConst {
+		return &Error{
+			Message: "Cannot reassign to constant '" + name + "'",
+		}
+	}
+
+	e.store[name] = val
+	return val
 }

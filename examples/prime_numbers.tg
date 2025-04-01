@@ -1,0 +1,111 @@
+// prime_numbers.tg - Prime number examples in TargaScript
+
+// Function to check if a number is prime
+fn is_prime(num) {
+  // Numbers less than 2 are not prime
+  if num < 2 {
+    return false
+  }
+  
+  // 2 is prime
+  if num == 2 {
+    return true
+  }
+  
+  // Even numbers greater than 2 are not prime
+  if num % 2 == 0 {
+    return false
+  }
+  
+  // Check odd divisors up to the square root
+  let i = 3
+  let checking = true
+  repeat checking {
+    if i * i > num {
+      checking = false
+      continue
+    }
+    
+    if num % i == 0 {
+      return false
+    }
+    i = i + 2
+  }
+  
+  return true
+}
+
+// Function to generate all prime numbers up to n
+fn generate_primes_up_to(n) {
+  let primes = []
+  
+  // Create range and iterate
+  let numbers = range(2, n)
+  repeat i in numbers {
+    if is_prime(i) {
+      primes = primes.insert(i)
+    }
+  }
+  
+  return primes
+}
+
+// Function to get the first n prime numbers
+fn first_n_primes(n) {
+  let primes = []
+  let count = 0
+  let num = 2
+  
+  let running = true
+  repeat running {
+    if count >= n {
+      running = false
+      continue
+    }
+    
+    if is_prime(num) {
+      primes = primes.insert(num)
+      count = count + 1
+    }
+    num = num + 1
+  }
+  
+  return primes
+}
+
+// Helper function to generate range
+fn range(start, end) {
+  // Base case
+  if start > end {
+    return []
+  }
+  
+  // Create range from start+1 to end, then add start at the beginning
+  let rest = range(start + 1, end)
+  let result = [start]
+  
+  // Add all elements from rest to result
+  repeat item in rest {
+    result = result.insert(item)
+  }
+  
+  return result
+}
+
+// Example usage
+print("Is 7 prime? " + is_prime(7))    // true
+print("Is 12 prime? " + is_prime(12))  // false
+print("Is 23 prime? " + is_prime(23))  // true
+print("Is 1 prime? " + is_prime(1))    // false (by definition)
+
+print("\nPrime numbers up to 50:")
+let primes_to_50 = generate_primes_up_to(50)
+repeat prime in primes_to_50 {
+  print(prime)
+}
+
+print("\nFirst 10 prime numbers:")
+let first_10 = first_n_primes(10)
+repeat prime in first_10 {
+  print(prime)
+} 

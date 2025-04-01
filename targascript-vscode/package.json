@@ -1,0 +1,48 @@
+{
+  "name": "targascript",
+  "displayName": "TargaScript",
+  "description": "Syntax highlighting for TargaScript (.tg) files",
+  "version": "0.1.0",
+  "publisher": "migueltarga",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "targascript",
+        "aliases": [
+          "TargaScript",
+          "targascript"
+        ],
+        "extensions": [
+          ".tg"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "targascript",
+        "scopeName": "source.targascript",
+        "path": "./syntaxes/targascript.tmLanguage.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/migueltarga/TargaScript"
+  },
+  "keywords": [
+    "targascript",
+    "tg",
+    "syntax",
+    "highlighting"
+  ],
+  "author": "Miguel Targa",
+  "license": "MIT"
+} 

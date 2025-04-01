@@ -78,7 +78,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(val) {
 			return val
 		}
-		env.Set(node.Name.Value, val)
+
+		env.SetLocal(node.Name.Value, val)
+		return val
+
+	case *ast.ConstStatement:
+		val := Eval(node.Value, env)
+		if isError(val) {
+			return val
+		}
+
+		result := env.SetConst(node.Name.Value, val)
+		if _, ok := result.(*object.Error); ok {
+			return result
+		}
 		return val
 
 	case *ast.FunctionStatement:
@@ -230,11 +243,15 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 		switch left := node.Left.(type) {
 		case *ast.Identifier:
+			if env.IsConstant(left.Value) {
+				return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", left.Value)
+			}
+
 			if _, ok := env.Get(left.Value); !ok {
 				return newError(node.Token.Line, node.Token.Column, "identifier not found: %s", left.Value)
 			}
-			env.Set(left.Value, val)
-			return val
+			result, _ := env.Set(left.Value, val)
+			return result
 
 		case *ast.DotExpression:
 			obj := Eval(left.Left, env)
@@ -321,8 +338,11 @@ func evalProgram(statements []ast.Statement, env *object.Environment) object.Obj
 func evalBlockStatements(statements []ast.Statement, env *object.Environment) object.Object {
 	var result object.Object
 
+	// Create a new enclosed environment for this block
+	blockEnv := object.NewEnclosedEnvironment(env)
+
 	for _, statement := range statements {
-		result = Eval(statement, env)
+		result = Eval(statement, blockEnv)
 
 		if result != nil {
 			rt := result.Type()
@@ -372,6 +392,8 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return evalIntegerInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
 		return evalFloatInfixExpression(operator, left, right, line, column)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.STRING_OBJ && operator == "+":
 		leftVal := left.(*object.String).Value
 		rightVal := objectToString(right)
@@ -545,9 +567,13 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 	}
 
 	if isTruthy(condition) {
-		return Eval(ie.Consequence, env)
+		// Create a new enclosed environment for the consequence block
+		consequenceEnv := object.NewEnclosedEnvironment(env)
+		return Eval(ie.Consequence, consequenceEnv)
 	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
+		// Create a new enclosed environment for the alternative block
+		alternativeEnv := object.NewEnclosedEnvironment(env)
+		return Eval(ie.Alternative, alternativeEnv)
 	} else {
 		return NULL
 	}
@@ -650,9 +676,9 @@ func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Enviro
 
 	for paramIdx, param := range fn.Parameters {
 		if paramIdx < len(args) {
-			env.Set(param.Value, args[paramIdx])
+			env.SetLocal(param.Value, args[paramIdx])
 		} else {
-			env.Set(param.Value, NULL)
+			env.SetLocal(param.Value, NULL)
 		}
 	}
 
@@ -1022,8 +1048,8 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 }
 
 func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) object.Object {
-	// Use the parent environment directly for "repeat...in" loops to allow modifications to persist
-	loopEnv := env
+	// Create an enclosed environment for the repeat statement to ensure proper block scoping
+	loopEnv := object.NewEnclosedEnvironment(env)
 
 	if traceMode {
 		fmt.Fprintf(os.Stdout, "TRACE: Entering repeat statement\n")
@@ -1152,11 +1178,11 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 	}
 
 	if rs.Collection != nil && rs.Iterator == nil {
-		// Use the parent environment directly for condition loops as well
-		conditionEnv := env
+		// Create enclosed environment for condition-based loops as well
+		conditionEnv := object.NewEnclosedEnvironment(env)
 
 		for {
-			// Evaluate condition in the same environment where loop body runs
+			// Evaluate condition in the loop environment
 			condition := Eval(rs.Collection, conditionEnv)
 			if isError(condition) {
 				return condition
@@ -1173,7 +1199,7 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 				fmt.Fprintf(os.Stdout, "TRACE: Condition is truthy, continuing loop\n")
 			}
 
-			// Run loop body in the same environment where condition is evaluated
+			// Run loop body in the loop environment
 			result := Eval(rs.Body, conditionEnv)
 
 			if traceMode {
@@ -1299,6 +1325,31 @@ func evalBooleanInfixExpression(operator string, left, right object.Object, line
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
+	default:
+		return newError(line, column, "unknown operator: %s %s %s",
+			left.Type(), operator, right.Type())
+	}
+}
+
+func evalStringInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+
+	switch operator {
+	case "+":
+		return &object.String{Value: leftVal + rightVal}
+	case "==":
+		return nativeBoolToBooleanObject(leftVal == rightVal)
+	case "!=":
+		return nativeBoolToBooleanObject(leftVal != rightVal)
+	case "<":
+		return nativeBoolToBooleanObject(leftVal < rightVal)
+	case ">":
+		return nativeBoolToBooleanObject(leftVal > rightVal)
+	case "<=":
+		return nativeBoolToBooleanObject(leftVal <= rightVal)
+	case ">=":
+		return nativeBoolToBooleanObject(leftVal >= rightVal)
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())

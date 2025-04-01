@@ -163,6 +163,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.CONST:
+		return p.parseConstStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
 	case token.LOAD:
@@ -192,6 +194,37 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
 			p.nextToken()
 			msg := fmt.Sprintf("line %d:%d: invalid variable name '%s': variable names cannot start with a digit",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseConstStatement() *ast.ConstStatement {
+	stmt := &ast.ConstStatement{Token: p.curToken}
+
+	if !p.expectPeek(token.IDENT) {
+		if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
+			p.nextToken()
+			msg := fmt.Sprintf("line %d:%d: invalid constant name '%s': constant names cannot start with a digit",
 				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
 			p.errors = append(p.errors, msg)
 			return nil
@@ -404,11 +437,30 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	if p.peekTokenIs(token.ELSE) {
 		p.nextToken()
 
-		if !p.expectPeek(token.LBRACE) {
+		if p.peekTokenIs(token.IF) {
+			p.nextToken()
+
+			nestedIf := p.parseIfExpression()
+			if nestedIf == nil {
+				return nil
+			}
+
+			alternative := &ast.BlockStatement{
+				Token: p.curToken,
+				Statements: []ast.Statement{
+					&ast.ExpressionStatement{
+						Token:      p.curToken,
+						Expression: nestedIf,
+					},
+				},
+			}
+
+			expression.Alternative = alternative
+		} else if p.expectPeek(token.LBRACE) {
+			expression.Alternative = p.parseBlockStatement()
+		} else {
 			return nil
 		}
-
-		expression.Alternative = p.parseBlockStatement()
 	}
 
 	return expression

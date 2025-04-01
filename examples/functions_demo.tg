@@ -1,0 +1,143 @@
+// functions_demo.tg
+// ===============================================================
+// Comprehensive demonstration of built-in functions in TargaScript
+// This example covers type conversion, math, string, and other
+// utility functions available in the language.
+// ===============================================================
+
+print("TargaScript Built-in Functions Demo")
+print("===================================")
+
+// SECTION 1: Type Conversion Functions
+// -----------------------------------
+// TargaScript provides functions to convert between different types
+
+print("")
+print("1. Type Conversion Functions:")
+let num = 42
+let float_val = 3.14
+let bool_val = true
+
+print("  Original values:")
+print("    num =", num, "(type:", type(num) + ")")
+print("    float_val =", float_val, "(type:", type(float_val) + ")")
+print("    bool_val =", bool_val, "(type:", type(bool_val) + ")")
+
+print("  toString() conversions:")
+print("    toString(num):", toString(num), "(type:", type(toString(num)) + ")")
+print("    toString(float_val):", toString(float_val), "(type:", type(toString(float_val)) + ")")
+print("    toString(bool_val):", toString(bool_val), "(type:", type(toString(bool_val)) + ")")
+
+print("  toInt() conversions:")
+print("    toInt(\"42\"):", toInt("42"), "(type:", type(toInt("42")) + ")")
+print("    toInt(float_val):", toInt(float_val), "(type:", type(toInt(float_val)) + ")")
+print("    toInt(bool_val):", toInt(bool_val), "(type:", type(toInt(bool_val)) + ")")
+
+print("  toFloat() conversions:")
+print("    toFloat(num):", toFloat(num), "(type:", type(toFloat(num)) + ")")
+print("    toFloat(\"3.14\"):", toFloat("3.14"), "(type:", type(toFloat("3.14")) + ")")
+print("    toFloat(bool_val):", toFloat(bool_val), "(type:", type(toFloat(bool_val)) + ")")
+
+// SECTION 2: Type Function
+// -------------------------
+// The type() function returns a string indicating the data type
+
+print("")
+print("2. Type Function:")
+print("  type(42):", type(42))
+print("  type(3.14):", type(3.14))
+print("  type(\"hello\"):", type("hello"))
+print("  type(true):", type(true))
+print("  type([1, 2, 3]):", type([1, 2, 3]))
+print("  type({\"name\": \"Alice\"}):", type({"name": "Alice"}))
+
+// SECTION 3: Length Property
+// -------------------------
+// The length property works on strings and arrays
+
+print("")
+print("3. Length Property:")
+print("  \"hello\".length:", "hello".length)
+print("  [1, 2, 3, 4, 5].length:", [1, 2, 3, 4, 5].length)
+print("  {\"a\": 1, \"b\": 2, \"c\": 3}.length:", {"a": 1, "b": 2, "c": 3}.length)
+
+// SECTION 4: Math Functions
+// -----------------------
+// TargaScript provides several built-in math functions
+
+print("")
+print("4. Math Functions:")
+print("  abs() - Absolute value:")
+print("    abs(42):", abs(42))
+print("    abs(-42):", abs(-42))
+print("    abs(3.14):", abs(3.14))
+print("    abs(-3.14):", abs(-3.14))
+
+print("  Additional math functions (see math_string_time.tg for more examples):")
+print("    sqrt(16):", sqrt(16))
+print("    pow(2, 3):", pow(2, 3))
+print("    floor(3.7):", floor(3.7))
+print("    ceil(3.2):", ceil(3.2))
+print("    round(3.5):", round(3.5))
+
+// SECTION 5: String Methods
+// -------------------------
+// Methods for string manipulation using dot notation
+
+print("")
+print("5. String Methods:")
+print("  split() - Splits string into array:")
+let sentence = "Hello,World,TargaScript"
+let parts = sentence.split(",")
+print("    Original string:", sentence)
+print("    split result:", parts)
+
+print("  join() - Joins array into string:")
+let words = ["Hello", "beautiful", "world"]
+let joined = words.join(" ")
+print("    Original array:", words)
+print("    join result:", joined)
+
+print("  Additional string methods (see string_operations.tg for more examples):")
+print("    \"  hello  \".trim():", "  hello  ".trim())
+print("    \"hello\".upper():", "hello".upper())
+print("    \"HELLO\".lower():", "HELLO".lower())
+
+// SECTION 6: Range Function
+// -----------------------
+// Generate sequential arrays of integers
+
+print("")
+print("6. Range Function:")
+let r1_5 = range(1, 5)
+print("  range(1, 5):", r1_5)
+
+let r10_20 = range(10, 20)
+print("  range(10, 20):", r10_20)
+
+let empty_range = range(10, 5)
+print("  range(10, 5) (empty):", empty_range)
+
+// SECTION 7: Array Methods
+// -------------------------------------
+// Methods that operate on arrays with callbacks
+
+print("")
+print("7. Array Methods:")
+let numbers = [1, 2, 3, 4, 5]
+print("  Original array:", numbers)
+
+print("  map() - Transform each element:")
+let doubled = numbers.map(fn(x) { return x * 2 })
+print("    Doubled:", doubled)
+
+print("  filter() - Select elements that match condition:")
+let evens = numbers.filter(fn(x) { return x % 2 == 0 })
+print("    Even numbers:", evens)
+
+print("  reduce() - Combine elements into single value:")
+let sum = numbers.reduce(fn(acc, x) { return acc + x }, 0)
+print("    Sum of all elements:", sum)
+
+print("")
+print("Built-in functions demo completed successfully!") 

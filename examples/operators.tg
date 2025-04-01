@@ -1,0 +1,42 @@
+// operators.tg
+// Basic examples of operators in TargaScript
+
+print("TargaScript Basic Operators")
+print("=========================")
+
+// Arithmetic operators
+print("")
+print("Arithmetic Operators:")
+print("5 + 3 = " + (5 + 3))
+print("10 - 4 = " + (10 - 4))
+print("6 * 7 = " + (6 * 7))
+print("20 / 4 = " + (20 / 4))
+print("10 % 3 = " + (10 % 3))
+
+// Comparison operators
+print("")
+print("Comparison Operators:")
+print("5 == 5: " + (5 == 5))
+print("5 != 10: " + (5 != 10))
+print("10 > 5: " + (10 > 5))
+print("5 < 10: " + (5 < 10))
+print("5 >= 5: " + (5 >= 5))
+print("5 <= 10: " + (5 <= 10))
+
+// Logical operators
+print("")
+print("Logical Operators:")
+print("true && true: " + (true && true))
+print("true && false: " + (true && false))
+print("true || false: " + (true || false))
+print("false || false: " + (false || false))
+print("!true: " + (!true))
+print("!false: " + (!false))
+
+// String concatenation
+print("")
+print("String Concatenation:")
+print("\"Hello \" + \"World\" = " + ("Hello " + "World"))
+
+print("")
+print("Basic operators demonstration completed!") 

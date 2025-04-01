@@ -1,0 +1,66 @@
+// This example demonstrates variable scoping with function parameters in TargaScript
+// We're testing how function parameters shadow outer variables 
+
+// Set up initial variables
+let x = "outer-x"
+let y = "outer-y"
+
+print("Initial values:")
+print("x =", x)
+print("y =", y)
+
+// Create a function that shadows the outer variable x
+let shadowingFunction = fn(x) {
+  // The parameter x shadows the outer x
+  print("\nInside function (parameter shadows outer x):")
+  print("x =", x, "(should be parameter value, not outer x)")
+  print("y =", y, "(should be outer-y)")
+  
+  // Modify the parameter
+  x = "modified-parameter"
+  print("After modifying parameter:")
+  print("x =", x, "(should be modified-parameter)")
+}
+
+// Call the function
+print("\nCalling function with parameter:")
+shadowingFunction("parameter-value")
+
+// Verify outer variable wasn't affected
+print("\nAfter function call:")
+print("x =", x, "(should still be outer-x)")
+print("y =", y, "(should still be outer-y)")
+
+// Test nested functions with parameter shadowing
+let outerFunction = fn(a) {
+  print("\nIn outer function:")
+  print("a =", a, "(parameter value)")
+  print("x =", x, "(outer scope x)")
+  
+  let innerFunction = fn(x) {
+    print("\nIn inner function:")
+    print("a =", a, "(from outer function)")
+    print("x =", x, "(parameter value, shadows outer x)")
+    
+    // Modify parameter
+    x = "modified-inner-parameter"
+    print("After modifying inner parameter:")
+    print("x =", x)
+  }
+  
+  innerFunction("inner-parameter-value")
+  
+  print("\nAfter inner function call:")
+  print("x =", x, "(should still be outer-x, not modified)")
+}
+
+// Call the outer function
+print("\nCalling outer function:")
+outerFunction("outer-parameter-value")
+
+// Final verification
+print("\nFinal outer scope values:")
+print("x =", x, "(should still be outer-x)")
+print("y =", y, "(should still be outer-y)")
+
+print("\nTest completed successfully!") 

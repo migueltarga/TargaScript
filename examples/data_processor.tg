@@ -1,0 +1,273 @@
+// data_processor.tg - Practical Data Processing with Method Chaining
+//
+// This example demonstrates how method-style dot notation can simplify
+// common data processing tasks in TargaScript.
+
+print("TargaScript Data Processing with Method Chaining")
+print("==============================================")
+
+// Basic transformation with numbers - works perfectly
+print("1. Simple Data Transformation:")
+let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+let result = numbers
+  .filter(fn(n) { return n % 2 == 0 })  // Keep only even numbers
+  .map(fn(n) { return n * n })          // Square each number
+  .reduce(fn(sum, n) { return sum + n }, 0) // Sum all values
+
+print("Result of filtering, mapping and reducing:", result)
+print("")
+
+// String processing example - works perfectly
+print("2. Text Processing:")
+let paragraph = "   This is an   EXAMPLE   text with   inconsistent   spacing and CAPITALIZATION.  "
+
+let formatted = paragraph
+  .trim()                        // Remove leading/trailing spaces
+  .lower()                       // Convert to lowercase
+  .split(" ")                    // Split into words
+  .filter(fn(word) {             // Remove empty words
+    return word.length > 0
+  })
+  .join(" ")                     // Join with single spaces
+
+print("Original:", "\"" + paragraph + "\"")
+print("Formatted:", "\"" + formatted + "\"")
+print("")
+
+// Simple array filter - works perfectly
+print("3. Simple Array Filter:")
+let fruits = ["apple", "banana", "cherry", "date", "elderberry"]
+let longFruits = fruits.filter(fn(fruit) { return fruit.length > 5 })
+print("Fruits with more than 5 letters:", longFruits)
+print("")
+
+// Let's focus on making a very simple, working example
+print("4. Simple Function Chain with Strings:")
+
+// Create example data with strings
+let messages = [
+  "Hello world",
+  "   Extra spaces   ",
+  "UPPERCASE MESSAGE",
+  "mixed CASE text",
+  ""  // Empty message
+]
+
+// Process all messages
+let processedMessages = messages
+  .filter(fn(msg) {               // Filter out empty messages 
+    return msg.length > 0
+  })
+  .map(fn(msg) {                  // Transform each message
+    return msg.trim().lower()     // Use method chaining inside the map function
+  })
+
+print("Original messages:", messages)
+print("Processed messages:", processedMessages)
+
+// Join the messages into a single string
+let combined = processedMessages.join(" | ")
+print("Combined:", combined)
+print("")
+
+// Method chaining with simple array of objects
+print("5. Method Chaining with Object Arrays:")
+
+// Define some simple person objects with only string values for simplicity
+let people = [
+  {"name": "Alice", "age": "32", "city": "New York"},
+  {"name": "Bob", "age": "45", "city": "Boston"},
+  {"name": "Charlie", "age": "27", "city": "New York"},
+  {"name": "Diana", "age": "36", "city": "Chicago"},
+  {"name": "Eve", "age": "29", "city": "Boston"}
+]
+
+// Get people from New York
+print("People from New York:")
+let nyPeople = people.filter(fn(person) {
+  return person["city"] == "New York"
+})
+repeat person in nyPeople {
+  print("- " + person["name"] + ", age " + person["age"])
+}
+
+// Transform to a more concise format and sort
+let names = people
+  .filter(fn(person) {
+    // Parse age as integer and filter by age
+    return toInt(person["age"]) > 30
+  })
+  .map(fn(person) {
+    // Create a formatted string
+    return person["name"] + " (" + person["city"] + ")"
+  })
+  .join(", ")
+
+print("\nPeople over 30:", names)
+print("")
+
+// Simple statistics with method chaining
+print("6. Statistical Analysis with Method Chaining:")
+
+// Simple score data
+let scores = [85, 92, 78, 65, 90, 76, 88, 95]
+
+// Calculate passing scores (>= 70)
+let passingScores = scores.filter(fn(score) {
+  return score >= 70
+})
+
+// Calculate average of passing scores
+let totalPassing = passingScores.reduce(fn(sum, score) {
+  return sum + score
+}, 0)
+
+let passingCount = passingScores.length
+let averagePassing = 0
+
+if (passingCount > 0) {  // Avoid division by zero
+  averagePassing = totalPassing / passingCount
+}
+
+print("All scores:", scores)
+print("Passing scores:", passingScores)
+print("Average passing score:", averagePassing)
+
+// All in one chain
+let highScorers = scores
+  .filter(fn(score) { return score >= 90 })
+  .map(fn(score) { return "Score: " + score })
+  .join(", ")
+
+print("High scorers:", highScorers)
+
+// Demonstrate working with string keys directly
+print("7. Working With String Data:")
+
+// Sample data for books
+let books = [
+  {"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "fiction": "yes", "pages": "180"},
+  {"title": "To Kill a Mockingbird", "author": "Harper Lee", "fiction": "yes", "pages": "281"},
+  {"title": "A Brief History of Time", "author": "Stephen Hawking", "fiction": "no", "pages": "212"},
+  {"title": "Pride and Prejudice", "author": "Jane Austen", "fiction": "yes", "pages": "279"},
+  {"title": "The Art of War", "author": "Sun Tzu", "fiction": "no", "pages": "92"}
+]
+
+// Get all fiction books
+let fictionBooks = books.filter(fn(book) { 
+  return book["fiction"] == "yes" 
+})
+
+print("Fiction books:")
+repeat book in fictionBooks {
+  print("- " + book["title"] + " by " + book["author"])
+}
+print("")
+
+// Create a formatted list of all books
+let bookList = books
+  .map(fn(book) {
+    let pages = toInt(book["pages"])
+    let type = "fiction"
+    if (book["fiction"] == "no") {
+      type = "non-fiction"
+    }
+    return book["title"] + " (" + type + ", " + pages + " pages)"
+  })
+  .join("\n- ")
+
+print("Book list:\n- " + bookList)
+
+// Structured data processing - Using string comparison
+print("8. Structured Data Processing:")
+
+// Create an array of user records with string values
+let users = [
+  {"id": "1", "name": "John Smith", "age": "34", "role": "Developer", "active": "true"},
+  {"id": "2", "name": "Emily Johnson", "age": "28", "role": "Designer", "active": "true"},
+  {"id": "3", "name": "Michael Brown", "age": "45", "role": "Manager", "active": "true"},
+  {"id": "4", "name": "Sarah Davis", "age": "31", "role": "Developer", "active": "false"},
+  {"id": "5", "name": "Robert Wilson", "age": "39", "role": "DevOps", "active": "true"}
+]
+
+// Filter for active developers
+let activeDevs = users
+  .filter(fn(user) {
+    return user["active"] == "true"  // String comparison
+  })
+  .filter(fn(user) {
+    return user["role"] == "Developer"  // String comparison
+  })
+
+print("Active developers:")
+repeat dev in activeDevs {
+  print("- " + dev["name"] + " (" + dev["age"] + " years old)")
+}
+print("")
+
+// Get technical staff names
+let technicalStaff = users
+  .filter(fn(user) {
+    // Combined condition with string comparisons
+    return (user["role"] == "Developer" || user["role"] == "DevOps") && 
+           user["active"] == "true"
+  })
+  .map(fn(user) {
+    let nameParts = user["name"].split(" ")
+    return nameParts[0] + " " + nameParts[1]
+  })
+  .join(", ")
+
+print("Active technical staff: " + technicalStaff)
+print("")
+
+// Employee data processing
+print("9. Employee Data Processing:")
+
+// Sample employee data
+let employees = [
+  {"name": "Alice Smith", "email": "alice@example.com", "department": "Engineering", "salary": "85000"},
+  {"name": "Bob Johnson", "email": "bob@example.com", "department": "Marketing", "salary": "75000"},
+  {"name": "Carol Williams", "email": "carol@example.com", "department": "Engineering", "salary": "92000"},
+  {"name": "Dave Brown", "email": "dave@example.com", "department": "Finance", "salary": "78000"},
+  {"name": "Eve Davis", "email": "eve@example.com", "department": "Engineering", "salary": "88000"}
+]
+
+// Get engineering emails
+let engineeringEmails = employees
+  .filter(fn(emp) {
+    return emp["department"] == "Engineering"
+  })
+  .map(fn(emp) {
+    return emp["name"] + " <" + emp["email"] + ">"
+  })
+  .join(", ")
+
+print("Engineering team emails: " + engineeringEmails)
+
+// Calculate average engineering salary
+let engineeringSalaries = employees
+  .filter(fn(emp) { 
+    return emp["department"] == "Engineering"
+  })
+  .map(fn(emp) {
+    return toInt(emp["salary"])  // Convert string to integer
+  })
+
+// Calculate total and average
+let totalSalary = engineeringSalaries
+  .reduce(fn(sum, salary) {
+    return sum + salary
+  }, 0)
+
+let engineeringCount = engineeringSalaries.length
+let averageSalary = 0
+
+if (engineeringCount > 0) {
+  averageSalary = totalSalary / engineeringCount
+}
+
+print("Number of engineering employees:", engineeringCount)
+print("Total engineering salary: $" + totalSalary)
+print("Average engineering salary: $" + averageSalary) 

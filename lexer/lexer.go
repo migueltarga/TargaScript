@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"strings"
+
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -261,23 +263,43 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 }
 
 func (l *Lexer) readString() string {
-	start := l.position + 1
+	escaped := false
+	var result strings.Builder
+
 	for {
 		l.readChar()
 
 		if l.ch == 0 {
 			break
 		}
-		if l.ch == '"' {
-			break
-		}
-		if l.ch == '\\' {
-			if l.peekChar() == '"' {
-				l.readChar()
+
+		if escaped {
+			// Handle escaped characters
+			switch l.ch {
+			case 'n':
+				result.WriteRune('\n')
+			case 't':
+				result.WriteRune('\t')
+			case 'r':
+				result.WriteRune('\r')
+			case '"':
+				result.WriteRune('"')
+			case '\\':
+				result.WriteRune('\\')
+			default:
+				result.WriteRune(l.ch)
 			}
+			escaped = false
+		} else if l.ch == '\\' {
+			escaped = true
+		} else if l.ch == '"' {
+			break
+		} else {
+			result.WriteRune(l.ch)
 		}
 	}
-	return l.input[start:l.position]
+
+	return result.String()
 }
 
 func isLetter(ch rune) bool {
