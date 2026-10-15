@@ -1,0 +1,41 @@
+name: Test
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Run examples
+        run: |
+          go build -o targascript .
+          for f in examples/*.tg; do
+            # const_test.tg ends with an intentional error
+            [ "$f" = "examples/const_test.tg" ] && continue
+            echo "== $f"
+            ./targascript "$f" > /dev/null
+          done
