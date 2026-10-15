@@ -13,6 +13,10 @@ const (
 	STRING = "STRING"
 	BOOL   = "BOOL"
 
+	// TEMPLATE is a string containing ${...}. Its literal is the raw source
+	// between the quotes, escapes included.
+	TEMPLATE = "TEMPLATE"
+
 	// Operators
 	ASSIGN    = "="
 	EQ        = "=="

@@ -321,6 +321,31 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+// TemplateLiteral is a string with ${...} interpolations. Parts alternate
+// between *StringLiteral text and the interpolated expressions.
+type TemplateLiteral struct {
+	Token token.Token
+	Parts []Expression
+}
+
+func (tl *TemplateLiteral) expressionNode()      {}
+func (tl *TemplateLiteral) TokenLiteral() string { return tl.Token.Literal }
+func (tl *TemplateLiteral) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("\"")
+	for _, part := range tl.Parts {
+		if text, ok := part.(*StringLiteral); ok {
+			out.WriteString(text.Value)
+		} else {
+			out.WriteString("${" + part.String() + "}")
+		}
+	}
+	out.WriteString("\"")
+
+	return out.String()
+}
+
 type StringLiteral struct {
 	Token token.Token
 	Value string

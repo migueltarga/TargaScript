@@ -29,6 +29,14 @@
         {
           "name": "constant.character.escape.targascript",
           "match": "\\\\."
+        },
+        {
+          "name": "meta.embedded.interpolation.targascript",
+          "begin": "\\$\\{",
+          "end": "\\}",
+          "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.targascript" } },
+          "endCaptures": { "0": { "name": "punctuation.section.embedded.end.targascript" } },
+          "patterns": [{ "include": "$self" }]
         }
       ]
     },
