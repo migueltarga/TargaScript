@@ -296,6 +296,10 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		!isStatementEnd(p.peekToken.Type) &&
 		precedence < p.peekPrecedence() {
 
+		if p.peekStartsNewLine() {
+			return leftExp
+		}
+
 		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
@@ -307,6 +311,26 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	return leftExp
+}
+
+// peekStartsNewLine reports whether the next token begins a new statement
+// rather than continuing the current expression. A "(", "[" or "-" at the
+// start of a line could do either, so it is treated as a new statement:
+//
+//	let a = b
+//	(c + d).print()
+//
+// To continue an expression on the next line, end the line with an operator.
+func (p *Parser) peekStartsNewLine() bool {
+	if p.peekToken.Line <= p.curToken.Line {
+		return false
+	}
+	switch p.peekToken.Type {
+	case token.LPAREN, token.LBRACKET, token.MINUS:
+		return true
+	default:
+		return false
+	}
 }
 
 func isStatementEnd(tokenType token.TokenType) bool {
