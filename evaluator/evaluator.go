@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strings"
 
@@ -392,6 +393,10 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return evalIntegerInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.FLOAT_OBJ && right.Type() == object.FLOAT_OBJ:
 		return evalFloatInfixExpression(operator, left, right, line, column)
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.FLOAT_OBJ:
+		return evalFloatInfixExpression(operator, toFloat(left), right, line, column)
+	case left.Type() == object.FLOAT_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalFloatInfixExpression(operator, left, toFloat(right), line, column)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.STRING_OBJ && operator == "+":
@@ -531,7 +536,7 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 		if rightVal == 0 {
 			return newError(line, column, "modulo by zero")
 		}
-		return &object.Float{Value: float64(int64(leftVal) % int64(rightVal))}
+		return &object.Float{Value: math.Mod(leftVal, rightVal)}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -558,6 +563,10 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
 	}
+}
+
+func toFloat(obj object.Object) *object.Float {
+	return &object.Float{Value: float64(obj.(*object.Integer).Value)}
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
