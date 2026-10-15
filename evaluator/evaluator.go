@@ -343,13 +343,16 @@ func evalProgram(statements []ast.Statement, env *object.Environment) object.Obj
 }
 
 func evalBlockStatements(statements []ast.Statement, env *object.Environment) object.Object {
+	return evalStatements(statements, object.NewEnclosedEnvironment(env))
+}
+
+// evalStatements runs statements directly in env, without a new scope. Used
+// where the caller already created the scope (function calls, loop iterations).
+func evalStatements(statements []ast.Statement, env *object.Environment) object.Object {
 	var result object.Object
 
-	// Create a new enclosed environment for this block
-	blockEnv := object.NewEnclosedEnvironment(env)
-
 	for _, statement := range statements {
-		result = Eval(statement, blockEnv)
+		result = Eval(statement, env)
 
 		if result != nil {
 			rt := result.Type()
@@ -539,14 +542,11 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 		return condition
 	}
 
+	// Each branch is a block, which gets its own scope
 	if isTruthy(condition) {
-		// Create a new enclosed environment for the consequence block
-		consequenceEnv := object.NewEnclosedEnvironment(env)
-		return Eval(ie.Consequence, consequenceEnv)
+		return Eval(ie.Consequence, env)
 	} else if ie.Alternative != nil {
-		// Create a new enclosed environment for the alternative block
-		alternativeEnv := object.NewEnclosedEnvironment(env)
-		return Eval(ie.Alternative, alternativeEnv)
+		return Eval(ie.Alternative, env)
 	} else {
 		return NULL
 	}
@@ -637,7 +637,8 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 		extendedEnv := extendFunctionEnv(fn, args)
 
-		evaluated := Eval(fn.Body, extendedEnv)
+		// Parameters and the body's own variables share one scope
+		evaluated := evalStatements(fn.Body.Statements, extendedEnv)
 		if err := loopControlError(evaluated); err != nil {
 			return err
 		}
@@ -1047,9 +1048,6 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 }
 
 func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) object.Object {
-	// Create an enclosed environment for the repeat statement to ensure proper block scoping
-	loopEnv := object.NewEnclosedEnvironment(env)
-
 	if traceMode {
 		fmt.Fprintf(os.Stdout, "TRACE: Entering repeat statement\n")
 	}
@@ -1061,8 +1059,7 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 
 	if rs.Iterator == nil {
 		for {
-			// Evaluate condition in the loop environment
-			condition := Eval(rs.Collection, loopEnv)
+			condition := Eval(rs.Collection, env)
 			if isError(condition) {
 				return condition
 			}
@@ -1074,7 +1071,7 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 				break
 			}
 
-			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
+			if result, stop := runLoopBody(rs.Body, object.NewEnclosedEnvironment(env)); stop {
 				return result
 			}
 		}
@@ -1094,16 +1091,14 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 	switch collection := collection.(type) {
 	case *object.Array:
 		for _, element := range collection.Elements {
-			loopEnv.SetLocal(rs.Iterator.Value, element)
-			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
+			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, element)); stop {
 				return result
 			}
 		}
 
 	case *object.Integer:
 		for i := int64(1); i <= collection.Value; i++ {
-			loopEnv.SetLocal(rs.Iterator.Value, &object.Integer{Value: i})
-			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
+			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.Integer{Value: i})); stop {
 				return result
 			}
 		}
@@ -1116,11 +1111,19 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 	return NULL
 }
 
-// runLoopBody evaluates one loop iteration. It reports stop when the loop must
-// end, returning what the loop should evaluate to: the error or return value
-// to propagate, or NULL after a break.
+// iterationEnv creates the scope for one loop iteration with the iterator
+// bound in it, so closures created in the body keep that iteration's value.
+func iterationEnv(env *object.Environment, iterator *ast.Identifier, value object.Object) *object.Environment {
+	iterEnv := object.NewEnclosedEnvironment(env)
+	iterEnv.SetLocal(iterator.Value, value)
+	return iterEnv
+}
+
+// runLoopBody evaluates one loop iteration in env, the iteration's scope. It
+// reports stop when the loop must end, returning what the loop should
+// evaluate to: the error or return value to propagate, or NULL after a break.
 func runLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
-	result := Eval(body, env)
+	result := evalStatements(body.Statements, env)
 
 	if traceMode && result != nil {
 		fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n", result.Type(), result.Inspect())
