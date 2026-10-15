@@ -653,6 +653,15 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	}
 }
 
+func isCallable(obj object.Object) bool {
+	switch obj.(type) {
+	case *object.Function, *object.Builtin:
+		return true
+	default:
+		return false
+	}
+}
+
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 
@@ -917,9 +926,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for array.map(): got %d, want 1", len(args))
 			}
 
-			fn, ok := args[0].(*object.Function)
-			if !ok {
-				return newError(line, column, "argument to array.map() must be FUNCTION, got %s", args[0].Type())
+			fn := args[0]
+			if !isCallable(fn) {
+				return newError(line, column, "argument to array.map() must be FUNCTION, got %s", fn.Type())
 			}
 
 			result := make([]object.Object, 0, len(obj.Elements))
@@ -937,9 +946,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for array.filter(): got %d, want 1", len(args))
 			}
 
-			fn, ok := args[0].(*object.Function)
-			if !ok {
-				return newError(line, column, "argument to array.filter() must be FUNCTION, got %s", args[0].Type())
+			fn := args[0]
+			if !isCallable(fn) {
+				return newError(line, column, "argument to array.filter() must be FUNCTION, got %s", fn.Type())
 			}
 
 			result := make([]object.Object, 0)
@@ -960,9 +969,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for array.reduce(): got %d, want 2", len(args))
 			}
 
-			fn, ok := args[0].(*object.Function)
-			if !ok {
-				return newError(line, column, "first argument to array.reduce() must be FUNCTION, got %s", args[0].Type())
+			fn := args[0]
+			if !isCallable(fn) {
+				return newError(line, column, "first argument to array.reduce() must be FUNCTION, got %s", fn.Type())
 			}
 
 			initialValue := args[1]
