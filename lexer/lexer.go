@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/token"
 )
@@ -182,21 +183,17 @@ func (l *Lexer) readChar() {
 		l.column = 1
 	}
 
+	width := 1
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
-		r := []rune(l.input[l.readPosition:])[0]
-		l.ch = r
+		l.ch, width = utf8.DecodeRuneInString(l.input[l.readPosition:])
 	}
 	l.position = l.readPosition
+	l.readPosition += width
 
-	if l.ch != 0 {
-		l.readPosition += len(string(l.ch))
-		if l.ch != '\n' {
-			l.column++
-		}
-	} else {
-		l.readPosition += 1
+	if l.ch != 0 && l.ch != '\n' {
+		l.column++
 	}
 }
 
@@ -204,7 +201,8 @@ func (l *Lexer) peekChar() rune {
 	if l.readPosition >= len(l.input) {
 		return 0
 	}
-	return []rune(l.input[l.readPosition:])[0]
+	r, _ := utf8.DecodeRuneInString(l.input[l.readPosition:])
+	return r
 }
 
 func (l *Lexer) readIdentifier() string {
