@@ -428,6 +428,7 @@ type HashPair struct {
 type HashLiteral struct {
 	Token token.Token
 	Pairs map[string]HashPair
+	Order []string // keys of Pairs in source order
 }
 
 func (hl *HashLiteral) expressionNode()      {}
@@ -436,7 +437,8 @@ func (hl *HashLiteral) String() string {
 	var out bytes.Buffer
 
 	pairs := []string{}
-	for _, pair := range hl.Pairs {
+	for _, name := range hl.Order {
+		pair := hl.Pairs[name]
 		pairs = append(pairs, pair.Key.String()+": "+pair.Value.String())
 	}
 

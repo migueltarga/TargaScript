@@ -1726,3 +1726,15 @@ func TestFunctionStatementParsing(t *testing.T) {
 		}
 	}
 }
+
+func TestHashLiteralStringKeepsOrder(t *testing.T) {
+	input := `{"c": 1, b: 2, "a": 3}`
+
+	for i := 0; i < 20; i++ {
+		program := New(lexer.New(input)).ParseProgram()
+		got := program.String()
+		if got != `{"c": 1, b: 2, "a": 3}` {
+			t.Fatalf("got=%s", got)
+		}
+	}
+}
