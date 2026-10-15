@@ -59,17 +59,17 @@ func main() {
 	repl.Start(os.Stdin, os.Stdout, noColor, debugEnabled, traceEnabled)
 }
 
-func executeFile(input string, debug bool, noColor bool, trace bool) error {
-	// Set up panic recovery
+func executeFile(input string, debug bool, noColor bool, trace bool) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("Panic during execution: %v\n", r)
+			fmt.Fprintf(os.Stderr, "Panic during execution: %v\n", r)
+			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
 
-	err := repl.EvalSource(input, os.Stdout, noColor, debug, false, trace)
+	err = repl.EvalSource(input, os.Stdout, noColor, debug, false, trace)
 	if err != nil {
-		fmt.Printf("\033[31mExecution Error: %v\033[0m\n", err)
+		fmt.Fprintf(os.Stderr, "\033[31mExecution Error: %v\033[0m\n", err)
 		return err
 	}
 	return nil
