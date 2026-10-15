@@ -21,7 +21,14 @@ var (
 	output io.Writer = os.Stdout
 	// Trace mode for debugging
 	traceMode bool = false
+
+	// Number of user function calls currently on the stack
+	callDepth int
 )
+
+// maxCallDepth limits recursion so runaway calls fail with an error
+// instead of overflowing the Go stack.
+const maxCallDepth = 10000
 
 // SetOutput sets the writer to use for print statements
 func SetOutput(w io.Writer) {
@@ -188,7 +195,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if len(args) == 1 && isError(args[0]) {
 			return args[0]
 		}
-		return applyFunction(function, args)
+		result := applyFunction(function, args)
+		if err, ok := result.(*object.Error); ok && err.Line == 0 {
+			err.Line, err.Column = node.Token.Line, node.Token.Column
+		}
+		return result
 
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
@@ -659,6 +670,12 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		if fn == nil {
 			return newError(0, 0, "function object is nil")
 		}
+		if callDepth >= maxCallDepth {
+			return newError(0, 0, "maximum call depth exceeded (%d)", maxCallDepth)
+		}
+		callDepth++
+		defer func() { callDepth-- }()
+
 		extendedEnv := extendFunctionEnv(fn, args)
 
 		evaluated := Eval(fn.Body, extendedEnv)
