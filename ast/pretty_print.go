@@ -160,11 +160,10 @@ func prettyPrintNode(node Node, level int) string {
 
 	case *HashLiteral:
 		result += "{"
-		i := 0
-		for _, pair := range n.Pairs {
+		for i, name := range n.Order {
+			pair := n.Pairs[name]
 			result += prettyPrintNode(pair.Key, 0) + ": " + prettyPrintNode(pair.Value, 0)
-			i++
-			if i < len(n.Pairs) {
+			if i < len(n.Order)-1 {
 				result += ", "
 			}
 		}

@@ -716,6 +716,7 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		keyName = str.Value
 	}
 
+	hash.Order = append(hash.Order, keyName)
 	hash.Pairs[keyName] = ast.HashPair{Key: key, Value: value}
 
 	for p.peekTokenIs(token.COMMA) {
@@ -737,6 +738,9 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 			keyName = str.Value
 		}
 
+		if _, exists := hash.Pairs[keyName]; !exists {
+			hash.Order = append(hash.Order, keyName)
+		}
 		hash.Pairs[keyName] = ast.HashPair{Key: key, Value: value}
 	}
 

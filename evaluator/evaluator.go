@@ -258,10 +258,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			propertyName := left.Property.Value
 
 			if hash, ok := obj.(*object.Hash); ok {
-				key := &object.String{Value: propertyName}
-				hashKey := key.HashKey()
-
-				hash.Pairs[hashKey] = object.HashPair{Key: key, Value: val}
+				hash.Set(&object.String{Value: propertyName}, val)
 				return val
 			}
 
@@ -299,7 +296,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 					return newError(node.Token.Line, node.Token.Column, "unusable as hash key: %s", index.Type())
 				}
 
-				hash.Pairs[hashable.HashKey()] = object.HashPair{Key: index, Value: val}
+				hash.Set(hashable, val)
 				return val
 			}
 
@@ -736,10 +733,17 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 }
 
 func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
-	pairs := make(map[object.HashKey]object.HashPair)
+	hash := object.NewHash()
 
-	for _, pair := range node.Pairs {
-		key := Eval(pair.Key, env)
+	for _, name := range node.Order {
+		pair := node.Pairs[name]
+		var key object.Object
+		if ident, ok := pair.Key.(*ast.Identifier); ok {
+			// Bare keys are names, like in `{name: "Ana"}` and `person.name`
+			key = &object.String{Value: ident.Value}
+		} else {
+			key = Eval(pair.Key, env)
+		}
 		if isError(key) {
 			return key
 		}
@@ -754,11 +758,10 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 			return value
 		}
 
-		hashed := hashKey.HashKey()
-		pairs[hashed] = object.HashPair{Key: key, Value: value}
+		hash.Set(hashKey, value)
 	}
 
-	return &object.Hash{Pairs: pairs}
+	return hash
 }
 
 func evalHashIndexExpression(hash, index object.Object, line, column int) object.Object {
@@ -1007,7 +1010,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 			keys := []object.Object{}
-			for _, pair := range obj.Pairs {
+			for _, pair := range obj.OrderedPairs() {
 				keys = append(keys, pair.Key)
 			}
 
@@ -1019,7 +1022,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 			values := []object.Object{}
-			for _, pair := range obj.Pairs {
+			for _, pair := range obj.OrderedPairs() {
 				values = append(values, pair.Value)
 			}
 

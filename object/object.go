@@ -206,6 +206,29 @@ type HashPair struct {
 
 type Hash struct {
 	Pairs map[HashKey]HashPair
+	Order []HashKey // keys of Pairs in insertion order
+}
+
+func NewHash() *Hash {
+	return &Hash{Pairs: make(map[HashKey]HashPair)}
+}
+
+// Set adds or updates a pair, keeping the original position of existing keys.
+func (h *Hash) Set(key Hashable, value Object) {
+	hashKey := key.HashKey()
+	if _, exists := h.Pairs[hashKey]; !exists {
+		h.Order = append(h.Order, hashKey)
+	}
+	h.Pairs[hashKey] = HashPair{Key: key.(Object), Value: value}
+}
+
+// OrderedPairs returns the pairs in insertion order.
+func (h *Hash) OrderedPairs() []HashPair {
+	pairs := make([]HashPair, 0, len(h.Order))
+	for _, hashKey := range h.Order {
+		pairs = append(pairs, h.Pairs[hashKey])
+	}
+	return pairs
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
@@ -213,7 +236,7 @@ func (h *Hash) Inspect() string {
 	var out bytes.Buffer
 
 	pairs := []string{}
-	for _, pair := range h.Pairs {
+	for _, pair := range h.OrderedPairs() {
 		pairs = append(pairs, fmt.Sprintf("%s: %s",
 			pair.Key.Inspect(), pair.Value.Inspect()))
 	}
