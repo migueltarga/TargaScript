@@ -59,10 +59,10 @@ func TestArraySortAndReverse(t *testing.T) {
 	}{
 		{"[3, 1, 2].sort()", "[1, 2, 3]"},
 		{"[2.5, 1, 3].sort()", "[1, 2.5, 3]"},
-		{`["pear", "apple", "fig"].sort()`, "[apple, fig, pear]"},
+		{`["pear", "apple", "fig"].sort()`, `["apple", "fig", "pear"]`},
 		{"[1, 3, 2].sort(fn(a, b) { b - a })", "[3, 2, 1]"},
 		{`let people = [{"n": "b", "age": 30}, {"n": "a", "age": 25}, {"n": "c", "age": 30}]
-people.sort(fn(a, b) { a.age - b.age }).map(fn(p) { p.n })`, "[a, b, c]"},
+people.sort(fn(a, b) { a.age - b.age }).map(fn(p) { p.n })`, `["a", "b", "c"]`},
 		{"let a = [3, 1, 2]\na.sort()\na", "[1, 2, 3]"},
 		{"[].sort()", "[]"},
 		{"[1, 2, 3].reverse()", "[3, 2, 1]"},

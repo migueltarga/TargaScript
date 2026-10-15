@@ -10,7 +10,7 @@ func TestRepeatOverHash(t *testing.T) {
 		{`let h = {"b": 2, "a": 1, "c": 3}
 let keys = []
 repeat k in h { keys = keys.insert(k) }
-keys`, "[b, a, c]"},
+keys`, `["b", "a", "c"]`},
 		{`let h = {"x": 10, "y": 20}
 let total = 0
 repeat k in h { total = total + h[k] }
@@ -18,10 +18,10 @@ total`, "30"},
 		{`let h = {1: "one", true: "yes"}
 let out = []
 repeat k in h { out = out.insert(type(k)) }
-out`, "[INTEGER, BOOLEAN]"},
+out`, `["INTEGER", "BOOLEAN"]`},
 		{`let h = {"a": 1}
 repeat k in h { h[k + "2"] = 2 }
-h`, "{a: 1, a2: 2}"},
+h`, `{"a": 1, "a2": 2}`},
 		{`let n = 0
 repeat k in {} { n = n + 1 }
 n`, "0"},

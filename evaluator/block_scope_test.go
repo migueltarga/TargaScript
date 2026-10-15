@@ -17,7 +17,7 @@ repeat i in 3 { fns = fns.insert(fn() { i }) }
 fns.map(fn(f) { f() })`, "[1, 2, 3]"},
 		{`let fns = []
 repeat x in ["a", "b"] { fns = fns.insert(fn() { x }) }
-fns.map(fn(f) { f() })`, "[a, b]"},
+fns.map(fn(f) { f() })`, `["a", "b"]`},
 		{`let fns = []
 let n = 0
 repeat n < 2 {

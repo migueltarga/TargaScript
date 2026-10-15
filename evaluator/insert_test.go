@@ -11,7 +11,7 @@ func TestArrayInsertModifiesArray(t *testing.T) {
 		{"let a = []\na = a.insert(1)\na", "[1]"},
 		{"let a = [1]\nlet b = a\nb.insert(2)\na", "[1, 2]"},
 		{"let a = [1]\na.insert(2).insert(3)\na", "[1, 2, 3]"},
-		{"let h = {\"items\": []}\nh.items.insert(\"x\")\nh.items", "[x]"},
+		{"let h = {\"items\": []}\nh.items.insert(\"x\")\nh.items", `["x"]`},
 	}
 
 	for _, tt := range tests {
