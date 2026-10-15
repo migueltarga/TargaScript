@@ -11,11 +11,9 @@ import (
 )
 
 var (
-	NULL     = &object.Null{}
-	TRUE     = &object.Boolean{Value: true}
-	FALSE    = &object.Boolean{Value: false}
-	BREAK    = &object.Break{}
-	CONTINUE = &object.Continue{}
+	NULL  = &object.Null{}
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
 
 	// Default output to stdout
 	output io.Writer = os.Stdout
@@ -105,10 +103,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return fn
 
 	case *ast.BreakStatement:
-		return BREAK
+		return &object.Break{Line: node.Token.Line, Column: node.Token.Column}
 
 	case *ast.ContinueStatement:
-		return CONTINUE
+		return &object.Continue{Line: node.Token.Line, Column: node.Token.Column}
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -329,6 +327,9 @@ func evalProgram(statements []ast.Statement, env *object.Environment) object.Obj
 			return result.Value
 		case *object.Error:
 			return result
+		}
+		if err := loopControlError(result); err != nil {
+			return err
 		}
 	}
 
@@ -659,6 +660,9 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		extendedEnv := extendFunctionEnv(fn, args)
 
 		evaluated := Eval(fn.Body, extendedEnv)
+		if err := loopControlError(evaluated); err != nil {
+			return err
+		}
 
 		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
@@ -683,6 +687,17 @@ func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Enviro
 	}
 
 	return env
+}
+
+// loopControlError reports a break or continue that escaped every loop.
+func loopControlError(obj object.Object) *object.Error {
+	switch obj := obj.(type) {
+	case *object.Break:
+		return newError(obj.Line, obj.Column, "break outside of a loop")
+	case *object.Continue:
+		return newError(obj.Line, obj.Column, "continue outside of a loop")
+	}
+	return nil
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {

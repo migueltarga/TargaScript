@@ -87,12 +87,18 @@ type Null struct{}
 func (n *Null) Type() ObjectType { return NULL_OBJ }
 func (n *Null) Inspect() string  { return "null" }
 
-type Break struct{}
+type Break struct {
+	Line   int
+	Column int
+}
 
 func (b *Break) Type() ObjectType { return BREAK_OBJ }
 func (b *Break) Inspect() string  { return "break" }
 
-type Continue struct{}
+type Continue struct {
+	Line   int
+	Column int
+}
 
 func (c *Continue) Type() ObjectType { return CONTINUE_OBJ }
 func (c *Continue) Inspect() string  { return "continue" }
