@@ -1,0 +1,143 @@
+package evaluator
+
+import (
+	"sort"
+
+	"github.com/migueltarga/TargaScript/object"
+)
+
+// evalArraySearchMethod handles the array methods that search, slice or
+// reorder elements. ok is false when method isn't one of them.
+func evalArraySearchMethod(arr *object.Array, method string, args []object.Object, line, column int) (result object.Object, ok bool) {
+	switch method {
+	case "contains", "indexOf":
+		if len(args) != 1 {
+			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want 1", method, len(args)), true
+		}
+		index := int64(-1)
+		for i, element := range arr.Elements {
+			if objectsEqual(element, args[0]) {
+				index = int64(i)
+				break
+			}
+		}
+		if method == "contains" {
+			return nativeBoolToBooleanObject(index >= 0), true
+		}
+		return &object.Integer{Value: index}, true
+
+	case "find":
+		if len(args) != 1 || !isCallable(args[0]) {
+			return newError(line, column, "array.find() takes one FUNCTION argument"), true
+		}
+		for _, element := range arr.Elements {
+			matched := applyFunction(args[0], []object.Object{element})
+			if isError(matched) {
+				return matched, true
+			}
+			if isTruthy(matched) {
+				return element, true
+			}
+		}
+		return NULL, true
+
+	case "slice":
+		if len(args) < 1 || len(args) > 2 {
+			return newError(line, column, "wrong number of arguments for array.slice(): got %d, want 1 or 2", len(args)), true
+		}
+		length := int64(len(arr.Elements))
+		bounds := []int64{0, length}
+		for i, arg := range args {
+			n, isInt := arg.(*object.Integer)
+			if !isInt {
+				return newError(line, column, "arguments to array.slice() must be INTEGER, got %s", arg.Type()), true
+			}
+			bounds[i] = clampSliceIndex(n.Value, length)
+		}
+		start, end := bounds[0], bounds[1]
+		if start > end {
+			start = end
+		}
+		elements := make([]object.Object, end-start)
+		copy(elements, arr.Elements[start:end])
+		return &object.Array{Elements: elements}, true
+
+	case "reverse":
+		if len(args) != 0 {
+			return newError(line, column, "wrong number of arguments for array.reverse(): got %d, want 0", len(args)), true
+		}
+		for i, j := 0, len(arr.Elements)-1; i < j; i, j = i+1, j-1 {
+			arr.Elements[i], arr.Elements[j] = arr.Elements[j], arr.Elements[i]
+		}
+		return arr, true
+
+	case "sort":
+		if len(args) > 1 || (len(args) == 1 && !isCallable(args[0])) {
+			return newError(line, column, "array.sort() takes an optional FUNCTION argument"), true
+		}
+		if err := sortArray(arr, args, line, column); err != nil {
+			return err, true
+		}
+		return arr, true
+	}
+
+	return nil, false
+}
+
+// clampSliceIndex turns a slice() index into a position in [0, length].
+// Negative indexes count from the end.
+func clampSliceIndex(index, length int64) int64 {
+	if index < 0 {
+		index += length
+	}
+	if index < 0 {
+		return 0
+	}
+	if index > length {
+		return length
+	}
+	return index
+}
+
+// sortArray sorts in place. With a compare function, its result decides the
+// order like in JavaScript: negative if a comes first, positive if b does.
+// Without one, elements must all be numbers or all be strings.
+func sortArray(arr *object.Array, args []object.Object, line, column int) *object.Error {
+	var sortErr *object.Error
+
+	less := func(a, b object.Object) bool {
+		if sortErr != nil {
+			return false
+		}
+		if len(args) == 1 {
+			result := applyFunction(args[0], []object.Object{a, b})
+			switch result := result.(type) {
+			case *object.Error:
+				sortErr = result
+			case *object.Integer:
+				return result.Value < 0
+			case *object.Float:
+				return result.Value < 0
+			default:
+				sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", result.Type())
+			}
+			return false
+		}
+
+		lt := evalInfixExpression("<", a, b, line, column)
+		if errObj, isErr := lt.(*object.Error); isErr {
+			sortErr = newError(line, column, "cannot sort: %s", errObj.Message)
+			return false
+		}
+		return lt == TRUE
+	}
+
+	sort.SliceStable(arr.Elements, func(i, j int) bool {
+		return less(arr.Elements[i], arr.Elements[j])
+	})
+	return sortErr
+}
+
+func objectsEqual(a, b object.Object) bool {
+	return evalInfixExpression("==", a, b, 0, 0) == TRUE
+}

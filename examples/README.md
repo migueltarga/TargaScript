@@ -106,6 +106,12 @@ Arrays support the following method-style operations:
 - `array.map(function)` - Transform each element
 - `array.filter(function)` - Filter elements by a condition
 - `array.reduce(function, initialValue)` - Reduce to a single value
+- `array.contains(value)` - Whether the array has an element equal to `value`
+- `array.indexOf(value)` - Position of the first element equal to `value`, or -1
+- `array.find(function)` - First element for which the function returns true, or `null`
+- `array.slice(start, end)` - Copy of the elements from `start` up to (not including) `end`; negative positions count from the end, and `end` is optional
+- `array.sort()` / `array.sort(compare)` - Sort the array in place and return it. Without `compare`, elements must be all numbers or all strings; `compare(a, b)` returns a negative number when `a` comes first
+- `array.reverse()` - Reverse the array in place and return it
 
 Example of array method chaining:
 ```
