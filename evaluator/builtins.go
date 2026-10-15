@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"strconv"
 	"time"
 
@@ -495,9 +496,7 @@ func init() {
 					}
 				}
 
-				// Using current time nanoseconds to generate a pseudo-random number between 0 and 1
-				// This is not cryptographically secure but sufficient for basic randomness
-				return &object.Float{Value: float64(time.Now().UnixNano()%10000) / 10000.0}
+				return &object.Float{Value: rand.Float64()}
 			},
 		},
 
