@@ -1078,135 +1078,15 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 		fmt.Fprintf(os.Stdout, "TRACE: Entering repeat statement\n")
 	}
 
-	if rs.Iterator != nil && rs.Collection != nil {
-		collection := Eval(rs.Collection, env)
-		if isError(collection) {
-			return collection
-		}
-
-		if traceMode {
-			fmt.Fprintf(os.Stdout, "TRACE: Repeat collection evaluated to type: %s\n", collection.Type())
-			if collection.Type() == object.ARRAY_OBJ {
-				arr := collection.(*object.Array)
-				fmt.Fprintf(os.Stdout, "TRACE: Array has %d elements\n", len(arr.Elements))
-				for i, elem := range arr.Elements {
-					fmt.Fprintf(os.Stdout, "TRACE: Element %d: %s (%s)\n",
-						i, elem.Type(), elem.Inspect())
-				}
-			}
-		}
-
-		switch collection := collection.(type) {
-		case *object.Array:
-			if len(collection.Elements) == 0 && traceMode {
-				fmt.Fprintf(os.Stdout, "TRACE: Empty array in repeat statement\n")
-			}
-
-			for _, element := range collection.Elements {
-				loopEnv.SetLocal(rs.Iterator.Value, element)
-
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with element: %s\n", element.Inspect())
-				}
-
-				result := Eval(rs.Body, loopEnv)
-
-				if traceMode {
-					if result == nil {
-						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
-					} else {
-						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
-							result.Type(), result.Inspect())
-					}
-				}
-
-				// Only propagate error or return objects
-				// Break and Continue should only affect the current loop
-				if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
-					}
-					return result
-				}
-
-				if result != nil && result.Type() == object.BREAK_OBJ {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
-					}
-					break
-				}
-
-				if result != nil && result.Type() == object.CONTINUE_OBJ {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
-					}
-					continue
-				}
-			}
-
-		case *object.Integer:
-			end := collection.Value
-
-			for i := int64(1); i <= end; i++ {
-				loopEnv.SetLocal(rs.Iterator.Value, &object.Integer{Value: i})
-
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with i = %d\n", i)
-				}
-
-				result := Eval(rs.Body, loopEnv)
-
-				if traceMode {
-					if result == nil {
-						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
-					} else {
-						fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
-							result.Type(), result.Inspect())
-					}
-				}
-
-				// Only propagate error or return objects
-				// Break and Continue should only affect the current loop
-				if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
-					}
-					return result
-				}
-
-				if result != nil && result.Type() == object.BREAK_OBJ {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
-					}
-					break
-				}
-
-				if result != nil && result.Type() == object.CONTINUE_OBJ {
-					if traceMode {
-						fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
-					}
-					continue
-				}
-			}
-
-		default:
-			return newError(rs.Token.Line, rs.Token.Column,
-				"cannot iterate over %s", collection.Type())
-		}
-
-		if traceMode {
-			fmt.Fprintf(os.Stdout, "TRACE: Exiting repeat statement normally\n")
-		}
-		return NULL
+	if rs.Collection == nil {
+		return newError(rs.Token.Line, rs.Token.Column,
+			"invalid repeat statement: missing iterator or condition")
 	}
 
-	if rs.Collection != nil && rs.Iterator == nil {
-		// Create enclosed environment for condition-based loops as well
-		conditionEnv := object.NewEnclosedEnvironment(env)
-
+	if rs.Iterator == nil {
 		for {
 			// Evaluate condition in the loop environment
-			condition := Eval(rs.Collection, conditionEnv)
+			condition := Eval(rs.Collection, loopEnv)
 			if isError(condition) {
 				return condition
 			}
@@ -1218,54 +1098,67 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 				break
 			}
 
-			if traceMode {
-				fmt.Fprintf(os.Stdout, "TRACE: Condition is truthy, continuing loop\n")
-			}
-
-			// Run loop body in the loop environment
-			result := Eval(rs.Body, conditionEnv)
-
-			if traceMode {
-				if result == nil {
-					fmt.Fprintf(os.Stdout, "TRACE: Loop body returned nil\n")
-				} else {
-					fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n",
-						result.Type(), result.Inspect())
-				}
-			}
-
-			// Only propagate error or return objects
-			// Break and Continue should only affect the current loop
-			if result != nil && (result.Type() == object.ERROR_OBJ || result.Type() == object.RETURN_VALUE_OBJ) {
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Propagating %s up from loop\n", result.Type())
-				}
+			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
 				return result
 			}
-
-			if result != nil && result.Type() == object.BREAK_OBJ {
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Breaking out of loop\n")
-				}
-				break
-			}
-
-			if result != nil && result.Type() == object.CONTINUE_OBJ {
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Continuing to next iteration\n")
-				}
-				continue
-			}
-		}
-
-		if traceMode {
-			fmt.Fprintf(os.Stdout, "TRACE: Exiting repeat statement normally\n")
 		}
 		return NULL
 	}
 
-	return newError(rs.Token.Line, rs.Token.Column,
-		"invalid repeat statement: missing iterator or condition")
+	collection := Eval(rs.Collection, env)
+	if isError(collection) {
+		return collection
+	}
+
+	if traceMode {
+		fmt.Fprintf(os.Stdout, "TRACE: Repeat collection evaluated to: %s (%s)\n",
+			collection.Type(), collection.Inspect())
+	}
+
+	switch collection := collection.(type) {
+	case *object.Array:
+		for _, element := range collection.Elements {
+			loopEnv.SetLocal(rs.Iterator.Value, element)
+			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
+				return result
+			}
+		}
+
+	case *object.Integer:
+		for i := int64(1); i <= collection.Value; i++ {
+			loopEnv.SetLocal(rs.Iterator.Value, &object.Integer{Value: i})
+			if result, stop := runLoopBody(rs.Body, loopEnv); stop {
+				return result
+			}
+		}
+
+	default:
+		return newError(rs.Token.Line, rs.Token.Column,
+			"cannot iterate over %s", collection.Type())
+	}
+
+	return NULL
+}
+
+// runLoopBody evaluates one loop iteration. It reports stop when the loop must
+// end, returning what the loop should evaluate to: the error or return value
+// to propagate, or NULL after a break.
+func runLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
+	result := Eval(body, env)
+
+	if traceMode && result != nil {
+		fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n", result.Type(), result.Inspect())
+	}
+
+	switch result.(type) {
+	case *object.Error, *object.ReturnValue:
+		return result, true
+	case *object.Break:
+		return NULL, true
+	default:
+		// Continue and normal results move on to the next iteration
+		return nil, false
+	}
 }
 
 func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object.Object {
