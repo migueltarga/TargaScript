@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/object"
@@ -772,7 +773,7 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 		propertyName := node.Property.Value
 		switch propertyName {
 		case "length":
-			return &object.Integer{Value: int64(len(obj.Value))}
+			return &object.Integer{Value: int64(utf8.RuneCountInString(obj.Value))}
 		default:
 			return newError(node.Token.Line, node.Token.Column, "string has no property '%s'", propertyName)
 		}
