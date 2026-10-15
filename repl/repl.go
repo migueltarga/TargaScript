@@ -15,6 +15,16 @@ import (
 const PROMPT = ">> "
 
 func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
+	return evalSource(source, newEnvironment(), out, noColor, debug, isRepl, trace)
+}
+
+func newEnvironment() *object.Environment {
+	env := object.NewEnvironment()
+	env.Set("NULL", evaluator.NULL)
+	return env
+}
+
+func evalSource(source string, env *object.Environment, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParseProgram()
@@ -35,9 +45,6 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl b
 
 	evaluator.SetTraceMode(trace)
 	evaluator.SetOutput(out)
-
-	env := object.NewEnvironment()
-	env.Set("NULL", evaluator.NULL)
 
 	var evaluated object.Object
 	func() {
@@ -83,6 +90,7 @@ func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl b
 
 func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 	scanner := bufio.NewScanner(in)
+	env := newEnvironment()
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -92,7 +100,7 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 		}
 
 		line := scanner.Text()
-		EvalSource(line, out, noColor, debug, true, trace)
+		evalSource(line, env, out, noColor, debug, true, trace)
 	}
 }
 
