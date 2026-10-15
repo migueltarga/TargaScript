@@ -135,8 +135,12 @@ func (l *Lexer) NextToken() token.Token {
 	case ']':
 		tok = l.newToken(token.RBRACKET, string(l.ch), tokenLine, tokenColumn)
 	case '"':
-		literal := l.readString()
-		tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
+		literal, terminated := l.readString()
+		if terminated {
+			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
+		} else {
+			tok = l.newToken(token.ILLEGAL, "\""+literal, tokenLine, tokenColumn)
+		}
 		l.readChar()
 		return tok
 	case 0:
@@ -260,7 +264,8 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 	return token.INT, lit
 }
 
-func (l *Lexer) readString() string {
+// readString reads a string literal and reports whether its closing quote was found.
+func (l *Lexer) readString() (string, bool) {
 	escaped := false
 	var result strings.Builder
 
@@ -268,7 +273,7 @@ func (l *Lexer) readString() string {
 		l.readChar()
 
 		if l.ch == 0 {
-			break
+			return result.String(), false
 		}
 
 		if escaped {
@@ -297,7 +302,7 @@ func (l *Lexer) readString() string {
 		}
 	}
 
-	return result.String()
+	return result.String(), true
 }
 
 func isLetter(ch rune) bool {
