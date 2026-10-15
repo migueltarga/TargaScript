@@ -378,10 +378,6 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return newError(line, column, "cannot evaluate infix expression: one of the operands is nil")
 	}
 
-	if operator == "&&" || operator == "||" {
-		return evalLogicalInfixExpression(operator, left, right, line, column)
-	}
-
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right, line, column)
@@ -409,23 +405,6 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
-	}
-}
-
-func evalLogicalInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
-	switch operator {
-	case "&&":
-		if !isTruthy(left) {
-			return left
-		}
-		return right
-	case "||":
-		if isTruthy(left) {
-			return left
-		}
-		return right
-	default:
-		return newError(line, column, "unknown logical operator: %s", operator)
 	}
 }
 
@@ -494,16 +473,6 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 		return nativeBoolToBooleanObject(leftVal <= rightVal)
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
-	case "&&":
-		if leftVal != 0 && rightVal != 0 {
-			return TRUE
-		}
-		return FALSE
-	case "||":
-		if leftVal != 0 || rightVal != 0 {
-			return TRUE
-		}
-		return FALSE
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
@@ -543,16 +512,6 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 		return nativeBoolToBooleanObject(leftVal <= rightVal)
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
-	case "&&":
-		if leftVal != 0 && rightVal != 0 {
-			return TRUE
-		}
-		return FALSE
-	case "||":
-		if leftVal != 0 || rightVal != 0 {
-			return TRUE
-		}
-		return FALSE
 	default:
 		return newError(line, column, "unknown operator: %s %s %s",
 			left.Type(), operator, right.Type())
@@ -1299,7 +1258,7 @@ func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object
 		if arg == nil {
 			values[i] = "nil"
 		} else {
-			values[i] = formatPrintValue(arg)
+			values[i] = objectToString(arg)
 		}
 	}
 
@@ -1331,19 +1290,11 @@ func objectToString(obj object.Object) string {
 	}
 }
 
-func formatPrintValue(obj object.Object) string {
-	return objectToString(obj)
-}
-
 func evalBooleanInfixExpression(operator string, left, right object.Object, line, column int) object.Object {
 	leftVal := left.(*object.Boolean).Value
 	rightVal := right.(*object.Boolean).Value
 
 	switch operator {
-	case "&&":
-		return nativeBoolToBooleanObject(leftVal && rightVal)
-	case "||":
-		return nativeBoolToBooleanObject(leftVal || rightVal)
 	case "==":
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	case "!=":
