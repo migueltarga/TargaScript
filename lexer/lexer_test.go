@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/migueltarga/TargaScript/token"
@@ -290,6 +291,46 @@ let valid = 15;
 		if tok.Literal != tt.expectedLiteral {
 			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
 				i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
+
+func TestUnicodeInput(t *testing.T) {
+	input := `let café = "olá 🚀"
+café`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+		expectedLine    int
+	}{
+		{token.LET, "let", 1},
+		{token.IDENT, "café", 1},
+		{token.ASSIGN, "=", 1},
+		{token.STRING, "olá 🚀", 1},
+		{token.IDENT, "café", 2},
+		{token.EOF, "", 2},
+	}
+
+	l := New(input)
+	for i, tt := range tests {
+		tok := l.NextToken()
+		if tok.Type != tt.expectedType || tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - got %s %q, want %s %q",
+				i, tok.Type, tok.Literal, tt.expectedType, tt.expectedLiteral)
+		}
+		if tok.Line != tt.expectedLine {
+			t.Fatalf("tests[%d] - %q at line %d, want %d",
+				i, tok.Literal, tok.Line, tt.expectedLine)
+		}
+	}
+}
+
+func BenchmarkLexer(b *testing.B) {
+	input := strings.Repeat("let a = 1 + 2.5 * \"text\"\n", 5000)
+	for i := 0; i < b.N; i++ {
+		l := New(input)
+		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
 		}
 	}
 }
