@@ -919,12 +919,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for array.insert(): got %d, want 1", len(args))
 			}
 
-			length := len(obj.Elements)
-			newElements := make([]object.Object, length+1)
-			copy(newElements, obj.Elements)
-			newElements[length] = args[0]
-
-			return &object.Array{Elements: newElements}
+			// Appends in place, like index assignment, and returns the same array
+			obj.Elements = append(obj.Elements, args[0])
+			return obj
 		case "rest":
 			if len(args) != 0 {
 				return newError(line, column, "wrong number of arguments for array.rest(): got %d, want 0", len(args))
