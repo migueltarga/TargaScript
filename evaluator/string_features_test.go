@@ -36,7 +36,7 @@ func TestRepeatOverString(t *testing.T) {
 	}{
 		{`let out = []
 repeat c in "abc" { out = out.insert(c) }
-out`, "[a, b, c]"},
+out`, `["a", "b", "c"]`},
 		{`let n = 0
 repeat c in "olá 🚀" { n = n + 1 }
 n`, "5"},

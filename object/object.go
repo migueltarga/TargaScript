@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -189,7 +190,7 @@ func (ao *Array) Inspect() string {
 
 	elements := []string{}
 	for _, e := range ao.Elements {
-		elements = append(elements, e.Inspect())
+		elements = append(elements, inspectNested(e))
 	}
 
 	out.WriteString("[")
@@ -238,7 +239,7 @@ func (h *Hash) Inspect() string {
 	pairs := []string{}
 	for _, pair := range h.OrderedPairs() {
 		pairs = append(pairs, fmt.Sprintf("%s: %s",
-			pair.Key.Inspect(), pair.Value.Inspect()))
+			inspectNested(pair.Key), inspectNested(pair.Value)))
 	}
 
 	out.WriteString("{")
@@ -246,4 +247,13 @@ func (h *Hash) Inspect() string {
 	out.WriteString("}")
 
 	return out.String()
+}
+
+// inspectNested formats a value inside an array or hash. Strings are quoted
+// there, so ["1", 1] and {"a": "b"} print unambiguously.
+func inspectNested(obj Object) string {
+	if str, ok := obj.(*String); ok {
+		return strconv.Quote(str.Value)
+	}
+	return obj.Inspect()
 }

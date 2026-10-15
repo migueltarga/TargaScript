@@ -383,7 +383,8 @@ func TestStringConcatenation(t *testing.T) {
 		{`"Is it true? " + true`, "Is it true? true"},
 		{`"Null value: " + null`, "Null value: null"},
 		{`"Array: " + [1, 2, 3]`, "Array: [1, 2, 3]"},
-		{`"Object: " + {"name": "Alice", "age": 30}`, "Object: {name: Alice, age: 30}"},
+		{`"Object: " + {"name": "Alice", "age": 30}`, `Object: {"name": "Alice", "age": 30}`},
+		{`"Names: " + ["a", "b"]`, `Names: ["a", "b"]`},
 		{`"Count: " + 123 + ", Valid: " + true`, "Count: 123, Valid: true"},
 	}
 
@@ -394,14 +395,7 @@ func TestStringConcatenation(t *testing.T) {
 			t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
 		}
 
-		if strings.Contains(tt.input, "Object:") && strings.Contains(tt.input, "name") {
-			if !strings.Contains(str.Value, "Object:") ||
-				!strings.Contains(str.Value, "name: Alice") ||
-				!strings.Contains(str.Value, "age: 30") {
-				t.Errorf("String does not contain expected substrings for %q.\nexpected=%q\ngot=%q",
-					tt.input, tt.expected, str.Value)
-			}
-		} else if str.Value != tt.expected {
+		if str.Value != tt.expected {
 			t.Errorf("String has wrong value for %q.\nexpected=%q\ngot=%q",
 				tt.input, tt.expected, str.Value)
 		}

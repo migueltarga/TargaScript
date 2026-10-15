@@ -17,7 +17,7 @@ func TestPostfixOperators(t *testing.T) {
 		{"let f = 1.5\nf++\nf", "2.5"},
 		{"let h = {\"count\": 0}\nh.count++\nh.count++\nh.count", "2"},
 		{"let a = [5, 6]\na[1]--\na", "[5, 5]"},
-		{"let h = {\"k\": 1}\nh[\"k\"]++\nh", "{k: 2}"},
+		{"let h = {\"k\": 1}\nh[\"k\"]++\nh", `{"k": 2}`},
 		{"let n = 0\nrepeat i in 3 { n++ }\nn", "3"},
 		{"let n = 10\nlet i = 0\nrepeat i < 3 { i++\nn-- }\nn", "7"},
 		{"let x = 1\nx++ + 10", "12"},

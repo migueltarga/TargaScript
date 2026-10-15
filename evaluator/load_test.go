@@ -44,7 +44,7 @@ func TestLoad(t *testing.T) {
 		{"load \"lib/math.tg\"\nsquare(3)", "9"},
 		{"load \"lib/math.tg\"\nPI", "3"},
 		{"load \"lib/math.tg\" as m\nm.square(5) + m.PI", "28"},
-		{"load \"lib/math.tg\" as m\nm.keys()", "[PI, loads, square]"},
+		{"load \"lib/math.tg\" as m\nm.keys()", `["PI", "loads", "square"]`},
 		// Paths inside a module are relative to that module's file
 		{"load \"lib/geo.tg\" as geo\ngeo.area(2)", "12"},
 		{"load \"lib/geo.tg\" as geo\ngeo.later()", "16"},
