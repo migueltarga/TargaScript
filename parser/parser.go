@@ -593,27 +593,9 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
-	var identifiers []*ast.Identifier
+	identifiers := []*ast.Identifier{}
 
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return identifiers
-	}
-
-	p.nextToken()
-
-	if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
-		msg := fmt.Sprintf("line %d:%d: invalid parameter name '%s': parameter names cannot start with a digit",
-			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-	identifiers = append(identifiers, ident)
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
+	for !p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
 
 		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
@@ -622,9 +604,19 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 			p.errors = append(p.errors, msg)
 			return nil
 		}
+		if !p.curTokenIs(token.IDENT) {
+			msg := fmt.Sprintf("line %d:%d: expected parameter name, got %q",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+			p.errors = append(p.errors, msg)
+			return nil
+		}
 
-		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-		identifiers = append(identifiers, ident)
+		identifiers = append(identifiers, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+		if !p.peekTokenIs(token.COMMA) {
+			break
+		}
+		p.nextToken()
 	}
 
 	if !p.expectPeek(token.RPAREN) {
@@ -641,27 +633,7 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
-
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return args
-	}
-
-	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
-	}
-
-	return args
+	return p.parseExpressionList(token.RPAREN)
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
@@ -746,20 +718,17 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 }
 
 func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
-	var list []ast.Expression
+	list := []ast.Expression{}
 
-	if p.peekTokenIs(end) {
-		p.nextToken()
-		return list
-	}
-
-	p.nextToken()
-	list = append(list, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
+	// A trailing comma before the closing token is allowed
+	for !p.peekTokenIs(end) {
 		p.nextToken()
 		list = append(list, p.parseExpression(LOWEST))
+
+		if !p.peekTokenIs(token.COMMA) {
+			break
+		}
+		p.nextToken()
 	}
 
 	if !p.expectPeek(end) {
@@ -853,26 +822,15 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 	if p.peekTokenIs(token.LPAREN) {
 		methodCall := &ast.MethodCallExpression{
-			Token:     expression.Token,
-			Object:    left,
-			Method:    propertyName,
-			Arguments: []ast.Expression{},
+			Token:  expression.Token,
+			Object: left,
+			Method: propertyName,
 		}
 
 		p.nextToken()
 
-		if !p.peekTokenIs(token.RPAREN) {
-			p.nextToken()
-			methodCall.Arguments = append(methodCall.Arguments, p.parseExpression(LOWEST))
-
-			for p.peekTokenIs(token.COMMA) {
-				p.nextToken()
-				p.nextToken()
-				methodCall.Arguments = append(methodCall.Arguments, p.parseExpression(LOWEST))
-			}
-		}
-
-		if !p.expectPeek(token.RPAREN) {
+		methodCall.Arguments = p.parseExpressionList(token.RPAREN)
+		if methodCall.Arguments == nil {
 			return nil
 		}
 
@@ -897,27 +855,13 @@ func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
 
 func (p *Parser) parsePrintStatement() *ast.PrintStatement {
 	stmt := &ast.PrintStatement{Token: p.curToken}
-	stmt.Arguments = []ast.Expression{}
 
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
 
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return stmt
-	}
-
-	p.nextToken()
-	stmt.Arguments = append(stmt.Arguments, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-		stmt.Arguments = append(stmt.Arguments, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectPeek(token.RPAREN) {
+	stmt.Arguments = p.parseExpressionList(token.RPAREN)
+	if stmt.Arguments == nil {
 		return nil
 	}
 
