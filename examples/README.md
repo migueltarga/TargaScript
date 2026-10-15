@@ -89,6 +89,12 @@ Strings support the following method-style operations:
 - `str.upper()` - Convert to uppercase
 - `str.replace(old, new)` - Replace all occurrences of 'old' with 'new'
 - `str.split(delimiter)` - Split into an array of substrings
+- `str.contains(sub)` - Whether `sub` appears in the string
+- `str.startsWith(prefix)` / `str.endsWith(suffix)` - Check the start or end
+- `str.indexOf(sub)` - Position of the first `sub`, or -1
+- `str[i]` - The character at position `i` (`null` when out of range)
+
+`repeat c in str { ... }` iterates over the characters of a string.
 
 Example of string method chaining:
 ```

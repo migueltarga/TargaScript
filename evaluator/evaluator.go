@@ -728,6 +728,13 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		return evalArrayIndexExpression(left, index)
 	case left.Type() == object.HASH_OBJ:
 		return evalHashIndexExpression(left, index, line, column)
+	case left.Type() == object.STRING_OBJ && index.Type() == object.INTEGER_OBJ:
+		chars := []rune(left.(*object.String).Value)
+		idx := index.(*object.Integer).Value
+		if idx < 0 || idx >= int64(len(chars)) {
+			return NULL
+		}
+		return &object.String{Value: string(chars[idx])}
 	default:
 		return newError(line, column, "index operator not supported: %s", left.Type())
 	}
@@ -886,6 +893,31 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 			return &object.Array{Elements: elements}
+
+		case "contains", "indexOf", "startsWith", "endsWith":
+			if len(args) != 1 {
+				return newError(line, column, "wrong number of arguments for string.%s(): got %d, want 1", method, len(args))
+			}
+			sub, ok := args[0].(*object.String)
+			if !ok {
+				return newError(line, column, "argument to string.%s() must be STRING, got %s", method, args[0].Type())
+			}
+
+			switch method {
+			case "contains":
+				return nativeBoolToBooleanObject(strings.Contains(obj.Value, sub.Value))
+			case "startsWith":
+				return nativeBoolToBooleanObject(strings.HasPrefix(obj.Value, sub.Value))
+			case "endsWith":
+				return nativeBoolToBooleanObject(strings.HasSuffix(obj.Value, sub.Value))
+			default:
+				// Index in characters, like string indexing and length
+				byteIndex := strings.Index(obj.Value, sub.Value)
+				if byteIndex < 0 {
+					return &object.Integer{Value: -1}
+				}
+				return &object.Integer{Value: int64(utf8.RuneCountInString(obj.Value[:byteIndex]))}
+			}
 
 		default:
 			return newError(line, column, "string has no method '%s'", method)
@@ -1137,6 +1169,13 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 	}
 
 	switch collection := collection.(type) {
+	case *object.String:
+		for _, char := range collection.Value {
+			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.String{Value: string(char)})); stop {
+				return result
+			}
+		}
+
 	case *object.Array:
 		for _, element := range collection.Elements {
 			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, element)); stop {
