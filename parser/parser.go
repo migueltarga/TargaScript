@@ -416,18 +416,8 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 func (p *Parser) parseIfExpression() ast.Expression {
 	expression := &ast.IfExpression{Token: p.curToken}
 
-	if p.peekTokenIs(token.LPAREN) {
-		p.nextToken()
-		p.nextToken()
-		expression.Condition = p.parseExpression(LOWEST)
-
-		if !p.expectPeek(token.RPAREN) {
-			return nil
-		}
-	} else {
-		p.nextToken()
-		expression.Condition = p.parseExpression(LOWEST)
-	}
+	p.nextToken()
+	expression.Condition = p.parseExpression(LOWEST)
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
