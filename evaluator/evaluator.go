@@ -910,13 +910,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for array.rest(): got %d, want 0", len(args))
 			}
 
-			length := len(obj.Elements)
-			if length > 0 {
-				newElements := make([]object.Object, length-1)
-				copy(newElements, obj.Elements[1:])
-				return &object.Array{Elements: newElements}
+			if len(obj.Elements) == 0 {
+				return &object.Array{Elements: []object.Object{}}
 			}
-			return NULL
+			newElements := make([]object.Object, len(obj.Elements)-1)
+			copy(newElements, obj.Elements[1:])
+			return &object.Array{Elements: newElements}
 		case "join":
 			if len(args) != 1 {
 				return newError(line, column, "wrong number of arguments for array.join(): got %d, want 1", len(args))
