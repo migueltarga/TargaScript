@@ -60,6 +60,9 @@ type Parser struct {
 
 	prefixParseFns map[token.TokenType]prefixParseFn
 	infixParseFns  map[token.TokenType]infixParseFn
+
+	// Number of errors already handled by statement recovery
+	recovered int
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -163,7 +166,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program.Statements = []ast.Statement{}
 
 	for !p.curTokenIs(token.EOF) {
-		stmt := p.parseStatement()
+		stmt := p.parseStatementOrRecover(false)
 		if stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}
@@ -171,6 +174,42 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 
 	return program
+}
+
+// parseStatementOrRecover parses a statement and, if it fails, keeps only its
+// first error (the later ones are usually caused by it) and skips the rest of
+// the line so parsing resumes at the next statement. Returns nil on failure.
+func (p *Parser) parseStatementOrRecover(inBlock bool) ast.Statement {
+	start := len(p.errors)
+	stmt := p.parseStatement()
+
+	// Errors already recovered inside a nested block are kept
+	if p.recovered > start {
+		start = p.recovered
+	}
+	if len(p.errors) == start {
+		return stmt
+	}
+
+	p.errors = p.errors[:start+1]
+	p.skipRestOfLine(inBlock)
+	p.recovered = len(p.errors)
+	return nil
+}
+
+// skipRestOfLine advances to the last token on the current line, stopping
+// before a closing brace when inside a block so the block can still end.
+func (p *Parser) skipRestOfLine(inBlock bool) {
+	if inBlock && p.curTokenIs(token.RBRACE) {
+		return
+	}
+	line := p.curToken.Line
+	for !p.peekTokenIs(token.EOF) && p.peekToken.Line == line {
+		if inBlock && p.peekTokenIs(token.RBRACE) {
+			return
+		}
+		p.nextToken()
+	}
 }
 
 func (p *Parser) parseStatement() ast.Statement {
@@ -207,14 +246,15 @@ func (p *Parser) parseStatement() ast.Statement {
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
+	if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
+		p.nextToken()
+		msg := fmt.Sprintf("line %d:%d: invalid variable name '%s': variable names cannot start with a digit",
+			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
 	if !p.expectPeek(token.IDENT) {
-		if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
-			p.nextToken()
-			msg := fmt.Sprintf("line %d:%d: invalid variable name '%s': variable names cannot start with a digit",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-			p.errors = append(p.errors, msg)
-			return nil
-		}
 		return nil
 	}
 
@@ -238,14 +278,15 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	stmt := &ast.ConstStatement{Token: p.curToken}
 
+	if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
+		p.nextToken()
+		msg := fmt.Sprintf("line %d:%d: invalid constant name '%s': constant names cannot start with a digit",
+			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
 	if !p.expectPeek(token.IDENT) {
-		if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
-			p.nextToken()
-			msg := fmt.Sprintf("line %d:%d: invalid constant name '%s': constant names cannot start with a digit",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-			p.errors = append(p.errors, msg)
-			return nil
-		}
 		return nil
 	}
 
@@ -484,7 +525,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	p.nextToken()
 
 	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
-		stmt := p.parseStatement()
+		stmt := p.parseStatementOrRecover(true)
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
 		}
