@@ -44,6 +44,8 @@ func TestEvalBooleanExpression(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"true || false && false", true},
+		{"false && true || true", true},
 		{"1 < 2", true},
 		{"1 > 2", false},
 		{"1 < 1", false},

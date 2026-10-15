@@ -12,7 +12,8 @@ import (
 const (
 	_ int = iota
 	LOWEST
-	LOGICAL     // && or ||
+	OR          // ||
+	AND         // &&
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -40,8 +41,8 @@ var precedences = map[token.TokenType]int{
 	token.LBRACKET: INDEX,
 	token.DOT:      INDEX,
 	token.ASSIGN:   ASSIGN,
-	token.AND:      LOGICAL,
-	token.OR:       LOGICAL,
+	token.AND:      AND,
+	token.OR:       OR,
 }
 
 type (
