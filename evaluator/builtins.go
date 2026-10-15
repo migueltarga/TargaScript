@@ -15,17 +15,6 @@ var builtins map[string]*object.Builtin
 // initBuiltins initializes all built-in functions
 func init() {
 	builtins = map[string]*object.Builtin{
-		"print": {
-			Name: "print",
-			Fn: func(args ...object.Object) object.Object {
-				for _, arg := range args {
-					fmt.Println(arg.Inspect())
-				}
-
-				return NULL
-			},
-		},
-
 		// printf - Formatted printing with support for format specifiers
 		"printf": {
 			Name: "printf",

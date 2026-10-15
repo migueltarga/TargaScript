@@ -53,73 +53,10 @@ func (e *Environment) Set(name string, val Object) (Object, bool) {
 	return val, true
 }
 
-func (e *Environment) existsInOuterScope(name string) bool {
-	if e.outer == nil {
-		return false
-	}
-
-	_, exists := e.outer.Get(name)
-	return exists
-}
-
 func (e *Environment) SetConst(name string, val Object) Object {
 	e.store[name] = val
 	e.constants[name] = true
 	return val
-}
-
-// GetAll returns all variables in the current environment
-func (e *Environment) GetAll() map[string]Object {
-	return e.store
-}
-
-func (e *Environment) GetAllWithOuter() map[string]Object {
-	result := make(map[string]Object)
-
-	current := e
-	for current.outer != nil {
-		current = current.outer
-	}
-
-	for current != nil {
-		for k, v := range current.store {
-			result[k] = v
-		}
-		current = findNextInnerEnv(current, e)
-	}
-
-	return result
-}
-
-func findNextInnerEnv(current, target *Environment) *Environment {
-	if current == target {
-		return nil
-	}
-
-	var directChildren []*Environment
-	temp := target
-	for temp != nil {
-		if temp.outer == current {
-			directChildren = append(directChildren, temp)
-		}
-		temp = temp.outer
-	}
-
-	if len(directChildren) == 0 {
-		return nil
-	}
-
-	for _, child := range directChildren {
-		path := child
-		for path != nil {
-			if path == target {
-				return child
-			}
-			path = findNextInnerEnv(path, target)
-		}
-	}
-
-	return nil
 }
 
 func (e *Environment) HasLocal(name string) bool {
