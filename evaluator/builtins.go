@@ -82,27 +82,14 @@ func init() {
 					}
 				}
 
-				startVal := start.Value
-				endVal := end.Value
+				result := integerRange(start.Value, end.Value, 0, 0)
 
-				// If start > end, return empty array
-				if startVal > endVal {
-					return &object.Array{Elements: []object.Object{}}
-				}
-
-				// Create the range array
-				elements := make([]object.Object, 0, endVal-startVal+1)
-				for i := startVal; i <= endVal; i++ {
-					elements = append(elements, &object.Integer{Value: i})
-				}
-
-				// Log built-in range function call for debugging
 				if traceMode {
-					fmt.Printf("TRACE: Built-in range(%d, %d) created array with %d elements\n",
-						startVal, endVal, len(elements))
+					fmt.Printf("TRACE: Built-in range(%d, %d) returned %s\n",
+						start.Value, end.Value, result.Type())
 				}
 
-				return &object.Array{Elements: elements}
+				return result
 			},
 		},
 

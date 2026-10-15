@@ -406,6 +406,15 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return newError(line, column, "cannot evaluate infix expression: one of the operands is nil")
 	}
 
+	if operator == ".." {
+		start, startOk := left.(*object.Integer)
+		end, endOk := right.(*object.Integer)
+		if !startOk || !endOk {
+			return newError(line, column, "range bounds must be integers, got %s..%s", left.Type(), right.Type())
+		}
+		return integerRange(start.Value, end.Value, line, column)
+	}
+
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right, line, column)
@@ -1100,6 +1109,20 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 		return NULL
 	}
 
+	// Iterate over start..end without building the array
+	if rangeExpr, ok := rs.Collection.(*ast.InfixExpression); ok && rangeExpr.Operator == ".." {
+		start, end, err := evalRangeBounds(rangeExpr, env)
+		if err != nil {
+			return err
+		}
+		for i := start; i <= end; i++ {
+			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.Integer{Value: i})); stop {
+				return result
+			}
+		}
+		return NULL
+	}
+
 	collection := Eval(rs.Collection, env)
 	if isError(collection) {
 		return collection
@@ -1131,6 +1154,46 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 	}
 
 	return NULL
+}
+
+func evalRangeBounds(node *ast.InfixExpression, env *object.Environment) (int64, int64, object.Object) {
+	left := Eval(node.Left, env)
+	if isError(left) {
+		return 0, 0, left
+	}
+	right := Eval(node.Right, env)
+	if isError(right) {
+		return 0, 0, right
+	}
+
+	start, startOk := left.(*object.Integer)
+	end, endOk := right.(*object.Integer)
+	if !startOk || !endOk {
+		return 0, 0, newError(node.Token.Line, node.Token.Column,
+			"range bounds must be integers, got %s..%s", left.Type(), right.Type())
+	}
+	return start.Value, end.Value, nil
+}
+
+// maxRangeSize limits the arrays built by ranges so a typo like 1..1e12
+// fails with an error instead of exhausting memory.
+const maxRangeSize = 10_000_000
+
+// integerRange returns the array [start, start+1, ..., end], or an empty
+// array when start > end.
+func integerRange(start, end int64, line, column int) object.Object {
+	if start > end {
+		return &object.Array{Elements: []object.Object{}}
+	}
+	if end-start >= maxRangeSize {
+		return newError(line, column, "range too large: %d..%d (max %d elements)", start, end, maxRangeSize)
+	}
+
+	elements := make([]object.Object, 0, end-start+1)
+	for i := start; i <= end; i++ {
+		elements = append(elements, &object.Integer{Value: i})
+	}
+	return &object.Array{Elements: elements}
 }
 
 // iterationEnv creates the scope for one loop iteration with the iterator
