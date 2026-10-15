@@ -58,10 +58,12 @@ TargaScript provides several loop constructs:
 
 3. **Range-based loops** - Iterate over a numerical range:
    ```
-   repeat i in range(start, end) {
-     // Code to execute for each number in the range
+   repeat i in start..end {
+     // Code to execute for each number in the range (inclusive)
    }
    ```
+
+   `start..end` builds the array `[start, ..., end]` (empty when start > end), like `range(start, end)`. In a `repeat` it is iterated without building the array.
 
 4. **Loop Control Statements** - Control the flow of loops:
    ```
