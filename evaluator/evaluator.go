@@ -998,6 +998,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			return accumulator
 		default:
+			if result, ok := evalArraySearchMethod(obj, method, args, line, column); ok {
+				return result
+			}
 			return newError(line, column, "array has no method '%s'", method)
 		}
 	case *object.Hash:
