@@ -135,6 +135,10 @@ func (e *Environment) IsConstant(name string) bool {
 	return exists && isConst
 }
 
+func (e *Environment) IsLocalConstant(name string) bool {
+	return e.constants[name]
+}
+
 func (e *Environment) SetLocal(name string, val Object) Object {
 	if isConst, exists := e.constants[name]; exists && isConst {
 		return &Error{

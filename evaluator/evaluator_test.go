@@ -815,3 +815,52 @@ func testNullObject(t *testing.T, obj object.Object) bool {
 	}
 	return true
 }
+
+func TestScopeIsolation(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"let i = 100\nrepeat i in 3 { }\ni", 100},
+		{"let n = 100\nrepeat n in [1, 2, 3] { }\nn", 100},
+		{`
+fn helper() { return 1 }
+fn outer() {
+  fn helper() { return 2 }
+  return helper()
+}
+outer() * 10 + helper()
+`, 21},
+		{"let total = 0\nrepeat i in 3 { total = total + i }\ntotal", 6},
+	}
+
+	for _, tt := range tests {
+		testIntegerObject(t, testEval(tt.input), tt.expected, tt.input)
+	}
+}
+
+func TestConstantDeclarations(t *testing.T) {
+	tests := []struct {
+		input           string
+		expectedMessage string
+	}{
+		{"const c = 1\nlet c = 2", "cannot reassign constant: c"},
+		{"const c = 1\nconst c = 2", "identifier already declared: c"},
+		{"let c = 1\nconst c = 2", "identifier already declared: c"},
+		{"const f = 1\nfn f() { 2 }", "cannot reassign constant: f"},
+	}
+
+	for _, tt := range tests {
+		errObj, ok := testEval(tt.input).(*object.Error)
+		if !ok {
+			t.Errorf("%q: no error object returned", tt.input)
+			continue
+		}
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("%q: wrong error message. expected=%q, got=%q",
+				tt.input, tt.expectedMessage, errObj.Message)
+		}
+	}
+
+	testIntegerObject(t, testEval("const c = 1\nif true { const c = 2\nc }"), 2, "shadowing in inner scope")
+}
