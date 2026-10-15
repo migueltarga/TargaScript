@@ -236,6 +236,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.HashLiteral:
 		return evalHashLiteral(node, env)
 
+	case *ast.LoadStatement:
+		return evalLoadStatement(node, env)
+
 	case *ast.PrintStatement:
 		return evalPrintExpression(node, env)
 

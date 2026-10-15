@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/repl"
 )
 
@@ -30,6 +31,10 @@ func main() {
 		ext := filepath.Ext(filename)
 		if ext != ".tg" && debugEnabled {
 			fmt.Printf("Warning: '%s' does not have the .tg extension. TargaScript files should use the .tg extension.\n", filename)
+		}
+
+		if abs, err := filepath.Abs(filename); err == nil {
+			evaluator.SetMainDir(filepath.Dir(abs))
 		}
 
 		input, err := os.ReadFile(filename)

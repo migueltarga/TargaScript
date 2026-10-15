@@ -665,9 +665,10 @@ func (p *Parser) parseLoadStatement() *ast.LoadStatement {
 
 	stmt.Path = &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 
-	p.nextToken()
-
-	if p.curTokenIs(token.AS) {
+	// Leave the last token of the statement as the current one, like the
+	// other statements, so the next statement isn't skipped
+	if p.peekTokenIs(token.AS) {
+		p.nextToken()
 		p.nextToken()
 
 		if !p.curTokenIs(token.IDENT) {
@@ -678,6 +679,9 @@ func (p *Parser) parseLoadStatement() *ast.LoadStatement {
 		}
 
 		stmt.Alias = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	}
+
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 

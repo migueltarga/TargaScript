@@ -1,9 +1,16 @@
 package object
 
+import "sort"
+
 type Environment struct {
 	store     map[string]Object
 	outer     *Environment
 	constants map[string]bool // Tracks which variables are constants
+
+	// Dir is the directory of the file this environment's code comes from.
+	// It is set on a file's top-level environment and used to resolve
+	// `load` paths.
+	Dir string
 }
 
 func NewEnvironment() *Environment {
@@ -57,6 +64,27 @@ func (e *Environment) SetConst(name string, val Object) Object {
 	e.store[name] = val
 	e.constants[name] = true
 	return val
+}
+
+// ModuleDir returns the directory of the file the code running in this
+// environment was loaded from, or "" if it's unknown.
+func (e *Environment) ModuleDir() string {
+	for env := e; env != nil; env = env.outer {
+		if env.Dir != "" {
+			return env.Dir
+		}
+	}
+	return ""
+}
+
+// LocalNames returns the names defined directly in this environment, sorted.
+func (e *Environment) LocalNames() []string {
+	names := make([]string, 0, len(e.store))
+	for name := range e.store {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (e *Environment) HasLocal(name string) bool {
