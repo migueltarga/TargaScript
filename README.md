@@ -45,6 +45,25 @@ repeat skill in person.skills {
 }
 ```
 
+## 📦 Loading Other Files
+
+Split code across files with `load`. A loaded file runs once, and its top-level variables, constants and functions become available:
+
+```
+// lib/math.tg
+const PI = 3.14159
+fn square(x) { x * x }
+
+// main.tg
+load "lib/math.tg"          // brings PI and square into scope
+print(square(3))
+
+load "lib/math.tg" as math  // or keeps them in an object
+print(math.PI * math.square(2))
+```
+
+Paths are relative to the file that contains the `load`.
+
 ## 📚 Examples Directory
 
 For more comprehensive examples showcasing TargaScript's capabilities, please check out the [`examples/`](./examples/) directory, which contains:
