@@ -343,12 +343,20 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			"((a + b) || (c - d))",
 		},
 		{
+			"a || b && c",
+			"(a || (b && c))",
+		},
+		{
+			"a && b || c && d",
+			"((a && b) || (c && d))",
+		},
+		{
 			"3 > 5 == true && 5 < 10 == true",
 			"(((3 > 5) == true) && ((5 < 10) == true))",
 		},
 		{
 			"true && false || true && false",
-			"(((true && false) || true) && false)",
+			"((true && false) || (true && false))",
 		},
 		{
 			"(true && false) || (true && false)",
