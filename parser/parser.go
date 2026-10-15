@@ -319,6 +319,15 @@ func isStartingWithDigit(s string) bool {
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
+	// A bare return ends at "}", ";", the end of input or the end of the line
+	if p.peekTokenIs(token.RBRACE) || p.peekTokenIs(token.SEMICOLON) ||
+		p.peekTokenIs(token.EOF) || p.peekToken.Line > p.curToken.Line {
+		if p.peekTokenIs(token.SEMICOLON) {
+			p.nextToken()
+		}
+		return stmt
+	}
+
 	p.nextToken()
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
