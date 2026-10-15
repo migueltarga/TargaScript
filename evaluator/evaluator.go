@@ -1123,6 +1123,15 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			}
 		}
 
+	case *object.Hash:
+		// Iterate over the keys as they are now, in insertion order, so
+		// adding keys in the body doesn't affect the loop
+		for _, pair := range collection.OrderedPairs() {
+			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, pair.Key)); stop {
+				return result
+			}
+		}
+
 	default:
 		return newError(rs.Token.Line, rs.Token.Column,
 			"cannot iterate over %s", collection.Type())

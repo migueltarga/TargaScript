@@ -49,6 +49,8 @@ TargaScript provides several loop constructs:
    }
    ```
 
+   For an object, the loop goes over its keys in insertion order (`obj[key]` gives the value).
+
 2. **Condition-based loops** - Loop as long as a condition is true:
    ```
    repeat condition {
