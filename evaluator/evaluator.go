@@ -79,6 +79,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 
+		if env.IsLocalConstant(node.Name.Value) {
+			return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", node.Name.Value)
+		}
 		env.SetLocal(node.Name.Value, val)
 		return val
 
@@ -88,10 +91,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 
-		result := env.SetConst(node.Name.Value, val)
-		if _, ok := result.(*object.Error); ok {
-			return result
+		if env.HasLocal(node.Name.Value) {
+			return newError(node.Token.Line, node.Token.Column, "identifier already declared: %s", node.Name.Value)
 		}
+		env.SetConst(node.Name.Value, val)
 		return val
 
 	case *ast.FunctionStatement:
@@ -101,7 +104,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			Env:        env,
 			Name:       node.Name.Value,
 		}
-		env.Set(node.Name.Value, fn)
+		if env.IsLocalConstant(node.Name.Value) {
+			return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", node.Name.Value)
+		}
+		env.SetLocal(node.Name.Value, fn)
 		return fn
 
 	case *ast.BreakStatement:
@@ -1080,7 +1086,7 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			}
 
 			for _, element := range collection.Elements {
-				loopEnv.Set(rs.Iterator.Value, element)
+				loopEnv.SetLocal(rs.Iterator.Value, element)
 
 				if traceMode {
 					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with element: %s\n", element.Inspect())
@@ -1125,7 +1131,7 @@ func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) objec
 			end := collection.Value
 
 			for i := int64(1); i <= end; i++ {
-				loopEnv.Set(rs.Iterator.Value, &object.Integer{Value: i})
+				loopEnv.SetLocal(rs.Iterator.Value, &object.Integer{Value: i})
 
 				if traceMode {
 					fmt.Fprintf(os.Stdout, "TRACE: Loop iteration with i = %d\n", i)
