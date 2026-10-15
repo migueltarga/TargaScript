@@ -101,7 +101,7 @@ Arrays support the following method-style operations:
 - `array.first()` - Get the first element
 - `array.last()` - Get the last element
 - `array.rest()` - Get all elements except the first
-- `array.insert(value)` - Insert a value at the end
+- `array.insert(value)` - Append a value to the end of the array (changes the array) and return it
 - `array.join(separator)` - Join into a string with the separator
 - `array.map(function)` - Transform each element
 - `array.filter(function)` - Filter elements by a condition
