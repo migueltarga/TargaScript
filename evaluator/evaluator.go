@@ -36,20 +36,11 @@ func SetTraceMode(enabled bool) {
 // Eval evaluates the AST node and returns an object
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	if node == nil {
-		fmt.Fprintf(output, "WARNING: Eval received nil node\n")
 		return NULL
 	}
 
-	// Set up panic recovery to debug any runtime errors
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(os.Stdout, "PANIC in Eval: %v\n", r)
-		}
-	}()
-
-	nodeType := fmt.Sprintf("%T", node)
 	if traceMode {
-		fmt.Fprintf(os.Stdout, "TRACE: Evaluating %s: %s\n", nodeType, node.String())
+		fmt.Fprintf(os.Stdout, "TRACE: Evaluating %T: %s\n", node, node.String())
 	}
 
 	switch node := node.(type) {
@@ -314,8 +305,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 	}
 
-	fmt.Fprintf(output, "WARNING: Unhandled node type: %s\n", nodeType)
-	return NULL
+	return newError(0, 0, "unsupported node: %T", node)
 }
 
 func evalProgram(statements []ast.Statement, env *object.Environment) object.Object {
@@ -353,7 +343,6 @@ func evalBlockStatements(statements []ast.Statement, env *object.Environment) ob
 	}
 
 	if result == nil {
-		fmt.Fprintf(output, "WARNING: evalBlockStatements returning NULL because result is nil\n")
 		return NULL
 	}
 
