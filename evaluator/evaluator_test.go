@@ -766,6 +766,9 @@ func testEval(input string) object.Object {
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
+	if len(p.Errors()) > 0 {
+		return &object.Error{Message: "parser errors: " + strings.Join(p.Errors(), "; ")}
+	}
 	env := object.NewEnvironment()
 
 	return Eval(program, env)
