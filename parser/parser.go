@@ -163,7 +163,9 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 	for !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
-		program.Statements = append(program.Statements, stmt)
+		if stmt != nil {
+			program.Statements = append(program.Statements, stmt)
+		}
 		p.nextToken()
 	}
 
@@ -188,6 +190,9 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseBreakStatement()
 	case token.CONTINUE:
 		return p.parseContinueStatement()
+	case token.SEMICOLON:
+		// Empty statement, e.g. after a block: fn f() { ... };
+		return nil
 	case token.FUNCTION:
 		if p.peekTokenIs(token.IDENT) {
 			return p.parseFunctionStatement()
