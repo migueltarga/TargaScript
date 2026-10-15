@@ -19,7 +19,7 @@ func New(input string) *Lexer {
 	l := &Lexer{
 		input:  input,
 		line:   1,
-		column: 1,
+		column: 0,
 	}
 	l.readChar()
 	return l
@@ -179,7 +179,7 @@ func (l *Lexer) skipLineComment() {
 func (l *Lexer) readChar() {
 	if l.ch == '\n' {
 		l.line++
-		l.column = 1
+		l.column = 0
 	}
 
 	if l.readPosition >= len(l.input) {
