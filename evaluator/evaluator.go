@@ -257,83 +257,120 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return evalMethodCallExpression(object, node.Method.Value, args, node.Token.Line, node.Token.Column)
 
+	case *ast.PostfixExpression:
+		return evalPostfixExpression(node, env)
+
 	case *ast.AssignmentExpression:
 		val := Eval(node.Value, env)
 		if isError(val) {
 			return val
 		}
 
-		switch left := node.Left.(type) {
-		case *ast.Identifier:
-			if env.IsConstant(left.Value) {
-				return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", left.Value)
-			}
-
-			if _, ok := env.Get(left.Value); !ok {
-				return newError(node.Token.Line, node.Token.Column, "identifier not found: %s", left.Value)
-			}
-			result, _ := env.Set(left.Value, val)
-			return result
-
-		case *ast.DotExpression:
-			obj := Eval(left.Left, env)
-			if isError(obj) {
-				return obj
-			}
-
-			propertyName := left.Property.Value
-
-			if hash, ok := obj.(*object.Hash); ok {
-				hash.Set(&object.String{Value: propertyName}, val)
-				return val
-			}
-
-			return newError(node.Token.Line, node.Token.Column, "cannot assign to property of non-object: %s", obj.Type())
-
-		case *ast.IndexExpression:
-			container := Eval(left.Left, env)
-			if isError(container) {
-				return container
-			}
-
-			index := Eval(left.Index, env)
-			if isError(index) {
-				return index
-			}
-
-			if array, ok := container.(*object.Array); ok {
-				if idx, ok := index.(*object.Integer); ok {
-					arrayIdx := idx.Value
-					arrayLen := int64(len(array.Elements))
-
-					if arrayIdx < 0 || arrayIdx >= arrayLen {
-						return newError(node.Token.Line, node.Token.Column, "index out of bounds: %d", arrayIdx)
-					}
-
-					array.Elements[arrayIdx] = val
-					return val
-				}
-				return newError(node.Token.Line, node.Token.Column, "array index must be an integer, got: %s", index.Type())
-			}
-
-			if hash, ok := container.(*object.Hash); ok {
-				hashable, ok := index.(object.Hashable)
-				if !ok {
-					return newError(node.Token.Line, node.Token.Column, "unusable as hash key: %s", index.Type())
-				}
-
-				hash.Set(hashable, val)
-				return val
-			}
-
-			return newError(node.Token.Line, node.Token.Column, "index assignment not supported for: %s", container.Type())
-
-		default:
-			return newError(node.Token.Line, node.Token.Column, "invalid assignment target: %T", node.Left)
-		}
+		return assign(node.Left, val, env, node.Token.Line, node.Token.Column)
 	}
 
 	return newError(0, 0, "unsupported node: %T", node)
+}
+
+// evalPostfixExpression handles x++ and x--: it adds or subtracts 1 from a
+// numeric variable, property or element and returns the new value.
+func evalPostfixExpression(node *ast.PostfixExpression, env *object.Environment) object.Object {
+	line, column := node.Token.Line, node.Token.Column
+
+	current := Eval(node.Left, env)
+	if isError(current) {
+		return current
+	}
+
+	delta := int64(1)
+	if node.Operator == "--" {
+		delta = -1
+	}
+
+	var updated object.Object
+	switch current := current.(type) {
+	case *object.Integer:
+		updated = &object.Integer{Value: current.Value + delta}
+	case *object.Float:
+		updated = &object.Float{Value: current.Value + float64(delta)}
+	default:
+		return newError(line, column, "operator %s not supported for %s", node.Operator, current.Type())
+	}
+
+	return assign(node.Left, updated, env, line, column)
+}
+
+// assign stores val in target, which must be a variable, a property
+// (obj.name) or an index (arr[i], hash[key]).
+func assign(target ast.Expression, val object.Object, env *object.Environment, line, column int) object.Object {
+	switch left := target.(type) {
+	case *ast.Identifier:
+		if env.IsConstant(left.Value) {
+			return newError(line, column, "cannot reassign constant: %s", left.Value)
+		}
+
+		if _, ok := env.Get(left.Value); !ok {
+			return newError(line, column, "identifier not found: %s", left.Value)
+		}
+		result, _ := env.Set(left.Value, val)
+		return result
+
+	case *ast.DotExpression:
+		obj := Eval(left.Left, env)
+		if isError(obj) {
+			return obj
+		}
+
+		propertyName := left.Property.Value
+
+		if hash, ok := obj.(*object.Hash); ok {
+			hash.Set(&object.String{Value: propertyName}, val)
+			return val
+		}
+
+		return newError(line, column, "cannot assign to property of non-object: %s", obj.Type())
+
+	case *ast.IndexExpression:
+		container := Eval(left.Left, env)
+		if isError(container) {
+			return container
+		}
+
+		index := Eval(left.Index, env)
+		if isError(index) {
+			return index
+		}
+
+		if array, ok := container.(*object.Array); ok {
+			if idx, ok := index.(*object.Integer); ok {
+				arrayIdx := idx.Value
+				arrayLen := int64(len(array.Elements))
+
+				if arrayIdx < 0 || arrayIdx >= arrayLen {
+					return newError(line, column, "index out of bounds: %d", arrayIdx)
+				}
+
+				array.Elements[arrayIdx] = val
+				return val
+			}
+			return newError(line, column, "array index must be an integer, got: %s", index.Type())
+		}
+
+		if hash, ok := container.(*object.Hash); ok {
+			hashable, ok := index.(object.Hashable)
+			if !ok {
+				return newError(line, column, "unusable as hash key: %s", index.Type())
+			}
+
+			hash.Set(hashable, val)
+			return val
+		}
+
+		return newError(line, column, "index assignment not supported for: %s", container.Type())
+
+	default:
+		return newError(line, column, "invalid assignment target: %T", target)
+	}
 }
 
 func evalProgram(statements []ast.Statement, env *object.Environment) object.Object {
