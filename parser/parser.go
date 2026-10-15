@@ -789,33 +789,7 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	hash := &ast.HashLiteral{Token: p.curToken}
 	hash.Pairs = make(map[string]ast.HashPair)
 
-	if p.peekTokenIs(token.RBRACE) {
-		p.nextToken()
-		return hash
-	}
-
-	p.nextToken()
-
-	key := p.parseExpression(LOWEST)
-	if !p.expectPeek(token.COLON) {
-		return nil
-	}
-
-	p.nextToken()
-	value := p.parseExpression(LOWEST)
-
-	keyName := key.String()
-	if ident, ok := key.(*ast.Identifier); ok {
-		keyName = ident.Value
-	} else if str, ok := key.(*ast.StringLiteral); ok {
-		keyName = str.Value
-	}
-
-	hash.Order = append(hash.Order, keyName)
-	hash.Pairs[keyName] = ast.HashPair{Key: key, Value: value}
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
+	for !p.peekTokenIs(token.RBRACE) {
 		p.nextToken()
 
 		key := p.parseExpression(LOWEST)
@@ -826,17 +800,16 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 		value := p.parseExpression(LOWEST)
 
-		keyName := key.String()
-		if ident, ok := key.(*ast.Identifier); ok {
-			keyName = ident.Value
-		} else if str, ok := key.(*ast.StringLiteral); ok {
-			keyName = str.Value
+		name := hashKeyName(key, len(hash.Order))
+		if _, exists := hash.Pairs[name]; !exists {
+			hash.Order = append(hash.Order, name)
 		}
+		hash.Pairs[name] = ast.HashPair{Key: key, Value: value}
 
-		if _, exists := hash.Pairs[keyName]; !exists {
-			hash.Order = append(hash.Order, keyName)
+		if !p.peekTokenIs(token.COMMA) {
+			break
 		}
-		hash.Pairs[keyName] = ast.HashPair{Key: key, Value: value}
+		p.nextToken()
 	}
 
 	if !p.expectPeek(token.RBRACE) {
@@ -844,6 +817,21 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	}
 
 	return hash
+}
+
+// hashKeyName returns the name a hash literal pair is stored under. Bare
+// names and string literals use their text, so {a: 1, "a": 2} has one key.
+// Other keys may only be equal at runtime, so each gets its own name and
+// duplicates are resolved when the hash is evaluated.
+func hashKeyName(key ast.Expression, index int) string {
+	switch key := key.(type) {
+	case *ast.Identifier:
+		return key.Value
+	case *ast.StringLiteral:
+		return key.Value
+	default:
+		return fmt.Sprintf("\x00%d", index)
+	}
 }
 
 func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
