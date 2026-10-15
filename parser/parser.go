@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/lexer"
@@ -144,6 +145,15 @@ func (p *Parser) peekError(t token.TokenType) {
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	msg := fmt.Sprintf("line %d:%d: no prefix parse function for %s found",
 		p.curToken.Line, p.curToken.Column, t)
+	if t == token.ILLEGAL {
+		if strings.HasPrefix(p.curToken.Literal, "\"") {
+			msg = fmt.Sprintf("line %d:%d: unterminated string",
+				p.curToken.Line, p.curToken.Column)
+		} else {
+			msg = fmt.Sprintf("line %d:%d: unexpected %q",
+				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
+		}
+	}
 	p.errors = append(p.errors, msg)
 }
 
