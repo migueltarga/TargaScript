@@ -720,7 +720,13 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 	pairs := make(map[object.HashKey]object.HashPair)
 
 	for _, pair := range node.Pairs {
-		key := Eval(pair.Key, env)
+		var key object.Object
+		if ident, ok := pair.Key.(*ast.Identifier); ok {
+			// Bare keys are names, like in `{name: "Ana"}` and `person.name`
+			key = &object.String{Value: ident.Value}
+		} else {
+			key = Eval(pair.Key, env)
+		}
 		if isError(key) {
 			return key
 		}

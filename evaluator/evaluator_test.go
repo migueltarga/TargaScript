@@ -499,7 +499,7 @@ myArray[i]`,
 }
 
 func TestHashLiterals(t *testing.T) {
-	input := `let two = "two"
+	input := `let two = "not used as key"
 	{
 		"one": 10 - 9,
 		two: 1 + 1,
