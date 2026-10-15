@@ -38,5 +38,15 @@ print("")
 print("String Concatenation:")
 print("\"Hello \" + \"World\" = " + ("Hello " + "World"))
 
+// Increment and decrement
+print("")
+print("Increment and Decrement:")
+let counter = 5
+counter++
+print("counter++ -> " + counter)
+counter--
+counter--
+print("counter-- twice -> " + counter)
+
 print("")
 print("Basic operators demonstration completed!") 

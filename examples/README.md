@@ -193,6 +193,7 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - Comparison operators (==, !=, <, >, <=, >=)
    - Logical operators (&&, ||, !)
    - String concatenation
+   - Increment and decrement (`x++`, `x--`)
 
 ### Data Manipulation
 

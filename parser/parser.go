@@ -46,6 +46,10 @@ var precedences = map[token.TokenType]int{
 	token.ASSIGN:   ASSIGN,
 	token.AND:      AND,
 	token.OR:       OR,
+
+	// Postfix x++ and x-- bind to their operand like indexing
+	token.INCREMENT: INDEX,
+	token.DECREMENT: INDEX,
 }
 
 type (
@@ -110,6 +114,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 	p.registerInfix(token.DOT, p.parseDotExpression)
 	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
+	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
+	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -846,6 +852,10 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 	expression.Property = propertyName
 	return expression
+}
+
+func (p *Parser) parsePostfixExpression(left ast.Expression) ast.Expression {
+	return &ast.PostfixExpression{Token: p.curToken, Left: left, Operator: p.curToken.Literal}
 }
 
 func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
