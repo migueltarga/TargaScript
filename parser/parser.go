@@ -84,6 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
+	p.registerPrefix(token.TEMPLATE, p.parseTemplateLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
@@ -975,4 +976,109 @@ func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 	stmt.Body = p.parseBlockStatement()
 
 	return stmt
+}
+
+// parseTemplateLiteral splits the raw source of an interpolated string into
+// text and ${...} expressions, parsing each expression on its own.
+func (p *Parser) parseTemplateLiteral() ast.Expression {
+	tmpl := &ast.TemplateLiteral{Token: p.curToken}
+	raw := []rune(p.curToken.Literal)
+	var text strings.Builder
+
+	flushText := func() {
+		if text.Len() > 0 {
+			tmpl.Parts = append(tmpl.Parts, &ast.StringLiteral{Token: p.curToken, Value: text.String()})
+			text.Reset()
+		}
+	}
+
+	for i := 0; i < len(raw); i++ {
+		ch := raw[i]
+		switch {
+		case ch == '\\' && i+1 < len(raw):
+			i++
+			text.WriteRune(unescape(raw[i]))
+		case ch == '$' && i+1 < len(raw) && raw[i+1] == '{':
+			end := matchingBrace(raw, i+1)
+			source := string(raw[i+2 : end])
+			expr := p.parseInterpolation(source)
+			if expr == nil {
+				return nil
+			}
+			flushText()
+			tmpl.Parts = append(tmpl.Parts, expr)
+			i = end
+		default:
+			text.WriteRune(ch)
+		}
+	}
+	flushText()
+
+	return tmpl
+}
+
+func (p *Parser) parseInterpolation(source string) ast.Expression {
+	if strings.TrimSpace(source) == "" {
+		p.errors = append(p.errors, fmt.Sprintf("line %d:%d: empty ${} in string",
+			p.curToken.Line, p.curToken.Column))
+		return nil
+	}
+
+	sub := New(lexer.New(source))
+	expr := sub.parseExpression(LOWEST)
+	if len(sub.errors) == 0 && !sub.peekTokenIs(token.EOF) {
+		sub.errors = append(sub.errors, fmt.Sprintf("unexpected %q", sub.peekToken.Literal))
+	}
+	for _, msg := range sub.errors {
+		// Positions inside the interpolation are meaningless to the user
+		if strings.HasPrefix(msg, "line ") {
+			if _, rest, found := strings.Cut(msg, ": "); found {
+				msg = rest
+			}
+		}
+		p.errors = append(p.errors, fmt.Sprintf("line %d:%d: in ${%s}: %s",
+			p.curToken.Line, p.curToken.Column, source, msg))
+	}
+	if len(sub.errors) > 0 {
+		return nil
+	}
+	return expr
+}
+
+// matchingBrace returns the index of the "}" closing the "{" at open,
+// skipping nested braces and strings. The lexer has already checked that
+// it exists.
+func matchingBrace(raw []rune, open int) int {
+	depth := 0
+	for i := open; i < len(raw); i++ {
+		switch raw[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return i
+			}
+		case '"':
+			for i++; i < len(raw) && raw[i] != '"'; i++ {
+				if raw[i] == '\\' {
+					i++
+				}
+			}
+		}
+	}
+	return len(raw) - 1
+}
+
+func unescape(ch rune) rune {
+	switch ch {
+	case 'n':
+		return '\n'
+	case 't':
+		return '\t'
+	case 'r':
+		return '\r'
+	default:
+		return ch
+	}
 }

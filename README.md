@@ -35,6 +35,9 @@ let person = {
 // Print a greeting using dot notation to access properties
 print(greet(person.name))  // Prints: Hello, Alice!
 
+// Embed expressions in strings with ${...}
+print("${person.name} is ${person.age} years old")  // Prints: Alice is 30 years old
+
 // Use a loop to iterate through an array
 print("Skills:")
 repeat skill in person.skills {

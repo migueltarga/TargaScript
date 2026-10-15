@@ -124,6 +124,17 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
 
+	case *ast.TemplateLiteral:
+		var out strings.Builder
+		for _, part := range node.Parts {
+			value := Eval(part, env)
+			if isError(value) {
+				return value
+			}
+			out.WriteString(objectToString(value))
+		}
+		return &object.String{Value: out.String()}
+
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 

@@ -142,6 +142,9 @@ func prettyPrintNode(node Node, level int) string {
 	case *StringLiteral:
 		result += fmt.Sprintf("%s\"%s\"%s", Red, n.Value, Reset)
 
+	case *TemplateLiteral:
+		result += fmt.Sprintf("%s%s%s", Red, n.String(), Reset)
+
 	case *Boolean:
 		result += fmt.Sprintf("%s%v%s", Red, n.Value, Reset)
 

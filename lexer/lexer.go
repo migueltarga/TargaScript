@@ -137,11 +137,15 @@ func (l *Lexer) NextToken() token.Token {
 	case ']':
 		tok = l.newToken(token.RBRACKET, string(l.ch), tokenLine, tokenColumn)
 	case '"':
-		literal, terminated := l.readString()
-		if terminated {
-			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
-		} else {
+		start := l.position + 1
+		literal, interpolated, terminated := l.readString()
+		switch {
+		case !terminated:
 			tok = l.newToken(token.ILLEGAL, "\""+literal, tokenLine, tokenColumn)
+		case interpolated:
+			tok = l.newToken(token.TEMPLATE, l.input[start:l.position], tokenLine, tokenColumn)
+		default:
+			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
 		}
 		l.readChar()
 		return tok
@@ -266,8 +270,11 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 	return token.INT, lit
 }
 
-// readString reads a string literal and reports whether its closing quote was found.
-func (l *Lexer) readString() (string, bool) {
+// readString reads a string literal, processing escapes. It reports whether
+// the string contains ${...} interpolations, which are skipped over without
+// being processed, and whether its closing quote was found.
+func (l *Lexer) readString() (string, bool, bool) {
+	interpolated := false
 	escaped := false
 	var result strings.Builder
 
@@ -275,7 +282,7 @@ func (l *Lexer) readString() (string, bool) {
 		l.readChar()
 
 		if l.ch == 0 {
-			return result.String(), false
+			return result.String(), interpolated, false
 		}
 
 		if escaped {
@@ -299,12 +306,48 @@ func (l *Lexer) readString() (string, bool) {
 			escaped = true
 		} else if l.ch == '"' {
 			break
+		} else if l.ch == '$' && l.peekChar() == '{' {
+			interpolated = true
+			l.readChar()
+			if !l.skipInterpolation() {
+				return result.String(), interpolated, false
+			}
 		} else {
 			result.WriteRune(l.ch)
 		}
 	}
 
-	return result.String(), true
+	return result.String(), interpolated, true
+}
+
+// skipInterpolation advances from the "{" of "${" to its matching "}",
+// skipping nested braces and strings. Reports false if the input ends first.
+func (l *Lexer) skipInterpolation() bool {
+	depth := 1
+	for depth > 0 {
+		l.readChar()
+		switch l.ch {
+		case 0:
+			return false
+		case '{':
+			depth++
+		case '}':
+			depth--
+		case '"':
+			for {
+				l.readChar()
+				if l.ch == 0 {
+					return false
+				}
+				if l.ch == '\\' {
+					l.readChar()
+				} else if l.ch == '"' {
+					break
+				}
+			}
+		}
+	}
+	return true
 }
 
 func isLetter(ch rune) bool {
