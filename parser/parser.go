@@ -1062,7 +1062,7 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 		arm := &ast.MatchArm{}
 
 		// _ matches anything, and leaves Patterns nil
-		if !(p.curTokenIs(token.IDENT) && p.curToken.Literal == "_" && p.peekTokenIs(token.ARROW)) {
+		if !(p.curTokenIs(token.IDENT) && p.curToken.Literal == "_" && (p.peekTokenIs(token.ARROW) || p.peekTokenIs(token.IF))) {
 			p.inMatchPatterns = true
 			for {
 				pattern := p.parseExpression(LOWEST)
@@ -1078,6 +1078,18 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 				p.nextToken()
 			}
 			p.inMatchPatterns = false
+		}
+
+		// patterns if guard => body
+		if p.peekTokenIs(token.IF) {
+			p.nextToken()
+			p.nextToken()
+			p.inMatchPatterns = true
+			arm.Guard = p.parseExpression(LOWEST)
+			p.inMatchPatterns = false
+			if arm.Guard == nil {
+				return nil
+			}
 		}
 
 		if !p.expectPeek(token.ARROW) {

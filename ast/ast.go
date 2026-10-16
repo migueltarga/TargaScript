@@ -777,6 +777,10 @@ type MatchExpression struct {
 type MatchArm struct {
 	Patterns []Expression
 	Body     Node
+
+	// Guard, in `patterns if guard => body`, must also be truthy for the
+	// arm to be chosen, or nil
+	Guard Expression
 }
 
 func (me *MatchExpression) expressionNode()      {}
@@ -791,6 +795,9 @@ func (me *MatchExpression) String() string {
 				list = append(list, p.String())
 			}
 			patterns = strings.Join(list, ", ")
+		}
+		if arm.Guard != nil {
+			patterns += " if " + arm.Guard.String()
 		}
 		arms = append(arms, patterns+" => "+arm.Body.String())
 	}

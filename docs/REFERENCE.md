@@ -177,6 +177,7 @@ let size = match n {
     0 => "none"
     1, 2 => "a few"
     3..9 => "several"
+    _ if n > 1000 => "lots"                   // a guard: the arm needs it to be true too
     _ => "many"
 }
 print(size)                                   // → several
