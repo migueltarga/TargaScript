@@ -554,8 +554,10 @@ func (p *Parser) parsePattern() *ast.Pattern {
 		if p.peekTokenIs(token.ASSIGN) {
 			p.nextToken()
 			p.nextToken()
+			errors := len(p.errors)
 			value := p.parseExpression(LOWEST)
-			if value == nil {
+			// A default with an error can be half built, so it's dropped
+			if value == nil || len(p.errors) > errors {
 				return nil
 			}
 			setDefault(pattern, len(pattern.Names)-1, value)
