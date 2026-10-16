@@ -26,6 +26,15 @@ func New(input string) *Lexer {
 	return l
 }
 
+// NewAt returns a lexer for code that starts at a line and column of a
+// larger source, like the code inside ${...} in a string, so its tokens
+// have positions in that source.
+func NewAt(input string, line, column int) *Lexer {
+	l := &Lexer{input: input, line: line, column: column - 1}
+	l.readChar()
+	return l
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 	l.skipWhitespace()
