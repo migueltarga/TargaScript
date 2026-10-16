@@ -72,7 +72,22 @@ async function activate(context) {
     timers.set(document.uri.toString(), setTimeout(() => check(document), DELAY));
   };
 
+  // Runs the file, or its tests, with the targascript command in a terminal
+  const runIn = (command) => async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== "targascript") return;
+    await editor.document.save();
+    const program = vscode.workspace.getConfiguration("targascript").get("path") || "targascript";
+    const terminal = vscode.window.terminals.find((t) => t.name === "TargaScript") ||
+      vscode.window.createTerminal("TargaScript");
+    terminal.show(true);
+    const file = JSON.stringify(editor.document.fileName);
+    terminal.sendText(command ? `${program} ${command} ${file}` : `${program} ${file}`);
+  };
+
   context.subscriptions.push(
+    vscode.commands.registerCommand("targascript.runFile", runIn("")),
+    vscode.commands.registerCommand("targascript.testFile", runIn("test")),
     vscode.languages.registerHoverProvider("targascript", hover),
     vscode.languages.registerCompletionItemProvider("targascript", completions),
     vscode.workspace.onDidOpenTextDocument(check),

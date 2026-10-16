@@ -42,7 +42,56 @@
         "language": "targascript",
         "path": "./snippets/targascript.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "targascript.runFile",
+        "title": "Run File",
+        "category": "TargaScript",
+        "icon": "$(play)"
+      },
+      {
+        "command": "targascript.testFile",
+        "title": "Run Tests in File",
+        "category": "TargaScript"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "targascript.runFile",
+          "when": "resourceLangId == targascript"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "targascript.runFile",
+          "when": "editorLangId == targascript"
+        },
+        {
+          "command": "targascript.testFile",
+          "when": "editorLangId == targascript"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "targascript.runFile",
+        "key": "ctrl+f5",
+        "mac": "cmd+f5",
+        "when": "editorLangId == targascript"
+      }
+    ],
+    "configuration": {
+      "title": "TargaScript",
+      "properties": {
+        "targascript.path": {
+          "type": "string",
+          "default": "targascript",
+          "description": "The targascript command that Run File uses"
+        }
+      }
+    }
   },
   "repository": {
     "type": "git",
