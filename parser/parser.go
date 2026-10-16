@@ -932,7 +932,21 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 		params := []*ast.Identifier{}
 		defaults := []ast.Expression{}
 		patterns := []*ast.Pattern{}
-		for _, exp := range exps {
+		rest := false
+		for i, exp := range exps {
+			// (first, ...others) => ... collects the extra arguments
+			if spread, ok := exp.(*ast.SpreadExpression); ok {
+				ident, isIdent := spread.Value.(*ast.Identifier)
+				if !isIdent || i != len(exps)-1 {
+					p.errorAt(open.Line, open.Column, "...name must be the last parameter before =>")
+					return nil
+				}
+				params = append(params, ident)
+				defaults = append(defaults, nil)
+				patterns = append(patterns, nil)
+				rest = true
+				continue
+			}
 			// ([x, y]) => ... and ({name}) => ... take the argument apart
 			if pattern := literalPattern(exp); pattern != nil {
 				params = append(params, &ast.Identifier{Token: pattern.Token, Value: pattern.String()})
@@ -959,7 +973,11 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 				return nil
 			}
 		}
-		return p.parseArrowFunction(open, params, defaults, patterns)
+		arrow := p.parseArrowFunction(open, params, defaults, patterns)
+		if fn, ok := arrow.(*ast.FunctionLiteral); ok && rest {
+			fn.Rest = true
+		}
+		return arrow
 	}
 
 	if len(exps) > 1 {
