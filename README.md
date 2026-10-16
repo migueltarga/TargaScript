@@ -103,6 +103,27 @@ fn route(req) {
 
 An arm can have a guard, `if ...`, that must also be true for it to be chosen. An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
 
+## 🧱 Objects with Methods
+
+Inside a method, `this` is the object. A function that returns an object works like a class, and spreading one object into another shares its methods:
+
+```
+let shape = {
+    name: "shape",
+    area: fn() { 0 },
+    describe: fn() { "${this.name} with area ${this.area():.2f}" },
+}
+
+fn circle(r) { {...shape, name: "circle", r, area: fn() { 3.14159 * this.r ** 2 }} }
+fn rect(w, h) { {...shape, name: "rect", w, h, area: fn() { this.w * this.h }} }
+
+repeat s in [circle(1), rect(2, 3)] {
+    print(s.describe())    // circle with area 3.14, then rect with area 6.00
+}
+```
+
+Arrow functions inside a method see its `this`, so `this.items.map(i => i * this.rate)` works.
+
 ## 🧯 Handling Errors
 
 `try` runs a block and, if anything in it fails, runs the `catch` block with the error. `throw` raises an error of your own:
