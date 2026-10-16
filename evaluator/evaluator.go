@@ -73,11 +73,11 @@ func setProperty(obj object.Object, propertyName string, val object.Object, line
 func setIndex(container, index, val object.Object, line, column int) object.Object {
 	if array, ok := container.(*object.Array); ok {
 		if idx, ok := index.(*object.Integer); ok {
-			arrayIdx := idx.Value
 			arrayLen := int64(len(array.Elements))
+			arrayIdx := fromEnd(idx.Value, arrayLen)
 
 			if arrayIdx < 0 || arrayIdx >= arrayLen {
-				return newError(line, column, "index out of bounds: %d", arrayIdx)
+				return newError(line, column, "index out of bounds: %d", idx.Value)
 			}
 
 			array.Elements[arrayIdx] = val
@@ -395,7 +395,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		return evalHashIndexExpression(left, index, line, column)
 	case left.Type() == object.STRING_OBJ && index.Type() == object.INTEGER_OBJ:
 		chars := []rune(left.(*object.String).Value)
-		idx := index.(*object.Integer).Value
+		idx := fromEnd(index.(*object.Integer).Value, int64(len(chars)))
 		if idx < 0 || idx >= int64(len(chars)) {
 			return NULL
 		}
@@ -405,9 +405,18 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 	}
 }
 
+// fromEnd turns a negative index into one counted from the end, so -1 is
+// the last element.
+func fromEnd(index, length int64) int64 {
+	if index < 0 {
+		return index + length
+	}
+	return index
+}
+
 func evalArrayIndexExpression(array, index object.Object) object.Object {
 	arrayObject := array.(*object.Array)
-	idx := index.(*object.Integer).Value
+	idx := fromEnd(index.(*object.Integer).Value, int64(len(arrayObject.Elements)))
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {

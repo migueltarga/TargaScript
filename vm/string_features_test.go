@@ -18,7 +18,7 @@ func TestStringIndexing(t *testing.T) {
 		{`let s = "abc"
 s[s.length - 1]`, "c"},
 		{`"abc"[3]`, "null"},
-		{`"abc"[-1]`, "null"},
+		{`"abc"[-4]`, "null"},
 		{`""[0]`, "null"},
 	}
 

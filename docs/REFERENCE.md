@@ -70,7 +70,7 @@ print("${3.14159:.2f} [${7:3d}] [${"x":-3s}]")  // → 3.14 [  7] [x  ]
 print("line one\nline two\ttabbed \"quoted\"")
 
 let s = "Hello, World"
-print(s.length, s[0], s.slice(-5))          // → 12 H World
+print(s.length, s[0], s[-1], s.slice(-5))   // → 12 H d World
 print(s.upper(), s.lower(), s.reverse())
 print(s.contains("World"), s.startsWith("He"), s.indexOf("o"))  // → true true 4
 print(s.split(", "), s.replace("World", "there"))
@@ -99,7 +99,7 @@ String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `spl
 
 ```targascript
 let numbers = [5, 3, 8, 1]
-print(numbers.length, numbers[0], numbers.first(), numbers.last())  // → 4 5 5 1
+print(numbers.length, numbers[0], numbers[-1], numbers.first())  // → 4 5 1 5
 numbers.insert(9)                      // add at the end
 print(numbers.map(n => n * 2))         // → [10, 6, 16, 2, 18]
 print(numbers.filter(n => n > 4))      // → [5, 8, 9]
