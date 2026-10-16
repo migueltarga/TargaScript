@@ -3,6 +3,7 @@ package evaluator
 import (
 	"sort"
 
+	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/object"
 )
 
@@ -55,6 +56,15 @@ func Increment(value object.Object, operator string, line, column int) object.Ob
 // IsTruthy reports whether a value counts as true in conditions.
 func IsTruthy(obj object.Object) bool {
 	return isTruthy(obj)
+}
+
+// Diagnostic describes a runtime error for diag, with its trace.
+func Diagnostic(err *object.Error) diag.Diagnostic {
+	d := diag.Diagnostic{Line: err.Line, Column: err.Column, Message: err.Message}
+	for _, call := range err.Trace {
+		d.Trace = append(d.Trace, diag.Call{Function: call.Function, Line: call.Line})
+	}
+	return d
 }
 
 // ToDisplayString converts a value to the text print and interpolation show.

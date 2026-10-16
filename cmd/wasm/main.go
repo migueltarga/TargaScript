@@ -81,9 +81,7 @@ func run(source string, s *session, out writer) object.Object {
 func outcome(source string, result object.Object) object.Object {
 	switch result := result.(type) {
 	case *object.Error:
-		return &object.String{Value: diag.Format(source, diag.Diagnostic{
-			Line: result.Line, Column: result.Column, Message: result.Message,
-		})}
+		return &object.String{Value: diag.Format(source, evaluator.Diagnostic(result))}
 	case *object.Promise:
 		done := object.NewPromise()
 		result.Then(

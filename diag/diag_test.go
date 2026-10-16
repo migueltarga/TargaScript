@@ -44,3 +44,18 @@ func TestFormatAllLimitsErrors(t *testing.T) {
 		t.Errorf("got:\n%s", got)
 	}
 }
+
+func TestFormatWithTrace(t *testing.T) {
+	source := "fn f() {\n  1 / 0\n}\nf()"
+	got := Format(source, Diagnostic{Line: 2, Column: 5, Message: "division by zero",
+		Trace: []Call{{"f", 2}, {"", 4}}})
+	want := "Error: division by zero\n  --> line 2, column 5\n\n 2 |   1 / 0\n   |     ^\n\n  in f (line 2)\n  called from line 4"
+	if got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+
+	// An error at the top level has nothing to trace
+	if top := Format("1 / 0", Diagnostic{Line: 1, Column: 3, Message: "x", Trace: []Call{{"", 1}}}); strings.Contains(top, "called") || strings.Contains(top, " in ") {
+		t.Errorf("top-level error shows a trace:\n%s", top)
+	}
+}

@@ -13,6 +13,16 @@ type Diagnostic struct {
 	Line    int
 	Column  int
 	Message string
+
+	// Trace is the calls that led to a runtime error, the innermost first
+	Trace []Call
+}
+
+// Call is a function in a trace and the line it was at. The top level of a
+// program has no name.
+type Call struct {
+	Function string
+	Line     int
 }
 
 // MaxShown is how many errors FormatAll shows before summarizing the rest.
@@ -45,7 +55,34 @@ func Format(source string, d Diagnostic) string {
 	gutter := strings.Repeat(" ", len(number))
 	fmt.Fprintf(&b, " %s | %s\n", number, text)
 	fmt.Fprintf(&b, " %s | %s^", gutter, caretIndent(text, d.Column))
+	writeTrace(&b, d.Trace)
 	return b.String()
+}
+
+// writeTrace writes the calls that led to an error, when it happened inside
+// a function:
+//
+//	in divide (line 2)
+//	called from average (line 6)
+//	called from line 10
+func writeTrace(b *strings.Builder, trace []Call) {
+	if len(trace) < 2 {
+		return
+	}
+	b.WriteString("\n")
+	for i, call := range trace {
+		b.WriteString("\n  ")
+		if i == 0 {
+			b.WriteString("in ")
+		} else {
+			b.WriteString("called from ")
+		}
+		if call.Function == "" {
+			fmt.Fprintf(b, "line %d", call.Line)
+		} else {
+			fmt.Fprintf(b, "%s (line %d)", call.Function, call.Line)
+		}
+	}
 }
 
 // FormatAll formats the first MaxShown errors, separated by blank lines.
