@@ -410,9 +410,9 @@ and serve `build/targascript.js` and `build/targascript.wasm` (about 420 KB, 190
 
 ## ✏️ Editors
 
-The [VS Code extension](targascript-vscode/) colors the code, shows problems as you type, documents the builtins on hover, and runs files with Cmd+F5.
+The [VS Code extension](targascript-vscode/) colors the code, shows problems as you type, documents the builtins on hover, formats on save, and runs files with Cmd+F5.
 
-Other editors get problems, completion and hover from `targascript lsp`, a language server. In Neovim:
+Other editors get problems, completion, hover, go to definition, an outline and formatting from `targascript lsp`, a language server. In Neovim:
 
 ```lua
 vim.filetype.add({ extension = { tg = "targascript" } })
