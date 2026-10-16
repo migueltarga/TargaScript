@@ -33,6 +33,7 @@ const (
 	AND       = "&&"
 	OR        = "||"
 	RANGE     = ".."
+	SPREAD    = "..."
 	DOT       = "."
 	INCREMENT = "++"
 	DECREMENT = "--"

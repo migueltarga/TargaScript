@@ -466,6 +466,8 @@ func (rs *RepeatStatement) String() string {
 	return out.String()
 }
 
+// HashPair is a key and value in an object literal, or a spread
+// (`...other`) as Key with a nil Value.
 type HashPair struct {
 	Key   Expression
 	Value Expression
@@ -485,6 +487,10 @@ func (hl *HashLiteral) String() string {
 	pairs := []string{}
 	for _, name := range hl.Order {
 		pair := hl.Pairs[name]
+		if pair.Value == nil {
+			pairs = append(pairs, pair.Key.String())
+			continue
+		}
 		pairs = append(pairs, pair.Key.String()+": "+pair.Value.String())
 	}
 
@@ -716,3 +722,15 @@ func ParameterStrings(params []*Identifier, defaults []Expression) []string {
 	}
 	return out
 }
+
+// SpreadExpression puts the elements of an array in an array or in the
+// arguments of a call, or the properties of an object in an object:
+// `...value`.
+type SpreadExpression struct {
+	Token token.Token
+	Value Expression
+}
+
+func (se *SpreadExpression) expressionNode()      {}
+func (se *SpreadExpression) TokenLiteral() string { return se.Token.Literal }
+func (se *SpreadExpression) String() string       { return "..." + se.Value.String() }

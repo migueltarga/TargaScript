@@ -88,6 +88,12 @@ func BuiltinNames() []string {
 	return names
 }
 
+// TypeName describes the type of a value for error messages, with an
+// article: "an integer", "a string".
+func TypeName(obj object.Object) string {
+	return typeName(obj)
+}
+
 // NewError creates an error at a position.
 func NewError(line, column int, format string, a ...interface{}) *object.Error {
 	return newError(line, column, format, a...)

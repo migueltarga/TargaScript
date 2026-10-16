@@ -99,7 +99,12 @@ func (l *Lexer) NextToken() token.Token {
 	case '.':
 		if l.peekChar() == '.' {
 			l.readChar()
-			tok = l.newToken(token.RANGE, "..", tokenLine, tokenColumn)
+			if l.peekChar() == '.' {
+				l.readChar()
+				tok = l.newToken(token.SPREAD, "...", tokenLine, tokenColumn)
+			} else {
+				tok = l.newToken(token.RANGE, "..", tokenLine, tokenColumn)
+			}
 		} else {
 			tok = l.newToken(token.DOT, string(l.ch), tokenLine, tokenColumn)
 		}

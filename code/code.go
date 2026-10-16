@@ -18,9 +18,12 @@ const (
 	OpTrue
 	OpFalse
 	OpNull
-	OpArray    // pop n elements, push an array
-	OpHash     // pop n key/value pairs, push an object
-	OpTemplate // pop n parts, push them joined as a string
+	OpArray     // pop n elements, push an array
+	OpHash      // pop n key/value pairs, push an object
+	OpTemplate  // pop n parts, push them joined as a string
+	OpAppend    // pop a value and add it to the array below, or its elements when the operand is 1
+	OpHashSet   // pop a value and a key and set them in the object below
+	OpHashMerge // pop an object and copy its properties into the object below
 
 	// Operators
 	OpAdd
@@ -78,8 +81,10 @@ const (
 	OpSetProperty // pop value, object; store object.name; push value
 
 	// Calls
-	OpCall       // call the function below the arguments
-	OpCallMethod // call the method named by a constant on the object below the arguments
+	OpCall            // call the function below the arguments
+	OpCallMethod      // call the method named by a constant on the object below the arguments
+	OpCallArray       // call the function below an array, with its elements as arguments
+	OpCallMethodArray // call a method with the elements of the array on top as arguments
 	OpReturnValue
 	OpClosure // push a closure of constants[index] capturing n cells
 	OpPrint   // pop n values and print them
@@ -99,13 +104,16 @@ type Definition struct {
 }
 
 var definitions = map[Opcode]*Definition{
-	OpConstant: {"OpConstant", []int{2}},
-	OpTrue:     {"OpTrue", []int{}},
-	OpFalse:    {"OpFalse", []int{}},
-	OpNull:     {"OpNull", []int{}},
-	OpArray:    {"OpArray", []int{2}},
-	OpHash:     {"OpHash", []int{2}},
-	OpTemplate: {"OpTemplate", []int{2}},
+	OpConstant:  {"OpConstant", []int{2}},
+	OpTrue:      {"OpTrue", []int{}},
+	OpFalse:     {"OpFalse", []int{}},
+	OpNull:      {"OpNull", []int{}},
+	OpArray:     {"OpArray", []int{2}},
+	OpHash:      {"OpHash", []int{2}},
+	OpTemplate:  {"OpTemplate", []int{2}},
+	OpAppend:    {"OpAppend", []int{1}},
+	OpHashSet:   {"OpHashSet", []int{}},
+	OpHashMerge: {"OpHashMerge", []int{}},
 
 	OpAdd:          {"OpAdd", []int{}},
 	OpSub:          {"OpSub", []int{}},
@@ -157,17 +165,19 @@ var definitions = map[Opcode]*Definition{
 	OpGetProperty: {"OpGetProperty", []int{2}},
 	OpSetProperty: {"OpSetProperty", []int{2}},
 
-	OpCall:        {"OpCall", []int{1}},
-	OpCallMethod:  {"OpCallMethod", []int{2, 1}},
-	OpReturnValue: {"OpReturnValue", []int{}},
-	OpClosure:     {"OpClosure", []int{2, 1}},
-	OpPrint:       {"OpPrint", []int{1}},
-	OpLoad:        {"OpLoad", []int{2, 2}},
-	OpError:       {"OpError", []int{2}},
-	OpAwait:       {"OpAwait", []int{}},
-	OpTry:         {"OpTry", []int{2}},
-	OpTryEnd:      {"OpTryEnd", []int{}},
-	OpThrow:       {"OpThrow", []int{}},
+	OpCall:            {"OpCall", []int{1}},
+	OpCallMethod:      {"OpCallMethod", []int{2, 1}},
+	OpCallArray:       {"OpCallArray", []int{}},
+	OpCallMethodArray: {"OpCallMethodArray", []int{2}},
+	OpReturnValue:     {"OpReturnValue", []int{}},
+	OpClosure:         {"OpClosure", []int{2, 1}},
+	OpPrint:           {"OpPrint", []int{1}},
+	OpLoad:            {"OpLoad", []int{2, 2}},
+	OpError:           {"OpError", []int{2}},
+	OpAwait:           {"OpAwait", []int{}},
+	OpTry:             {"OpTry", []int{2}},
+	OpTryEnd:          {"OpTryEnd", []int{}},
+	OpThrow:           {"OpThrow", []int{}},
 }
 
 // Lookup returns the definition of an opcode.

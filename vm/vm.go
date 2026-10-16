@@ -503,27 +503,80 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpCall:
 			argc := int(ins[ip+1])
 			f.ip++
-			callee := vm.stack[vm.sp-1-argc]
-			if cl, ok := callee.(*object.Closure); ok && cl.Runner == vm {
-				if err := vm.callClosure(cl, argc); err != nil {
-					err.Line, err.Column = f.cl.Fn.PositionAt(ip)
-					return err
-				}
+			switched, err := vm.call(f, ip, argc)
+			if err != nil {
+				return err
+			}
+			if switched {
 				f = vm.frames[len(vm.frames)-1]
 				ins = f.cl.Fn.Instructions
-				continue
 			}
-			args := make([]object.Object, argc)
-			copy(args, vm.stack[vm.sp-argc:vm.sp])
-			vm.sp -= argc + 1
-			result := evaluator.CallFunction(callee, args)
+
+		case code.OpCallArray:
+			args := vm.pop().(*object.Array)
+			for _, arg := range args.Elements {
+				vm.push(arg)
+			}
+			switched, err := vm.call(f, ip, len(args.Elements))
+			if err != nil {
+				return err
+			}
+			if switched {
+				f = vm.frames[len(vm.frames)-1]
+				ins = f.cl.Fn.Instructions
+			}
+
+		case code.OpCallMethodArray:
+			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
+			f.ip += 2
+			args := vm.pop().(*object.Array)
+			obj := vm.pop()
+			line, column := f.cl.Fn.PositionAt(ip)
+			result := evaluator.CallMethod(obj, name, append([]object.Object{}, args.Elements...), line, column)
 			if err, ok := result.(*object.Error); ok {
-				if err.Line == 0 {
-					err.Line, err.Column = f.cl.Fn.PositionAt(ip)
-				}
 				return err
 			}
 			vm.push(result)
+
+		case code.OpAppend:
+			value := vm.pop()
+			array := vm.stack[vm.sp-1].(*object.Array)
+			f.ip++
+			if ins[ip+1] == 0 {
+				array.Elements = append(array.Elements, value)
+				continue
+			}
+			switch value := value.(type) {
+			case *object.Array:
+				array.Elements = append(array.Elements, value.Elements...)
+			case *object.String:
+				for _, char := range value.Value {
+					array.Elements = append(array.Elements, &object.String{Value: string(char)})
+				}
+			default:
+				return vm.errorAt(f, ip, "cannot spread %s into a list, only arrays and strings", evaluator.TypeName(value))
+			}
+
+		case code.OpHashSet:
+			value := vm.pop()
+			key := vm.pop()
+			hash := vm.stack[vm.sp-1].(*object.Hash)
+			hashable, ok := key.(object.Hashable)
+			if !ok {
+				return vm.errorAt(f, ip, "unusable as hash key: %s", key.Type())
+			}
+			hash.Set(hashable, value)
+
+		case code.OpHashMerge:
+			source := vm.pop()
+			hash := vm.stack[vm.sp-1].(*object.Hash)
+			from, ok := source.(*object.Hash)
+			if !ok {
+				return vm.errorAt(f, ip, "cannot spread %s into an object, only objects", evaluator.TypeName(source))
+			}
+			for _, pair := range from.OrderedPairs() {
+				hash.Set(pair.Key.(object.Hashable), pair.Value)
+			}
 
 		case code.OpCallMethod:
 			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
@@ -621,6 +674,33 @@ func (vm *VM) loop(base int) object.Object {
 			return vm.errorAt(f, ip, "unknown opcode %d", op)
 		}
 	}
+}
+
+// call calls the function below the argc arguments on the stack. For a
+// closure of this VM it pushes a frame and reports switched, so the loop
+// continues in it; other functions run right away and leave their result.
+func (vm *VM) call(f *frame, ip int, argc int) (switched bool, err *object.Error) {
+	callee := vm.stack[vm.sp-1-argc]
+	if cl, ok := callee.(*object.Closure); ok && cl.Runner == vm {
+		if err := vm.callClosure(cl, argc); err != nil {
+			err.Line, err.Column = f.cl.Fn.PositionAt(ip)
+			return false, err
+		}
+		return true, nil
+	}
+
+	args := make([]object.Object, argc)
+	copy(args, vm.stack[vm.sp-argc:vm.sp])
+	vm.sp -= argc + 1
+	result := evaluator.CallFunction(callee, args)
+	if err, ok := result.(*object.Error); ok {
+		if err.Line == 0 {
+			err.Line, err.Column = f.cl.Fn.PositionAt(ip)
+		}
+		return false, err
+	}
+	vm.push(result)
+	return false, nil
 }
 
 // callClosure starts a call to the closure below the argc arguments on the
