@@ -31,10 +31,21 @@ const (
 	HASH_OBJ  = "HASH"
 )
 
+// HashKey identifies a key of an object: its kind and a number from its
+// value. It fits in two words, so finding a key compares little.
 type HashKey struct {
-	Type  ObjectType
+	Kind  KeyKind
 	Value uint64
 }
+
+// KeyKind is the type of value a HashKey comes from.
+type KeyKind byte
+
+const (
+	IntegerKey KeyKind = iota + 1
+	BooleanKey
+	StringKey
+)
 
 type Hashable interface {
 	HashKey() HashKey
@@ -52,7 +63,7 @@ type Integer struct {
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) HashKey() HashKey {
-	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+	return HashKey{Kind: IntegerKey, Value: uint64(i.Value)}
 }
 
 type Float struct {
@@ -82,7 +93,7 @@ func (b *Boolean) HashKey() HashKey {
 		value = 0
 	}
 
-	return HashKey{Type: b.Type(), Value: value}
+	return HashKey{Kind: BooleanKey, Value: value}
 }
 
 type Null struct{}
@@ -173,7 +184,7 @@ func (s *String) HashKey() HashKey {
 		}
 		s.hash, s.hashed = h, true
 	}
-	return HashKey{Type: STRING_OBJ, Value: s.hash}
+	return HashKey{Kind: StringKey, Value: s.hash}
 }
 
 type Builtin struct {
@@ -237,6 +248,14 @@ const indexAbove = 8
 
 func NewHash() *Hash {
 	return &Hash{}
+}
+
+// NewHashOfSize returns an empty hash with room for n pairs.
+func NewHashOfSize(n int) *Hash {
+	if n > indexAbove {
+		return &Hash{}
+	}
+	return &Hash{keys: make([]HashKey, 0, n), pairs: make([]HashPair, 0, n)}
 }
 
 // find returns the position of a key, or -1.

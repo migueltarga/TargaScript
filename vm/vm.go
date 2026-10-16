@@ -336,7 +336,7 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpHash:
 			n := int(code.ReadUint16(ins[ip+1:]))
 			f.ip += 2
-			hash := object.NewHash()
+			hash := object.NewHashOfSize(n)
 			start := vm.sp - 2*n
 			for i := start; i < vm.sp; i += 2 {
 				key, ok := vm.stack[i].(object.Hashable)
