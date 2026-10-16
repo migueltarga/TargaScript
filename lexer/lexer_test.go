@@ -334,3 +334,16 @@ func BenchmarkLexer(b *testing.B) {
 		}
 	}
 }
+
+func TestShebang(t *testing.T) {
+	l := New("#!/usr/bin/env targascript\nlet x")
+	tok := l.NextToken()
+	if tok.Type != token.LET || tok.Line != 2 || tok.Column != 1 {
+		t.Errorf("got %s %q at %d:%d, want let at 2:1", tok.Type, tok.Literal, tok.Line, tok.Column)
+	}
+
+	// Only on the first line
+	if tok := New("let x\n#!").NextToken(); tok.Type != token.LET {
+		t.Errorf("got %s", tok.Type)
+	}
+}

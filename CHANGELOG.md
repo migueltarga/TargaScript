@@ -23,6 +23,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 - `await` anywhere, `all(promises)`, and `map` running functions that await side by side
 - `in` for arrays, objects, strings and ranges
 - Strings in backticks for JSON and HTML, interpolation with format specs: `${price:.2f}`
+- A `#!/usr/bin/env targascript` first line, to run scripts as programs
 - Number literals like `1_000_000`, `0xff` and `0b1010`; negative indexes; `[1] + [2]`, `"-" * 20`; arrays compare element by element
 
 ### Library
