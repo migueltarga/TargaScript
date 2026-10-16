@@ -258,3 +258,19 @@ func instructionWidth(ins code.Instructions, i int) int {
 func flowError(message string, at int) error {
 	return errors.New(message + " " + strconv.Itoa(at))
 }
+
+// jumpList returns the jumps of stack code, as their offset and their
+// target's.
+func jumpList(ins code.Instructions) [][2]int {
+	jumps := [][2]int{}
+	for i := 0; i < len(ins); i += instructionWidth(ins, i) {
+		switch code.Opcode(ins[i]) {
+		case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
+			code.OpJumpNotNullKeep, code.OpJumpNullKeep, code.OpIterNext, code.OpTry:
+			jumps = append(jumps, [2]int{i, int(code.ReadUint16(ins[i+1:]))})
+		case code.OpLoopEnter:
+			jumps = append(jumps, [2]int{i, int(code.ReadUint16(ins[i+1:]))}, [2]int{i, int(code.ReadUint16(ins[i+3:]))})
+		}
+	}
+	return jumps
+}

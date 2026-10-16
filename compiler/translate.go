@@ -62,6 +62,12 @@ type translation struct {
 	// the next value of an iterator, for an assignment of it to make it
 	// write the variable instead, or -1
 	iterNext int
+	// jumps are the jumps of the stack code, as their offset and their
+	// target's
+	jumps [][2]int
+	// layouts are where the values are at the targets of jumps that leave
+	// some in the variables or constants they came from
+	layouts map[int][]where
 	// straight is where the code that runs straight to the end starts,
 	// with no jumps from or to it
 	straight int
@@ -86,6 +92,7 @@ func translate(ins code.Instructions, positions []object.Position, numLocals int
 	t := &translation{
 		in: ins, flow: flow, numLocals: numLocals, cells: cells, constants: constants,
 		targets: jumpTargets(ins), oldPos: positions, newAt: make([]int, len(ins)+1), lastWrite: -1, iterNext: -1,
+		jumps: jumpList(ins), layouts: map[int][]where{},
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -317,7 +324,16 @@ func (t *translation) run() {
 			at = next
 			continue
 		}
-		if t.targets[at] {
+		if layout := t.layouts[at]; layout != nil {
+			// Jumps come here with the values the layout keeps where they
+			// came from, and the others in their own places
+			if len(t.stack) == d {
+				t.placeFor(at, layout)
+			}
+			t.stack = append(t.stack[:0], layout...)
+			t.lastWrite = -1
+			t.straight = len(t.out)
+		} else if t.targets[at] {
 			// Jumps come here with every value in its own place
 			if len(t.stack) == d {
 				t.place(at, 0)
@@ -446,6 +462,56 @@ func (t *translation) remove(i int) {
 		}
 		if p.Offset > i {
 			p.Offset--
+		}
+	}
+}
+
+// keptLayout returns where the values on the stack can be at the target
+// of a jump that skips the rest of an expression: in their own places, but
+// for the ones in variables nothing in between changes, or constants. The
+// value on top always goes in its own place.
+func (t *translation) keptLayout(at, next, target, d int) []where {
+	layout := make([]where, d)
+	for i := range layout {
+		layout[i] = inRegister(t.own(i))
+	}
+	// Only code between the jump and its target may jump into it
+	for _, j := range t.jumps {
+		if j[1] > at && j[1] <= target && (j[0] < at || j[0] >= target) {
+			return layout
+		}
+	}
+	written := map[int]bool{}
+	for i := next; i < target; i += instructionWidth(t.in, i) {
+		switch code.Opcode(t.in[i]) {
+		case code.OpSetLocal, code.OpNewCell:
+			written[t.u16(i, 1)] = true
+		}
+	}
+	for i := 0; i < d-1 && i < len(t.stack); i++ {
+		w := t.stack[i]
+		switch {
+		case w.constant >= 0:
+			layout[i] = w
+		case w.register < t.numLocals && !written[w.register] && !(w.register < len(t.cells) && t.cells[w.register]):
+			layout[i] = w
+		}
+	}
+	return layout
+}
+
+// placeFor moves the values a layout has in their own places there.
+func (t *translation) placeFor(old int, layout []where) {
+	for i := range t.stack {
+		if i < len(layout) && layout[i] != inRegister(t.own(i)) {
+			// The value is where the layout has it, or a copy of it
+			continue
+		}
+		w := t.stack[i]
+		if w.constant >= 0 || w.register != t.own(i) {
+			t.keep(old, t.own(i))
+			t.load(old, t.own(i), w)
+			t.stack[i] = inRegister(t.own(i))
 		}
 	}
 }
@@ -616,8 +682,19 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, t.u16(at, 1))
 
 	case code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep, code.OpJumpNotNullKeep, code.OpJumpNullKeep:
-		// The value goes with the jump, in its own place
-		t.place(at, 0)
+		// The value goes with the jump, in its own place; the ones below
+		// it can stay where they are
+		target := t.u16(at, 1)
+		layout := t.layouts[target]
+		if layout == nil && t.flow.depths[target] == d {
+			layout = t.keptLayout(at, next, target, d)
+			t.layouts[target] = layout
+		}
+		if layout != nil {
+			t.placeFor(at, layout)
+		} else {
+			t.place(at, 0)
+		}
 		rop := code.RJumpFalsy
 		switch op {
 		case code.OpJumpTruthyKeep:
