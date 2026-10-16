@@ -18,5 +18,5 @@
     <text x="104" y="498"><tspan fill="#e8e8e6">    </tspan><tspan fill="#9fd6a0">"/"</tspan><tspan fill="#e8e8e6"> =&gt; {words: words.length}</tspan></text>
     <text x="104" y="538"><tspan fill="#e8e8e6">})</tspan></text>
   </g>
-  <text x="74" y="598" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" fill="#7fb3e6">Try it in your browser: migueltarga.github.io/TargaScript</text>
+  <text x="74" y="598" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" fill="#7fb3e6">Try it in your browser: script.targa.me</text>
 </svg>

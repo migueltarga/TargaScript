@@ -26,7 +26,7 @@ func TestReadmeLinks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		found := regexp.MustCompile(`https://migueltarga\.github\.io/TargaScript/#code=[A-Za-z0-9_-]+`).FindAllString(string(text), -1)
+		found := regexp.MustCompile(`https://script\.targa\.me/#code=[A-Za-z0-9_-]+`).FindAllString(string(text), -1)
 		if len(found) == 0 {
 			t.Fatalf("no playground links in %s", file)
 		}

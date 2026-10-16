@@ -217,7 +217,7 @@ Flags:
 	flag.PrintDefaults()
 	fmt.Fprint(os.Stderr, `
 Reference: https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md
-Playground: https://migueltarga.github.io/TargaScript/
+Playground: https://script.targa.me/
 `)
 }
 
