@@ -184,6 +184,58 @@ func (vm *VM) step(f *frame, ip int) *object.Error {
 	return nil
 }
 
+// ownMethod returns the function an object holds under name, when calling
+// the method name calls it and it runs on this VM. keys, values, has and
+// length are methods every object has, which its own functions don't
+// replace.
+func (vm *VM) ownMethod(obj object.Object, name string) *object.Closure {
+	hash, ok := obj.(*object.Hash)
+	if !ok || name == "keys" || name == "values" || name == "has" || name == "length" {
+		return nil
+	}
+	pair, ok := hash.Get((&object.String{Value: name}).HashKey())
+	if !ok {
+		return nil
+	}
+	if cl, ok := pair.Value.(*object.Closure); ok && cl.Runner == vm {
+		return cl
+	}
+	return nil
+}
+
+// waitForPausedCall waits, like waitFor, when the call that just ran on
+// another VM, like a loaded file's function, paused and left its promise on
+// the stack.
+func (vm *VM) waitForPausedCall(f *frame, ip, base int) object.Object {
+	promise, ok := vm.stack[vm.sp-1].(*object.Promise)
+	if !ok || !promise.Paused {
+		return nil
+	}
+	vm.sp--
+	return vm.waitFor(f, ip, base, promise)
+}
+
+// waitFor pauses the run at a call that gave the promise of a function
+// that paused, as an await would, and returns the suspension, or pushes the
+// promise's result when it's already settled. It returns an error when the
+// run can't pause.
+func (vm *VM) waitFor(f *frame, ip, base int, promise *object.Promise) object.Object {
+	if promise.Settled() {
+		value, rejected := promise.Result()
+		if rejected {
+			return vm.positioned(f, ip, evaluator.NewError(0, 0, "%s", rejectionMessage(value)))
+		}
+		vm.push(value)
+		return nil
+	}
+	line, column := f.cl.Fn.PositionAt(ip)
+	if !vm.canPause(base) {
+		return evaluator.NewError(line, column,
+			"await can't pause here: this function was called by a builtin such as filter or sort")
+	}
+	return &suspension{awaited: promise, line: line, column: column}
+}
+
 // canPause reports whether the run from base can pause at an await.
 func (vm *VM) canPause(base int) bool {
 	if base == 0 {
@@ -223,7 +275,7 @@ func (vm *VM) runFiber(base int, fb *fiber) object.Object {
 
 	if s, ok := result.(*suspension); ok {
 		if fb == nil {
-			fb = &fiber{promise: object.NewPromise()}
+			fb = &fiber{promise: &object.Promise{Paused: true}}
 		}
 		vm.suspend(base, fb, s)
 		return fb.promise
@@ -606,6 +658,8 @@ func (vm *VM) loop(base int) object.Object {
 			if switched {
 				f = vm.frames[len(vm.frames)-1]
 				ins = f.cl.Fn.Instructions
+			} else if s := vm.waitForPausedCall(f, ip, base); s != nil {
+				return s
 			}
 
 		case code.OpCallArray:
@@ -620,18 +674,35 @@ func (vm *VM) loop(base int) object.Object {
 			if switched {
 				f = vm.frames[len(vm.frames)-1]
 				ins = f.cl.Fn.Instructions
+			} else if s := vm.waitForPausedCall(f, ip, base); s != nil {
+				return s
 			}
 
 		case code.OpCallMethodArray:
 			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
 			f.ip += 2
 			args := vm.pop().(*object.Array)
+			if cl := vm.ownMethod(vm.stack[vm.sp-1], name); cl != nil {
+				vm.stack[vm.sp-1] = cl
+				for _, arg := range args.Elements {
+					vm.push(arg)
+				}
+				if err := vm.callClosure(cl, len(args.Elements)); err != nil {
+					return vm.positioned(f, ip, err)
+				}
+				f = vm.frames[len(vm.frames)-1]
+				ins = f.cl.Fn.Instructions
+				continue
+			}
 			obj := vm.pop()
 			result := evaluator.CallMethod(obj, name, append([]object.Object{}, args.Elements...), 0, 0)
 			if err, ok := result.(*object.Error); ok {
 				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
+			if s := vm.waitForPausedCall(f, ip, base); s != nil {
+				return s
+			}
 
 		case code.OpAppend:
 			value := vm.pop()
@@ -696,6 +767,16 @@ func (vm *VM) loop(base int) object.Object {
 			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
 			argc := int(ins[ip+3])
 			f.ip += 3
+			// An object's own function runs like any call, so it can await
+			if cl := vm.ownMethod(vm.stack[vm.sp-1-argc], name); cl != nil {
+				vm.stack[vm.sp-1-argc] = cl
+				if err := vm.callClosure(cl, argc); err != nil {
+					return vm.positioned(f, ip, err)
+				}
+				f = vm.frames[len(vm.frames)-1]
+				ins = f.cl.Fn.Instructions
+				continue
+			}
 			args := make([]object.Object, argc)
 			copy(args, vm.stack[vm.sp-argc:vm.sp])
 			vm.sp -= argc
@@ -703,6 +784,13 @@ func (vm *VM) loop(base int) object.Object {
 			result := evaluator.CallMethod(obj, name, args, 0, 0)
 			if err, ok := result.(*object.Error); ok {
 				return vm.positioned(f, ip, err)
+			}
+			if paused, ok := result.(*object.Promise); ok && paused.Paused {
+				// A function of another VM, like a loaded file's, paused
+				if s := vm.waitFor(f, ip, base, paused); s != nil {
+					return s
+				}
+				continue
 			}
 			vm.push(result)
 

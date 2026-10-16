@@ -19,6 +19,11 @@ type Promise struct {
 	rejected bool
 	value    Object
 
+	// Paused is set for the promise of a function that paused at an
+	// await. Its caller waits for it, as if it had called the function
+	// directly, since calling a function that awaits needs no await.
+	Paused bool
+
 	resolvers []func(Object)
 	rejecters []func(Object)
 }
