@@ -80,6 +80,10 @@ type Parser struct {
 	// Patterns of the parameters being parsed, as parseFunctionParameters
 	// returns enough already
 	patterns []*ast.Pattern
+
+	// inMatchPatterns is set while parsing the patterns of a match arm,
+	// where => ends the patterns instead of starting an arrow function
+	inMatchPatterns bool
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -521,7 +525,38 @@ func (p *Parser) curPrecedence() int {
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	// x => x * 2
+	if p.peekTokenIs(token.ARROW) && !p.inMatchPatterns {
+		return p.parseArrowFunction(ident.Token, []*ast.Identifier{ident}, []ast.Expression{nil}, nil)
+	}
+	return ident
+}
+
+// parseArrowFunction parses the body of an arrow function, after its
+// parameters, with => as the next token: an expression, or a block.
+func (p *Parser) parseArrowFunction(tok token.Token, params []*ast.Identifier, defaults []ast.Expression, patterns []*ast.Pattern) ast.Expression {
+	p.nextToken() // =>
+	lit := &ast.FunctionLiteral{Token: tok, Parameters: params, Defaults: defaults, Patterns: patterns, Arrow: true}
+	p.nextToken()
+
+	if p.curTokenIs(token.LBRACE) {
+		lit.Body = p.parseBlockStatement()
+		return lit
+	}
+
+	// Inside an arrow function's body, => belongs to another arrow function
+	outer := p.inMatchPatterns
+	p.inMatchPatterns = false
+	body := p.parseExpression(LOWEST)
+	p.inMatchPatterns = outer
+	if body == nil {
+		return nil
+	}
+	lit.Body = &ast.BlockStatement{Token: tok, Statements: []ast.Statement{
+		&ast.ExpressionStatement{Token: tok, Expression: body},
+	}}
+	return lit
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
@@ -606,15 +641,70 @@ func (p *Parser) parseNullLiteral() ast.Expression {
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {
-	p.nextToken()
+	open := p.curToken
 
-	exp := p.parseExpression(LOWEST)
+	// () => value
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		if !p.peekTokenIs(token.ARROW) {
+			p.errorAt(open.Line, open.Column, "expected an expression in ()")
+			return nil
+		}
+		return p.parseArrowFunction(open, []*ast.Identifier{}, []ast.Expression{}, nil)
+	}
+
+	p.nextToken()
+	exps := []ast.Expression{p.parseExpression(LOWEST)}
+	// (a, b) can only be the parameters of an arrow function
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		exps = append(exps, p.parseExpression(LOWEST))
+	}
 
 	if !p.expectPeek(token.RPAREN) {
 		return nil
 	}
 
-	return exp
+	if p.peekTokenIs(token.ARROW) && !p.inMatchPatterns {
+		params := []*ast.Identifier{}
+		defaults := []ast.Expression{}
+		patterns := []*ast.Pattern{}
+		for _, exp := range exps {
+			// ([x, y]) => ... and ({name}) => ... take the argument apart
+			if pattern := literalPattern(exp); pattern != nil {
+				params = append(params, &ast.Identifier{Token: pattern.Token, Value: pattern.String()})
+				defaults = append(defaults, nil)
+				patterns = append(patterns, pattern)
+				continue
+			}
+			patterns = append(patterns, nil)
+			switch exp := exp.(type) {
+			case *ast.Identifier:
+				params = append(params, exp)
+				defaults = append(defaults, nil)
+			case *ast.AssignmentExpression:
+				// (a, b = 1) => ...
+				if ident, ok := exp.Left.(*ast.Identifier); ok && exp.Operator == "" {
+					params = append(params, ident)
+					defaults = append(defaults, exp.Value)
+					continue
+				}
+				p.errorAt(open.Line, open.Column, "expected parameter names before =>")
+				return nil
+			default:
+				p.errorAt(open.Line, open.Column, "expected parameter names before =>")
+				return nil
+			}
+		}
+		return p.parseArrowFunction(open, params, defaults, patterns)
+	}
+
+	if len(exps) > 1 {
+		p.errorAt(open.Line, open.Column, "expected one expression in (), found %d separated by commas", len(exps))
+		return nil
+	}
+	return exps[0]
 }
 
 func (p *Parser) parseIfExpression() ast.Expression {
@@ -891,9 +981,11 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 
 		// _ matches anything, and leaves Patterns nil
 		if !(p.curTokenIs(token.IDENT) && p.curToken.Literal == "_" && p.peekTokenIs(token.ARROW)) {
+			p.inMatchPatterns = true
 			for {
 				pattern := p.parseExpression(LOWEST)
 				if pattern == nil {
+					p.inMatchPatterns = false
 					return nil
 				}
 				arm.Patterns = append(arm.Patterns, pattern)
@@ -903,6 +995,7 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 				p.nextToken()
 				p.nextToken()
 			}
+			p.inMatchPatterns = false
 		}
 
 		if !p.expectPeek(token.ARROW) {

@@ -9,9 +9,9 @@ fn greet(name) {
 print(greet("world"))
 
 // Arrays, ranges and method chaining
-let squares = (1..10).map(fn(n) { n * n })
+let squares = (1..10).map(n => n * n)
 print("Squares:", squares)
-print("Even squares:", squares.filter(fn(n) { n % 2 == 0 }))
+print("Even squares:", squares.filter(n => n % 2 == 0))
 
 // Objects
 let languages = {"Lua": 1993, "JavaScript": 1995, "TargaScript": 2025}
