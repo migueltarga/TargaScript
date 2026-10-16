@@ -135,6 +135,9 @@ func moduleNames(program *ast.Program, dir string, seen map[string]bool) []modul
 // loadedNames returns the names a load statement defines, or the error
 // message it fails with.
 func (c *Compiler) loadedNames(stmt *ast.LoadStatement) (string, []moduleName, string) {
+	if !c.AllowLoad {
+		return "", nil, "load is not available in embedded scripts"
+	}
 	shown := stmt.Path.Value
 	path, err := ResolveLoadPath(c.Dir, shown)
 	if err != nil {

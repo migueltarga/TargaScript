@@ -50,6 +50,9 @@ type Compiler struct {
 	// are relative to. Empty means the working directory.
 	Dir string
 
+	// AllowLoad controls whether source can load files. Embedders disable it.
+	AllowLoad bool
+
 	// Errors found while compiling, which the program raises if it gets
 	// to them
 	problems []Problem
@@ -105,6 +108,7 @@ func New() *Compiler {
 		captured:     map[ast.Node]map[int]bool{},
 		hoisted:      map[*Symbol]bool{},
 		builtinIndex: map[string]int{},
+		AllowLoad:    true,
 	}
 	for i, name := range evaluator.BuiltinNames() {
 		c.builtinIndex[name] = i

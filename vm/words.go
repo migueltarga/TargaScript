@@ -207,7 +207,7 @@ func (vm *VM) loopWords(base int) object.Object {
 			if value == nil {
 				name := vm.names.Names()[w.B()]
 				// A builtin is still usable before a global with its name is set
-				builtin, ok := evaluator.Builtin(name)
+				builtin, ok := vm.builtin(name)
 				if !ok {
 					f.ip = pc
 					return vm.notDefined(f, pc-1, name)
@@ -314,6 +314,12 @@ func (vm *VM) loopWords(base int) object.Object {
 			r = vm.stack[f.base:]
 
 		case code.RCallMethod:
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, pc-1); err != nil {
+					f.ip = pc
+					return err
+				}
+			}
 			name := vm.constants[w.C()].(*object.String)
 			argc := w.B()
 			fn := f.base + w.A()
@@ -354,6 +360,12 @@ func (vm *VM) loopWords(base int) object.Object {
 			vm.stack[fn] = result
 
 		case code.RCallSpread, code.RCallMethodSpread:
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, pc-1); err != nil {
+					f.ip = pc
+					return err
+				}
+			}
 			f.ip = pc
 			if s := vm.callSpread(f, pc-1, w, base); s != nil {
 				return s

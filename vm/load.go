@@ -43,6 +43,9 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 
 	module := New(c.Globals())
 	module.modules = vm.modules
+	if vm.host != nil {
+		module.SetHost(vm.host)
+	}
 
 	vm.modules.loading[path] = true
 	result := module.Run(bytecode)
@@ -63,6 +66,15 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 
 	vm.modules.loaded[path] = exports
 	return exports
+}
+
+func (vm *VM) builtin(name string) (*object.Builtin, bool) {
+	for i, n := range evaluator.BuiltinNames() {
+		if n == name {
+			return vm.builtins[i], true
+		}
+	}
+	return nil, false
 }
 
 // Global returns the value of a global by name, or nil if it isn't set.

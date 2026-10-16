@@ -14,6 +14,10 @@ func init() {
 // sleep returns a promise that resolves after the given number of
 // milliseconds, for `await sleep(500)`.
 func sleep(args ...object.Object) object.Object {
+	return sleepWithHost(host, args...)
+}
+
+func sleepWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for sleep. got=%d, want=1", len(args))}
 	}
@@ -30,12 +34,12 @@ func sleep(args ...object.Object) object.Object {
 	if milliseconds < 0 {
 		milliseconds = 0
 	}
-	if host == nil {
+	if h == nil {
 		return &object.Error{Message: "sleep is not available here"}
 	}
 
 	promise := object.NewPromise()
-	host.After(milliseconds, func() { promise.Resolve(NULL) })
+	h.After(milliseconds, func() { promise.Resolve(NULL) })
 	return promise
 }
 

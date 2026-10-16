@@ -6,7 +6,7 @@
 
 TargaScript is a small, modern scripting language that runs in your terminal, in web pages and inside Go programs. It reads like JavaScript, has the conveniences of newer languages (pipes, pattern matching, destructuring, top-level `await`), and comes with everything around it: a web server, a test runner, a formatter, a REPL and editor support, in one binary. Files use the `.tg` extension.
 
-**[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
+**[▶ Try TargaScript in your browser](https://script.targa.me/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
 
 📖 The [language reference](docs/REFERENCE.md) covers everything in one page, the [cookbook](docs/COOKBOOK.md) has short programs for everyday jobs (CSV files, JSON, web APIs, servers, tests), and [coming from JavaScript or Python](docs/COMING_FROM.md) shows how to write what you already know.
 
@@ -18,19 +18,19 @@ TargaScript is a small, modern scripting language that runs in your terminal, in
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match` with guards, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
 - **A better shell script.** `exec("git status --short")` runs other programs and gives their output and exit code, `#!/usr/bin/env targascript` makes a file a command, and files, directories and environment variables are a function call away, with real data structures instead of string juggling.
 - **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
-- **Embed it in Go.** `targascript.New().Run(rule)` gives your Go program a safe scripting language for user rules, formulas and plugins; see [embedding](docs/EMBEDDING.md).
+- **Embed it in Go.** `targascript.New().Run(rule)` runs user rules, formulas and plugins with file loading and network access disabled by default; see [embedding](docs/EMBEDDING.md) for the available limits.
 - **Ship one file.** `targascript build app.tg` makes an executable with the program and everything it loads; whoever gets it doesn't need TargaScript.
 - **The tools are included.** `targascript fmt`, `check`, `test` and `build`, `--watch` to run again on every save, a REPL with history and Tab completion, a VS Code extension, and a language server for Neovim, Helix and other editors.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
-- **Faster than Python.** Programs compile to bytecode for a VM that beats CPython on all of [these benchmarks](bench/), up to 2 times, and allows 10,000 nested calls, in the browser too.
+- **A bytecode VM.** Programs run in the terminal and browser with the same semantics. The [reproducible benchmarks](bench/) compare startup and execution with Python, Node and Lua; results depend on the workload.
 
 ## ⚖️ Compared with Python and JavaScript
 
 | | TargaScript | Python | JavaScript (Node) |
 |---|---|---|---|
 | Runs in a web page with no build step | ✅ `<script type="text/targascript">`, ~200 KB | ⚠️ through Pyodide, several MB | ✅ |
-| One file to install, no runtime | ✅ | ❌ | ❌ |
+| One file to install, no runtime | ✅ | ⚠️ with packaging tools | ⚠️ with [single executable applications](https://nodejs.org/api/single-executable-applications.html) |
 | Turn a script into an executable to share | ✅ `targascript build` | ⚠️ with PyInstaller | ⚠️ single executable apps, experimental |
 | HTTP server in a few lines, no library | ✅ `serve(8080, fn(req) {...})` | ⚠️ `http.server`, low level | ⚠️ `http.createServer`, low level |
 | Test runner, no library | ✅ `targascript test` | ✅ `unittest` | ✅ `node --test` |
@@ -59,7 +59,7 @@ repeat name, commits in byAuthor {
 }
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=RJBPS8QwEMXv-RTPsocWJFkEL0IVFdG73iXtzrbRNgmTCUsp_e6y3T9eAmHe_N68ZwxeQ_YC6QmDFUqCNoyjk4SwhwVTDMlJ4AnNBJulD6wGEmQeUKPoRWJ6MMZGpzsnfW50G0azrpnRdZkGsdxZ83V8P1t2UczZ4SkSf0fbUX2_LVYoU4rBJ0INe7BOsCdp-zLzUCm3x81lrsMvZkjP4YDi3clHbmB9OhDTDpv5KktiJaelwKJWfjM9rwlQX630Twq-rHTHIceXqSzn03VLhfrx3IU-5dbejlQpxRTJCo6_22tbzv_TZwUAkZ2XstjMR6GOdvfmd-XdtlqwOXskPZDvpF8ulKJSi_oLAAD__w)
+[▶ Try it in the playground](https://script.targa.me/#code=RJBPS8QwEMXv-RTPsocWJFkEL0IVFdG73iXtzrbRNgmTCUsp_e6y3T9eAmHe_N68ZwxeQ_YC6QmDFUqCNoyjk4SwhwVTDMlJ4AnNBJulD6wGEmQeUKPoRWJ6MMZGpzsnfW50G0azrpnRdZkGsdxZ83V8P1t2UczZ4SkSf0fbUX2_LVYoU4rBJ0INe7BOsCdp-zLzUCm3x81lrsMvZkjP4YDi3clHbmB9OhDTDpv5KktiJaelwKJWfjM9rwlQX630Twq-rHTHIceXqSzn03VLhfrx3IU-5dbejlQpxRTJCo6_22tbzv_TZwUAkZ2XstjMR6GOdvfmd-XdtlqwOXskPZDvpF8ulKJSi_oLAAD__w)
 
 And the basics:
 
@@ -84,7 +84,7 @@ let words = "  Hello World  "
 print(words)                               // ["hello", "world"]
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=bJGxbvMgFIV3nuLkyoPRj4jyd4vkWN36Bh0sD1ZMXBQMFlBZlet3rwzOkpYJdNA53z33ZjF4pWJpu1GJfNd2QAV6U8Y44lgYAFCxPMRVoFi2_-uB2MqYURGT8sFZVFhoU-gMejX6qkiAwl0bE-iMhibvBt-No7bDpvQq6MFSu7LJaxvLjJK95ObDOX6d4xEJTSAlHBjzalJdhBZIUdB255E5eh8hZ1CxaPzDaZUolqSvxB9jNDftQxSQUnoVYosKzUngv8BLuzPuzl3fexVCLa86fqGuQZ_2bt1siWfG_Zl9Z-f7sJWKzI53500PUAL7vqAMqC4IMno9llwaNytfcv4sh8noWBKI8x0nOf_R0nNlDX2kfQrQvGVTy34CAAD__w)
+[▶ Try it in the playground](https://script.targa.me/#code=bJGxbvMgFIV3nuLkyoPRj4jyd4vkWN36Bh0sD1ZMXBQMFlBZlet3rwzOkpYJdNA53z33ZjF4pWJpu1GJfNd2QAV6U8Y44lgYAFCxPMRVoFi2_-uB2MqYURGT8sFZVFhoU-gMejX6qkiAwl0bE-iMhibvBt-No7bDpvQq6MFSu7LJaxvLjJK95ObDOX6d4xEJTSAlHBjzalJdhBZIUdB255E5eh8hZ1CxaPzDaZUolqSvxB9jNDftQxSQUnoVYosKzUngv8BLuzPuzl3fexVCLa86fqGuQZ_2bt1siWfG_Zl9Z-f7sJWKzI53500PUAL7vqAMqC4IMno9llwaNytfcv4sh8noWBKI8x0nOf_R0nNlDX2kfQrQvGVTy34CAAD__w)
 
 ## 🔀 Matching Values
 
@@ -110,7 +110,7 @@ fn route(req) {
 }
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=fJBBS8MwHMXv_RSP4KGDWOdkBwsTBIcePehpDInLv7bQJF0anaP0u0uTdu0E7a3vvby8XzINSfXOFu8U6xmaCACUcLscuv_rvjlWd2DaaGIn7Zpj4WWBjA6jfpMkt16v6YusKEfnzctK6GPQ2qiNokzDmk9HsaX9-QBL-0SRy42cLGGP6xeGIvNuJVyO1Qrsivnq3KjJQB_lYE_r-4fgV-KDcNEMR9vptL4yJyHJ1hv2fSmkKjTb-guOVIeKIP5C0sZBlKU5kJyQVbbQLt7MORYcS47lfJsoUcXDg89mfSTwN4E1HXZ3C9MOrf0z6MnGpDS7-p_08-tZLUfPmqI50aYBte1afgIAAP__)
+[▶ Try it in the playground](https://script.targa.me/#code=fJBBS8MwHMXv_RSP4KGDWOdkBwsTBIcePehpDInLv7bQJF0anaP0u0uTdu0E7a3vvby8XzINSfXOFu8U6xmaCACUcLscuv_rvjlWd2DaaGIn7Zpj4WWBjA6jfpMkt16v6YusKEfnzctK6GPQ2qiNokzDmk9HsaX9-QBL-0SRy42cLGGP6xeGIvNuJVyO1Qrsivnq3KjJQB_lYE_r-4fgV-KDcNEMR9vptL4yJyHJ1hv2fSmkKjTb-guOVIeKIP5C0sZBlKU5kJyQVbbQLt7MORYcS47lfJsoUcXDg89mfSTwN4E1HXZ3C9MOrf0z6MnGpDS7-p_08-tZLUfPmqI50aYBte1afgIAAP__)
 
 An arm can have a guard, `if ...`, that must also be true for it to be chosen. An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
 
@@ -133,7 +133,7 @@ repeat s in [circle(1), rect(2, 3)] {
 }
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=bJBBa8QgFITv_opBetAgbpJtCw30l5QebPqCwlaCCjkE_3tRk7ItvcmM73vz5kYJ0ZqV8IqdAYA3XzSBV5GrKplAZsLihcSOHrmpnxTn4D7ox-EPe7Iu6kLI2FyydRKHXN5CTnpcMi-MzNjiMbsw30iEAti11nWvOlM0lysE9TvFVQ-Pw9MLOlR2QNdhRM7IBRpoTmJTsP9Ti80Vyoc_2ArbTqptQBZoJZMQ4TzejsCDVG3NqHCV70d5a3A-iajPboSURb5cjjvvWikXKCRLLe6d86z7nmX2HQAA__8)
+[▶ Try it in the playground](https://script.targa.me/#code=bJBBa8QgFITv_opBetAgbpJtCw30l5QebPqCwlaCCjkE_3tRk7ItvcmM73vz5kYJ0ZqV8IqdAYA3XzSBV5GrKplAZsLihcSOHrmpnxTn4D7ox-EPe7Iu6kLI2FyydRKHXN5CTnpcMi-MzNjiMbsw30iEAti11nWvOlM0lysE9TvFVQ-Pw9MLOlR2QNdhRM7IBRpoTmJTsP9Ti80Vyoc_2ArbTqptQBZoJZMQ4TzejsCDVG3NqHCV70d5a3A-iajPboSURb5cjjvvWikXKCRLLe6d86z7nmX2HQAA__8)
 
 Arrow functions inside a method see its `this`, so `this.items.map(i => i * this.rate)` works.
 
@@ -156,7 +156,7 @@ let age = try {
 }
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=TI7BioNADIbv8xQ_uayCuwh7W7aHHn2M1MZxwMYyBtsi8-5l1Jbewv_lz5dOceU4ydFLYXK3EosDgEEM7AUH2NiobWwloVvBP2ossD6ON1AOWtYvw0mg4tnCLIS0FtiLS859XIyP3fJW0_cvlS6hZWt7SIyvhRjUCmp05iGcc_-Pqsx_LjJN7KUCsWEIKnuex-3R2iX3DAAA__8)
+[▶ Try it in the playground](https://script.targa.me/#code=TI7BioNADIbv8xQ_uayCuwh7W7aHHn2M1MZxwMYyBtsi8-5l1Jbewv_lz5dOceU4ydFLYXK3EosDgEEM7AUH2NiobWwloVvBP2ossD6ON1AOWtYvw0mg4tnCLIS0FtiLS859XIyP3fJW0_cvlS6hZWt7SIyvhRjUCmp05iGcc_-Pqsx_LjJN7KUCsWEIKnuex-3R2iX3DAAA__8)
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
@@ -214,7 +214,7 @@ fn minmax(list) { [list.sort().first(), list.last()] }
 let [lowest, highest] = minmax([5, 1, 9])
 ```
 
-[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=XI7BysMgEITvPsXgSWEJ5g__oYUc-hziQVqTCMaUKLQQ8u5lQym0t_2WYeZLocIOcS2VUMJ1yTeHHrY1hD9D6IwTHNmynwPBj2FHj00yyjPkJXtJkH5k6swuxJAxxzz7p0qxVI0Nlo-mLGtVujmmlCYcz-QZHPZjxKblEVhkiuMUSmWTd5f9J7SEk9NC3NeYq_pyJnz8CD8tWrwCAAD__w)
+[▶ Try it in the playground](https://script.targa.me/#code=XI7BysMgEITvPsXgSWEJ5g__oYUc-hziQVqTCMaUKLQQ8u5lQym0t_2WYeZLocIOcS2VUMJ1yTeHHrY1hD9D6IwTHNmynwPBj2FHj00yyjPkJXtJkH5k6swuxJAxxzz7p0qxVI0Nlo-mLGtVujmmlCYcz-QZHPZjxKblEVhkiuMUSmWTd5f9J7SEk9NC3NeYq_pyJnz8CD8tWrwCAAD__w)
 
 Missing elements and properties are null, unless the name has a default: `let {port = 8080} = config`. Patterns also work in loops and parameters, and `{name, age}` is short for `{"name": name, "age": age}`:
 
@@ -380,7 +380,7 @@ Strings are sent as text or HTML, objects and arrays as JSON. `response(body, {s
 
 ## 🌐 TargaScript in the Browser
 
-TargaScript also runs in web pages: try the [to-do list](https://migueltarga.github.io/TargaScript/demos/todo/) and the [Markdown editor](https://migueltarga.github.io/TargaScript/demos/markdown/), written entirely in TargaScript ([source](playground/demos/todo/app.tg), [source](playground/demos/markdown/app.tg)). The interpreter is compiled to WebAssembly, and scripts reach JavaScript and the DOM through `js`, which is `globalThis`:
+TargaScript also runs in web pages: try the [to-do list](https://script.targa.me/demos/todo/) and the [Markdown editor](https://script.targa.me/demos/markdown/), written entirely in TargaScript ([source](playground/demos/todo/app.tg), [source](playground/demos/markdown/app.tg)). The interpreter is compiled to WebAssembly, and scripts reach JavaScript and the DOM through `js`, which is `globalThis`:
 
 ```html
 <button id="hello">Say hello</button>

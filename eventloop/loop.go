@@ -3,15 +3,50 @@
 // on the loop's goroutine, the only one that touches the VM.
 package eventloop
 
-import "time"
+import (
+	"math"
+	"strings"
+	"time"
+)
 
 type Loop struct {
-	tasks   chan func()
-	pending int
+	tasks         chan func()
+	pending       int
+	restricted    bool
+	allowedHosts  map[string]bool
+	maxFetchBytes int64
 }
 
 func New() *Loop {
 	return &Loop{tasks: make(chan func(), 64)}
+}
+
+// NewRestricted creates a loop for embedded scripts. Network requests are
+// denied until the embedding application allows specific hosts.
+func NewRestricted() *Loop {
+	l := New()
+	l.restricted = true
+	l.maxFetchBytes = 1 << 20
+	return l
+}
+
+// AllowFetchHosts replaces the exact hostnames embedded scripts may contact.
+// An empty list disables fetch.
+func (l *Loop) AllowFetchHosts(hosts ...string) {
+	l.allowedHosts = make(map[string]bool, len(hosts))
+	for _, host := range hosts {
+		l.allowedHosts[strings.ToLower(strings.TrimSpace(host))] = true
+	}
+}
+
+// SetMaxFetchBytes limits the response body of an embedded fetch.
+func (l *Loop) SetMaxFetchBytes(n int64) {
+	if n > 0 {
+		if n == math.MaxInt64 {
+			n--
+		}
+		l.maxFetchBytes = n
+	}
 }
 
 // After runs fn on the loop after the given number of milliseconds.

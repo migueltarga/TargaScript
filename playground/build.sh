@@ -4,7 +4,7 @@
 set -e
 out=${1:-site}
 ./web/build.sh "$out"
-cp playground/index.html playground/playground.tg playground/runner.tg playground/welcome.tg playground/social.png "$out/"
+cp playground/index.html playground/playground.tg playground/runner.tg playground/welcome.tg playground/social.png playground/CNAME "$out/"
 
 # Demos: web apps written in TargaScript
 mkdir -p "$out/demos"

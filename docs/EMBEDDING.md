@@ -1,6 +1,6 @@
 # Embedding TargaScript in Go
 
-TargaScript can run inside a Go program, so its users can write rules, formulas, plugins or configuration in a small, readable language, without access to your files or your process.
+TargaScript can run inside a Go program, so its users can write rules, formulas, plugins or configuration in a small, readable language. Embedded scripts cannot load files, read the environment, run commands or exit the process. Network access is disabled until you allow specific hosts.
 
 ```sh
 go get github.com/migueltarga/TargaScript
@@ -47,11 +47,13 @@ count := script.Get("someGlobal")
 ```
 
 - `SetOutput(w)` sends `print` somewhere else than standard output.
-- `SetMaxSteps(n)` stops a script after that many loop iterations and calls, so a user's endless loop can't hang your program.
+- `SetMaxSteps(n)` stops scripts after that many loop iterations and calls. This is a computation limit, not a memory limit or a deadline for Go functions you expose.
+- `AllowFetchHosts("api.example.com")` allows `fetch` to contact that exact hostname, including redirects only to allowed hosts. By default, `fetch` is denied.
+- `SetMaxFetchBytes(n)` limits the response body size of allowed requests. The default is 1 MiB.
 - Errors are `*targascript.Error`, with `Message`, `Line` and `Column`. Their `Error()` shows the line of code with a caret.
 
-A `Script` isn't safe to use from several goroutines at once. Give each goroutine its own.
+A `Script` isn't safe to use from several goroutines at once. Give each goroutine its own; separate scripts have separate event loops.
 
 ## What scripts can do
 
-Scripts can compute, call the functions you give them, `await`, `fetch` and `sleep`. They can't read or write files, read the environment or exit. Those builtins only exist in the `targascript` command.
+Scripts can compute, call the functions you give them, `await` and `sleep`. They can use `fetch` only for hosts you explicitly allow. They cannot read or write files, load files, read the environment, run commands or exit through the language's builtins. Those builtins only exist in the `targascript` command. Go functions that you expose can still perform their own I/O, so only provide functions you intend scripts to use.

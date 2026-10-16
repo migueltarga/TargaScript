@@ -31,24 +31,23 @@ import (
 	"github.com/migueltarga/TargaScript/vm"
 )
 
-// loop runs the asynchronous work of scripts, like sleep and fetch.
-var loop = eventloop.New()
-
-func init() {
-	evaluator.SetHost(loop)
-}
-
 // Script is a TargaScript environment: what one Run defines, the next sees.
 // It isn't safe to use from several goroutines at once.
 type Script struct {
 	compiler *compiler.Compiler
 	machine  *vm.VM
+	loop     *eventloop.Loop
 }
 
 // New returns an empty environment.
 func New() *Script {
 	c := compiler.New()
-	return &Script{compiler: c, machine: vm.New(c.Globals())}
+	c.AllowLoad = false
+	l := eventloop.NewRestricted()
+	machine := vm.New(c.Globals())
+	machine.SetHost(l)
+	machine.RestrictBuiltins("readFile", "writeFile", "appendFile", "listDir", "env", "exit", "input", "exec", "exists", "deleteFile", "makeDir", "staticFile", "serve")
+	return &Script{compiler: c, machine: machine, loop: l}
 }
 
 // SetOutput sets where print writes; standard output when it isn't set.
@@ -60,6 +59,18 @@ func (s *Script) SetOutput(w io.Writer) {
 // calls, to bound scripts that might not end. 0 means no limit.
 func (s *Script) SetMaxSteps(n int) {
 	s.machine.MaxSteps = n
+}
+
+// AllowFetchHosts enables fetch for the given exact hostnames. Fetch is
+// disabled by default in embedded scripts.
+func (s *Script) AllowFetchHosts(hosts ...string) {
+	s.loop.AllowFetchHosts(hosts...)
+}
+
+// SetMaxFetchBytes sets the largest response body an embedded script can
+// receive. The default is 1 MiB.
+func (s *Script) SetMaxFetchBytes(n int64) {
+	s.loop.SetMaxFetchBytes(n)
 }
 
 // Error is an error in a script: its message and where it happened.
@@ -87,7 +98,7 @@ func (s *Script) Run(source string) (any, error) {
 	if err != nil {
 		return nil, &Error{Message: err.Error(), source: source}
 	}
-	result, err := wait(s.machine.Run(bytecode))
+	result, err := wait(s.loop, s.machine.Run(bytecode))
 	if err != nil {
 		if scriptErr, ok := err.(*Error); ok {
 			scriptErr.source = source
@@ -98,9 +109,9 @@ func (s *Script) Run(source string) (any, error) {
 }
 
 // wait runs the event loop until a script that paused at an await is done.
-func wait(result object.Object) (object.Object, error) {
+func wait(loop *eventloop.Loop, result object.Object) (object.Object, error) {
 	if promise, ok := result.(*object.Promise); ok {
-		if !loop.Run(promise.Settled) {
+		if loop == nil || !loop.Run(promise.Settled) {
 			return nil, errors.New("the script is waiting for something that will never happen")
 		}
 		value, rejected := promise.Result()
@@ -156,7 +167,13 @@ func callValue(fn object.Object, args []any) (any, error) {
 		}
 		values[i] = value
 	}
-	result, err := wait(evaluator.CallFunction(fn, values))
+	var loop *eventloop.Loop
+	if closure, ok := fn.(*object.Closure); ok {
+		if machine, ok := closure.Runner.(*vm.VM); ok {
+			loop, _ = machine.Host().(*eventloop.Loop)
+		}
+	}
+	result, err := wait(loop, evaluator.CallFunction(fn, values))
 	if err != nil {
 		return nil, err
 	}

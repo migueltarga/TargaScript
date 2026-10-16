@@ -16,7 +16,7 @@ import (
 )
 
 // Playground is the address of the playground.
-const Playground = "https://migueltarga.github.io/TargaScript/"
+const Playground = "https://script.targa.me/"
 
 // Link returns the playground link for a program: the code compressed with
 // raw deflate and written in base64url without padding, after #code=, as
