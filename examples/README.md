@@ -44,6 +44,17 @@ TargaScript provides a rich set of built-in functions for common operations:
 - `sleep(ms)` - Return a promise that resolves after `ms` milliseconds, for `await sleep(500)`
 - `fetch(url, options)` - Make an HTTP request and return a promise of the response, with `status`, `ok`, `url`, `headers`, `text` and `json()`. Options are `method`, `headers` and `body`
 
+#### Command Line
+
+These work when running scripts from the command line, not in the browser. Paths are relative to the working directory.
+
+- `readFile(path)` - The content of a file
+- `writeFile(path, text)` / `appendFile(path, text)` - Replace the content of a file, or add to its end, creating it if needed
+- `listDir(path)` - The names in a directory, sorted
+- `env(name, default)` - An environment variable, or `default` (null if not given) when it isn't set
+- `exit(code)` - End the program with an exit code, 0 by default
+- `args` - The command-line arguments after the script
+
 #### Time Functions
 
 - `now()` - Return the current Unix timestamp (seconds since Jan 1, 1970)

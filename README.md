@@ -246,7 +246,20 @@ cat script.tg | targascript -     # run code from standard input
 targascript --debug script.tg     # print the syntax tree before running
 ```
 
-In the REPL, code that isn't finished, like a function whose body isn't closed, continues on the next line. From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
+In the REPL, code that isn't finished, like a function whose body isn't closed, continues on the next line.
+
+Scripts can read and write files, read environment variables and set their exit code, which makes TargaScript handy for small tools:
+
+```
+// count.tg: count the lines of the files given as arguments
+if args.length == 0 {
+    print("usage: targascript count.tg FILE...")
+    exit(1)
+}
+repeat file in args {
+    print(readFile(file).lines().length, file)
+}
+``` From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
 
 ## 🌐 TargaScript in the Browser
 
