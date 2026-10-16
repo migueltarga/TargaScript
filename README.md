@@ -407,6 +407,34 @@ Build it with [TinyGo](https://tinygo.org) 0.39:
 
 and serve `build/targascript.js` and `build/targascript.wasm` (about 420 KB, 190 KB compressed) next to your page. Recursion goes up to 10,000 calls in the browser too. Only functions called back by builtins or by JavaScript, like the function given to `map` or an event handler, can nest at most 100 deep there.
 
+## ✏️ Editors
+
+The [VS Code extension](targascript-vscode/) colors the code, shows problems as you type, documents the builtins on hover, and runs files with Cmd+F5.
+
+Other editors get problems, completion and hover from `targascript lsp`, a language server. In Neovim:
+
+```lua
+vim.filetype.add({ extension = { tg = "targascript" } })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "targascript",
+  callback = function() vim.lsp.start({ name = "targascript", cmd = { "targascript", "lsp" } }) end,
+})
+```
+
+In Helix, in `languages.toml`:
+
+```toml
+[language-server.targascript]
+command = "targascript"
+args = ["lsp"]
+
+[[language]]
+name = "targascript"
+scope = "source.targascript"
+file-types = ["tg"]
+language-servers = ["targascript"]
+```
+
 ## 🤔 Why TargaScript?
 
 Creating a programming language is one of the most educational projects a developer can undertake! TargaScript is an experiment in language design, compiler construction, and a way to better understand how programming languages work under the hood.

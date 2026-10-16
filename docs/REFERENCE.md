@@ -432,6 +432,7 @@ targascript -e 'print(2 ** 10)'   # run code given on the command line
 targascript test                  # run the *_test.tg files, see Testing
 targascript check                 # find problems in the .tg files without running them
 targascript build app.tg -o app   # make an executable that runs app.tg, see below
+targascript lsp                   # a language server, for editors other than VS Code
 cat script.tg | targascript -     # run code from standard input
 ```
 
