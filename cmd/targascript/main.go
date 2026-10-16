@@ -26,6 +26,7 @@ func main() {
 	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
 	debugNoColor := flag.Bool("debug-no-color", false, "Enable debug mode with AST pretty printing (no colors)")
 
+	flag.Usage = usage
 	flag.Parse()
 
 	if *showVersion {
@@ -45,6 +46,13 @@ func main() {
 			os.Exit(1)
 		}
 		return
+	}
+
+	if len(args) > 0 && args[0] == "help" {
+		if _, err := os.Stat("help"); err != nil {
+			usage()
+			return
+		}
 	}
 
 	// test, check and build are commands, unless there's a file with
@@ -154,4 +162,32 @@ func runBundle(b *bundle) int {
 		return 1
 	}
 	return 0
+}
+
+// usage prints how to use the command, for -h, --help and help.
+func usage() {
+	fmt.Fprint(os.Stderr, `TargaScript, a small scripting language.
+
+Usage:
+  targascript                      start the REPL
+  targascript file.tg [args...]    run a program; it sees the arguments in args
+  targascript -e 'code'            run code given on the command line
+  targascript -                    run a program read from standard input
+
+Commands:
+  targascript test [paths]         run the tests in *_test.tg files
+  targascript check [paths]        find problems in .tg files without running them
+  targascript fmt [--check] [paths]
+                                   lay out .tg files; --check only lists the ones that need it
+  targascript build file.tg [-o name]
+                                   make an executable with the program and what it loads
+  targascript lsp                  a language server, for editors
+
+Flags:
+`)
+	flag.PrintDefaults()
+	fmt.Fprint(os.Stderr, `
+Reference: https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md
+Playground: https://migueltarga.github.io/TargaScript/
+`)
 }
