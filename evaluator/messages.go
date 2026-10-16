@@ -147,8 +147,7 @@ func operatorError(line, column int, operator string, left, right object.Object)
 // NotDefined reports an unknown name, suggesting a similar one from
 // candidates, the builtins or print.
 func NotDefined(line, column int, name string, candidates []string) *object.Error {
-	// print is a keyword, but it's called like a function
-	candidates = append(append([]string{}, candidates...), "print")
+	candidates = append([]string{}, candidates...)
 	for builtin := range builtins {
 		candidates = append(candidates, builtin)
 	}

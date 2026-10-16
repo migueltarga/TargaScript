@@ -314,7 +314,7 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 
 | Function | Does |
 |---|---|
-| `print(...values)` | prints values separated by spaces |
+| `print(...values)` | prints values separated by spaces; it is a function like any other, so `x \|> print` works |
 | `printf(format, ...values)` / `format(format, ...values)` | prints / returns values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`... |
 | `type(value)` | `"integer"`, `"float"`, `"string"`, `"boolean"`, `"null"`, `"array"`, `"object"`, `"function"`, `"promise"` |
 | `toString(v)`, `toInt(v)`, `toFloat(v)` | convert values |

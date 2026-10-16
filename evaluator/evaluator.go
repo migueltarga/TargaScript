@@ -24,12 +24,12 @@ var (
 // instead of overflowing the Go stack.
 const maxCallDepth = 10000
 
-// SetOutput sets the writer to use for print statements
+// SetOutput sets the writer print uses
 func SetOutput(w io.Writer) {
 	output = w
 }
 
-// Output returns the writer print statements use.
+// Output returns the writer print uses.
 func Output() io.Writer {
 	return output
 }

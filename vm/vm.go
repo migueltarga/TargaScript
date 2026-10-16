@@ -656,15 +656,6 @@ func (vm *VM) loop(base int) object.Object {
 			vm.sp -= n
 			vm.push(&object.Closure{Fn: fn, Free: free, Runner: vm})
 
-		case code.OpPrint:
-			n := int(ins[ip+1])
-			f.ip++
-			values := make([]object.Object, n)
-			copy(values, vm.stack[vm.sp-n:vm.sp])
-			vm.sp -= n
-			evaluator.Print(values)
-			vm.push(NULL)
-
 		case code.OpLoad:
 			path := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
 			shown := vm.constants[code.ReadUint16(ins[ip+3:])].(*object.String).Value

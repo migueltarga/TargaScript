@@ -1473,6 +1473,24 @@ func TestPropertyAssignmentExpression(t *testing.T) {
 	}
 }
 
+// printCall returns the print(...) call that is the program's only
+// statement. print is an ordinary function.
+func printCall(t *testing.T, program *ast.Program) *ast.CallExpression {
+	t.Helper()
+	exprStmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+	call, ok := exprStmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("expression is not ast.CallExpression. got=%T", exprStmt.Expression)
+	}
+	if fn, ok := call.Function.(*ast.Identifier); !ok || fn.Value != "print" {
+		t.Fatalf("call.Function is not print. got=%s", call.Function)
+	}
+	return call
+}
+
 func TestPrintStatement(t *testing.T) {
 	input := `print(5 + 5)`
 
@@ -1486,11 +1504,7 @@ func TestPrintStatement(t *testing.T) {
 			len(program.Statements))
 	}
 
-	stmt, ok := program.Statements[0].(*ast.PrintStatement)
-	if !ok {
-		t.Fatalf("program.Statements[0] is not ast.PrintStatement. got=%T",
-			program.Statements[0])
-	}
+	stmt := printCall(t, program)
 
 	if len(stmt.Arguments) != 1 {
 		t.Fatalf("print statement doesn't have 1 argument. got=%d",
@@ -1520,11 +1534,7 @@ func TestMultiArgumentPrintStatement(t *testing.T) {
 			len(program.Statements))
 	}
 
-	stmt, ok := program.Statements[0].(*ast.PrintStatement)
-	if !ok {
-		t.Fatalf("program.Statements[0] is not ast.PrintStatement. got=%T",
-			program.Statements[0])
-	}
+	stmt := printCall(t, program)
 
 	if len(stmt.Arguments) != 2 {
 		t.Fatalf("print statement doesn't have 2 arguments. got=%d",

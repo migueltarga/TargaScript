@@ -13,7 +13,7 @@ func TestUnterminatedString(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.PRINT, "print"},
+		{token.IDENT, "print"},
 		{token.LPAREN, "("},
 		{token.ILLEGAL, `"abc`},
 		{token.EOF, ""},

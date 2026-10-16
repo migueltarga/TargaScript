@@ -62,11 +62,6 @@ func ToDisplayString(obj object.Object) string {
 	return objectToString(obj)
 }
 
-// Print writes values like the print statement.
-func Print(values []object.Object) {
-	printValues(values)
-}
-
 // IntegerRange returns the array start..end.
 func IntegerRange(start, end int64, line, column int) object.Object {
 	return integerRange(start, end, line, column)

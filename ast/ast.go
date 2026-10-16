@@ -586,28 +586,6 @@ func (ae *AssignmentExpression) String() string {
 	return out.String()
 }
 
-type PrintStatement struct {
-	Token     token.Token
-	Arguments []Expression
-}
-
-func (ps *PrintStatement) statementNode()       {}
-func (ps *PrintStatement) TokenLiteral() string { return ps.Token.Literal }
-func (ps *PrintStatement) String() string {
-	var out bytes.Buffer
-
-	args := []string{}
-	for _, a := range ps.Arguments {
-		args = append(args, a.String())
-	}
-
-	out.WriteString(ps.TokenLiteral() + "(")
-	out.WriteString(strings.Join(args, ", "))
-	out.WriteString(")")
-
-	return out.String()
-}
-
 type BreakStatement struct {
 	Token token.Token
 }

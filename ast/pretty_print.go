@@ -203,16 +203,6 @@ func prettyPrintNode(node Node, level int) string {
 			result += " as " + n.Alias.Value
 		}
 
-	case *PrintStatement:
-		result += "print("
-		for i, arg := range n.Arguments {
-			if i > 0 {
-				result += ", "
-			}
-			result += prettyPrintNode(arg, 0)
-		}
-		result += ")"
-
 	default:
 		result += fmt.Sprintf("%s (using default String method)", node.String())
 	}
