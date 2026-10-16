@@ -77,7 +77,7 @@ func (ls *LetStatement) String() string {
 	out.WriteString(" = ")
 
 	if ls.Value != nil {
-		out.WriteString(ls.Value.String())
+		out.WriteString(nodeString(ls.Value))
 	}
 
 	return out.String()
@@ -102,7 +102,7 @@ func (cs *ConstStatement) String() string {
 	out.WriteString(" = ")
 
 	if cs.Value != nil {
-		out.WriteString(cs.Value.String())
+		out.WriteString(nodeString(cs.Value))
 	}
 
 	return out.String()
@@ -226,7 +226,7 @@ func (pe *PostfixExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("(")
-	out.WriteString(pe.Left.String())
+	out.WriteString(nodeString(pe.Left))
 	out.WriteString(pe.Operator)
 	out.WriteString(")")
 
@@ -362,7 +362,7 @@ func (ce *CallExpression) String() string {
 		args = append(args, a.String())
 	}
 
-	out.WriteString(ce.Function.String())
+	out.WriteString(nodeString(ce.Function))
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
@@ -441,12 +441,12 @@ func (ie *IndexExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("(")
-	out.WriteString(ie.Left.String())
+	out.WriteString(nodeString(ie.Left))
 	if ie.Optional {
 		out.WriteString("?.")
 	}
 	out.WriteString("[")
-	out.WriteString(ie.Index.String())
+	out.WriteString(nodeString(ie.Index))
 	out.WriteString("])")
 
 	return out.String()
@@ -497,7 +497,7 @@ func (rs *RepeatStatement) String() string {
 	out.WriteString(rs.TokenLiteral() + " ")
 
 	if rs.Key != nil {
-		out.WriteString(rs.Key.String())
+		out.WriteString(nodeString(rs.Key))
 		out.WriteString(", ")
 	}
 	if rs.Iterator != nil {
@@ -534,10 +534,10 @@ func (hl *HashLiteral) String() string {
 	for _, name := range hl.Order {
 		pair := hl.Pairs[name]
 		if pair.Value == nil {
-			pairs = append(pairs, pair.Key.String())
+			pairs = append(pairs, nodeString(pair.Key))
 			continue
 		}
-		pairs = append(pairs, pair.Key.String()+": "+pair.Value.String())
+		pairs = append(pairs, nodeString(pair.Key)+": "+nodeString(pair.Value))
 	}
 
 	out.WriteString("{")
@@ -561,7 +561,7 @@ func (de *DotExpression) TokenLiteral() string { return de.Token.Literal }
 func (de *DotExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(de.Left.String())
+	out.WriteString(nodeString(de.Left))
 	out.WriteString(de.Token.Literal)
 	out.WriteString(de.Property.String())
 
@@ -589,7 +589,7 @@ func (mce *MethodCallExpression) String() string {
 		args = append(args, a.String())
 	}
 
-	out.WriteString(mce.Object.String())
+	out.WriteString(nodeString(mce.Object))
 	out.WriteString(mce.Token.Literal)
 	out.WriteString(mce.Method.String())
 	out.WriteString("(")
@@ -613,9 +613,10 @@ func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal 
 func (ae *AssignmentExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(ae.Left.String())
+	// Either side is missing in code that failed to parse
+	out.WriteString(nodeString(ae.Left))
 	out.WriteString(" " + ae.Operator + "= ")
-	out.WriteString(ae.Value.String())
+	out.WriteString(nodeString(ae.Value))
 
 	return out.String()
 }
@@ -676,7 +677,7 @@ type AwaitExpression struct {
 func (ae *AwaitExpression) expressionNode()      {}
 func (ae *AwaitExpression) TokenLiteral() string { return ae.Token.Literal }
 func (ae *AwaitExpression) String() string {
-	return "await " + ae.Value.String()
+	return "await " + nodeString(ae.Value)
 }
 
 // TryExpression runs Body and, if it fails, Catch with the error in Name:
@@ -717,7 +718,7 @@ type ThrowStatement struct {
 func (ts *ThrowStatement) statementNode()       {}
 func (ts *ThrowStatement) TokenLiteral() string { return ts.Token.Literal }
 func (ts *ThrowStatement) String() string {
-	return "throw " + ts.Value.String()
+	return "throw " + nodeString(ts.Value)
 }
 
 // ThrowExpression is throw used where a value goes, as in
@@ -730,7 +731,7 @@ type ThrowExpression struct {
 func (te *ThrowExpression) expressionNode()      {}
 func (te *ThrowExpression) TokenLiteral() string { return te.Token.Literal }
 func (te *ThrowExpression) String() string {
-	return "throw " + te.Value.String()
+	return "throw " + nodeString(te.Value)
 }
 
 // Pattern takes values apart in a declaration: `[a, b]` takes the elements
@@ -828,7 +829,7 @@ type SpreadExpression struct {
 
 func (se *SpreadExpression) expressionNode()      {}
 func (se *SpreadExpression) TokenLiteral() string { return se.Token.Literal }
-func (se *SpreadExpression) String() string       { return "..." + se.Value.String() }
+func (se *SpreadExpression) String() string       { return "..." + nodeString(se.Value) }
 
 // MatchExpression picks the first arm whose patterns match Subject:
 //
@@ -885,4 +886,4 @@ type FormatExpression struct {
 
 func (fe *FormatExpression) expressionNode()      {}
 func (fe *FormatExpression) TokenLiteral() string { return fe.Token.Literal }
-func (fe *FormatExpression) String() string       { return fe.Value.String() + ":" + fe.Spec }
+func (fe *FormatExpression) String() string       { return nodeString(fe.Value) + ":" + fe.Spec }
