@@ -108,7 +108,7 @@ func init() {
 				case *object.Integer:
 					return &object.String{Value: fmt.Sprintf("%d", arg.Value)}
 				case *object.Float:
-					return &object.String{Value: fmt.Sprintf("%g", arg.Value)}
+					return &object.String{Value: arg.Inspect()}
 				case *object.Boolean:
 					return &object.String{Value: fmt.Sprintf("%t", arg.Value)}
 				case *object.Null:

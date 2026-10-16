@@ -573,14 +573,8 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 	case "*":
 		return &object.Float{Value: leftVal * rightVal}
 	case "/":
-		if rightVal == 0 {
-			return newError(line, column, "division by zero")
-		}
 		return &object.Float{Value: leftVal / rightVal}
 	case "%":
-		if rightVal == 0 {
-			return newError(line, column, "modulo by zero")
-		}
 		return &object.Float{Value: math.Mod(leftVal, rightVal)}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
@@ -1367,7 +1361,7 @@ func objectToString(obj object.Object) string {
 	case object.INTEGER_OBJ:
 		return fmt.Sprintf("%d", obj.(*object.Integer).Value)
 	case object.FLOAT_OBJ:
-		return fmt.Sprintf("%g", obj.(*object.Float).Value)
+		return obj.Inspect()
 	case object.BOOLEAN_OBJ:
 		return fmt.Sprintf("%t", obj.(*object.Boolean).Value)
 	case object.STRING_OBJ:
