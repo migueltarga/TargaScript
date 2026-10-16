@@ -8,7 +8,7 @@ TargaScript is a small, modern scripting language that runs in your terminal, in
 
 **[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
 
-📖 The [language reference](docs/REFERENCE.md) covers everything in one page, and the [cookbook](docs/COOKBOOK.md) has short programs for everyday jobs: CSV files, JSON, web APIs, servers, tests.
+📖 The [language reference](docs/REFERENCE.md) covers everything in one page, the [cookbook](docs/COOKBOOK.md) has short programs for everyday jobs (CSV files, JSON, web APIs, servers, tests), and [coming from JavaScript or Python](docs/COMING_FROM.md) shows how to write what you already know.
 
 ## 🌟 Why TargaScript
 
