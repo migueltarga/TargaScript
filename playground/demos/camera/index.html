@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCII camera in TargaScript</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #dddcd7; --text: #1f1f1d; --muted: #6b6a65;
+    --brand: #266ca4; --brand-dark: #16405b; --brand-text: #ffffff; --link: #266ca4;
+    --screen: #0b0d0b; --glyph: #7dffa0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161614; --panel: #1e1e1c; --border: #33332f; --text: #ececea; --muted: #9a9993; --link: #7fb3e6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; font-size: 14px; }
+  .controls label { display: inline-flex; align-items: center; gap: 6px; }
+  select, button { font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 6px 10px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--brand); border-color: var(--brand-dark); color: var(--brand-text); font-weight: 600; }
+  input[type=range] { width: 120px; }
+  .screen { background: var(--screen); border-radius: 8px; padding: 12px; overflow: auto; min-height: 240px; display: flex; justify-content: center; }
+  #art { margin: 0; color: var(--glyph); font: 10px/1 ui-monospace, Menlo, monospace; letter-spacing: 0; white-space: pre; }
+  #painted { max-width: 100%; height: auto; image-rendering: pixelated; }
+  #stats { margin: 8px 0 0; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #message { margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); font-size: 14px; }
+  video { display: none; }
+  footer { margin-top: 24px; font-size: 14px; color: var(--muted); }
+  a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1>ASCII camera</h1>
+  <p class="lead">Your camera as text, live. Every character is computed by TargaScript running on WebAssembly; nothing leaves your browser.</p>
+  <div class="controls">
+    <button id="start" class="primary">Use my camera</button>
+    <label>Style
+      <select id="style">
+        <option value="classic">Classic</option>
+        <option value="blocks">Blocks</option>
+        <option value="dots">Dots</option>
+        <option value="binary">Binary</option>
+        <option value="edges">Edges</option>
+      </select>
+    </label>
+    <label>Width <input id="columns" type="range" min="40" max="200" value="100"></label>
+    <label><input id="color" type="checkbox"> Color</label>
+    <label><input id="invert" type="checkbox"> Invert</label>
+    <button id="copy">Copy as text</button>
+  </div>
+  <p id="message" hidden></p>
+  <div class="screen">
+    <pre id="art" aria-label="The camera picture drawn with characters"></pre>
+    <canvas id="painted" hidden></canvas>
+  </div>
+  <p id="stats"></p>
+  <video id="video" playsinline muted></video>
+  <footer>
+    <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/camera/app.tg">See app.tg</a>
+    and <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/camera/ascii.tg">ascii.tg</a>
+    &middot; <a href="../../">Playground</a>
+  </footer>
+</main>
+<script src="../../targascript.js"></script>
+<script type="text/targascript" src="app.tg"></script>
+</body>
+</html>
