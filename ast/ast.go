@@ -613,3 +613,15 @@ func (fs *FunctionStatement) String() string {
 
 	return out.String()
 }
+
+// AwaitExpression waits for a promise: `await value`.
+type AwaitExpression struct {
+	Token token.Token
+	Value Expression
+}
+
+func (ae *AwaitExpression) expressionNode()      {}
+func (ae *AwaitExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AwaitExpression) String() string {
+	return "await " + ae.Value.String()
+}
