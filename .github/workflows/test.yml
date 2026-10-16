@@ -65,6 +65,18 @@ jobs:
           ./web/build.sh build
           ls -l build
 
+      - name: Keep the WebAssembly small
+        # A change that pulls in a big Go package shows up here; raise the
+        # limit on purpose, or find a smaller way
+        run: |
+          size=$(wc -c < build/targascript.wasm)
+          gzipped=$(gzip -9 -c build/targascript.wasm | wc -c)
+          echo "targascript.wasm: $size bytes, $gzipped gzipped"
+          if [ "$size" -gt 512000 ]; then
+            echo "targascript.wasm is over 500 KB"
+            exit 1
+          fi
+
       - name: Compare examples with the CLI
         run: |
           go build -o targascript ./cmd/targascript
