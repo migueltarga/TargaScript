@@ -39,7 +39,8 @@ const (
 	OpGreaterEqual
 	OpLessThan
 	OpLessEqual
-	OpRange // pop end and start, push the array start..end
+	OpRange   // pop end and start, push the array start..end
+	OpInRange // pop end, start and a value, push whether start <= value <= end
 	OpMinus
 	OpBang
 	OpIncrement // add 1 to the number on top, or subtract 1 when the operand is 1
@@ -130,6 +131,7 @@ var definitions = map[Opcode]*Definition{
 	OpLessThan:     {"OpLessThan", []int{}},
 	OpLessEqual:    {"OpLessEqual", []int{}},
 	OpRange:        {"OpRange", []int{}},
+	OpInRange:      {"OpInRange", []int{}},
 	OpMinus:        {"OpMinus", []int{}},
 	OpBang:         {"OpBang", []int{}},
 	OpIncrement:    {"OpIncrement", []int{1}},

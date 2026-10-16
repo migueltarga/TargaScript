@@ -4,6 +4,7 @@ All notable changes to the "TargaScript" extension will be documented in this fi
 
 ## [0.5.0] - 2026-10-16
 
+- Highlight the `match` keyword
 - Show errors while editing: syntax errors, names that aren't defined (with suggestions for typos), constants assigned again and more, checked by the TargaScript runtime itself
 
 ## [0.4.0] - 2026-10-16

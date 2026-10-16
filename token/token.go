@@ -74,6 +74,8 @@ const (
 	TRY      = "TRY"
 	CATCH    = "CATCH"
 	THROW    = "THROW"
+	MATCH    = "MATCH"
+	ARROW    = "=>"
 )
 
 type Token struct {
@@ -104,6 +106,7 @@ var keywords = map[string]TokenType{
 	"try":      TRY,
 	"catch":    CATCH,
 	"throw":    THROW,
+	"match":    MATCH,
 }
 
 func LookupIdent(ident string) TokenType {

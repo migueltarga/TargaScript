@@ -31,7 +31,7 @@ let tokenPattern = js.RegExp.new(
     "(//[^\\n]*|/\\*[\\s\\S]*?(?:\\*/|$))" +
     "|(\"(?:\\\\[\\s\\S]|[^\"\\\\])*\"?)" +
     "|(\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b)" +
-    "|(\\b(?:let|const|fn|if|else|return|repeat|in|break|continue|load|as|await|try|catch|throw|print|true|false|null)\\b)" +
+    "|(\\b(?:let|const|fn|if|else|return|repeat|in|break|continue|load|as|await|try|catch|throw|match|print|true|false|null)\\b)" +
     "|(\\b[A-Za-z_]\\w*(?=\\s*\\())" +
     "|([^/\"\\w]+|[\\s\\S])",
     "g"
@@ -45,13 +45,13 @@ fn span(kind, text) {
     "<span class=\"tok-${kind}\">${escapeHtml(text)}</span>"
 }
 
-fn colorToken(match, comment, string, number, keyword, call) {
-    if comment != null { return span("comment", match) }
-    if string != null { return span("string", match) }
-    if number != null { return span("number", match) }
-    if keyword != null { return span("keyword", match) }
-    if call != null { return span("call", match) }
-    escapeHtml(match)
+fn colorToken(text, comment, string, number, keyword, call) {
+    if comment != null { return span("comment", text) }
+    if string != null { return span("string", text) }
+    if number != null { return span("number", text) }
+    if keyword != null { return span("keyword", text) }
+    if call != null { return span("call", text) }
+    escapeHtml(text)
 }
 
 fn render() {
