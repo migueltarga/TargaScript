@@ -326,7 +326,7 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - Shows block-level variable scope isolation
    - Tests nested block scoping behavior
 
-9. **const_test.tg** - Test cases for constant variable declarations
+9. **constants.tg** - How constant declarations behave
    - Demonstrates using the `const` keyword for immutable variables
    - Shows how constants behave with different data types
    - Tests reassignment protection for constants
