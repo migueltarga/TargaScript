@@ -428,6 +428,15 @@ test("slugify joins words with dashes", fn() {
 // → ✓ slugify joins words with dashes
 ```
 
+`describe(name, fn)` groups the tests that `fn` defines, and groups nest. The output is indented under the group's name, and `-run` matches the group's name too: `-run "parser numbers"`.
+
+```targascript
+describe("slugify", fn() {
+    test("joins words", fn() { assertEqual(slugify("a b"), "a-b") })
+    test("trims", fn() { assertEqual(slugify(" a "), "a") })
+})
+```
+
 `targascript test` runs every file ending in `_test.tg` under the current directory, or the files and directories given, and prints a summary:
 
 ```text

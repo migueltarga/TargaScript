@@ -10,6 +10,14 @@ import (
 // Counts of the tests run with test since the last ResetTests
 var testsPassed, testsFailed, testsSkipped int
 
+// testGroups are the names of the describe calls running, outermost first,
+// and groupsShown how many of them have been printed. A group is printed
+// before its first test that runs, so -run leaves out empty groups.
+var (
+	testGroups  []string
+	groupsShown int
+)
+
 // testFilter, when set, is text a test's name must contain for it to run
 var testFilter string
 
@@ -21,6 +29,52 @@ func SetTestFilter(text string) {
 
 func init() {
 	builtins["test"] = &object.Builtin{Name: "test", Fn: testBuiltin}
+	builtins["describe"] = &object.Builtin{Name: "describe", Fn: describeBuiltin}
+}
+
+// describeBuiltin runs a function that defines tests, printing its name
+// above them. Groups nest, and their names are part of the names of their
+// tests for -run.
+func describeBuiltin(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for describe. got=%d, want=2", len(args))}
+	}
+	name, ok := args[0].(*object.String)
+	if !ok {
+		return &object.Error{Message: fmt.Sprintf("first argument to `describe` must be a string, got %s", typeName(args[0]))}
+	}
+	if !isCallable(args[1]) {
+		return &object.Error{Message: fmt.Sprintf("second argument to `describe` must be a function, got %s", typeName(args[1]))}
+	}
+
+	testGroups = append(testGroups, name.Value)
+	result := applyFunctionAsync(args[1], nil)
+	if promise, ok := result.(*object.Promise); ok && promise.Paused {
+		done := &object.Promise{Paused: true}
+		promise.Then(func(object.Object) {
+			leaveTestGroup()
+			done.Resolve(NULL)
+		}, func(reason object.Object) {
+			leaveTestGroup()
+			done.Reject(reason)
+		})
+		return done
+	}
+	leaveTestGroup()
+	if err, ok := result.(*object.Error); ok {
+		return err
+	}
+	return NULL
+}
+
+func leaveTestGroup() {
+	testGroups = testGroups[:len(testGroups)-1]
+	groupsShown = min(groupsShown, len(testGroups))
+}
+
+// testIndent is the space before the lines of a test in the groups running.
+func testIndent() string {
+	return strings.Repeat("  ", len(testGroups))
 }
 
 // testBuiltin runs a function as a named test and prints whether it
@@ -37,7 +91,8 @@ func testBuiltin(args ...object.Object) object.Object {
 		return &object.Error{Message: fmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
 	}
 
-	if testFilter != "" && !strings.Contains(strings.ToLower(name.Value), testFilter) {
+	fullName := strings.Join(append(append([]string{}, testGroups...), name.Value), " ")
+	if testFilter != "" && !strings.Contains(strings.ToLower(fullName), testFilter) {
 		testsSkipped++
 		return NULL
 	}
@@ -68,9 +123,12 @@ func testBuiltin(args ...object.Object) object.Object {
 
 // reportTest prints whether a test passed, and counts it.
 func reportTest(name string, err *object.Error) {
+	for ; groupsShown < len(testGroups); groupsShown++ {
+		fmt.Fprintf(output, "%s%s\n", strings.Repeat("  ", groupsShown), testGroups[groupsShown])
+	}
 	if err == nil {
 		testsPassed++
-		fmt.Fprintf(output, "✓ %s\n", name)
+		fmt.Fprintf(output, "%s✓ %s\n", testIndent(), name)
 		return
 	}
 	testsFailed++
@@ -78,7 +136,8 @@ func reportTest(name string, err *object.Error) {
 	if err.Line > 0 {
 		where = fmt.Sprintf(" (line %d)", err.Line)
 	}
-	fmt.Fprintf(output, "✗ %s\n    %s%s\n", name, err.Message, where)
+	indent := testIndent()
+	fmt.Fprintf(output, "%s✗ %s\n%s    %s%s\n", indent, name, indent, err.Message, where)
 }
 
 // TestResults returns how many tests passed, failed and were left out by
@@ -90,4 +149,5 @@ func TestResults() (passed, failed, skipped int) {
 // ResetTests sets the counts of TestResults back to zero.
 func ResetTests() {
 	testsPassed, testsFailed, testsSkipped = 0, 0, 0
+	testGroups, groupsShown = nil, 0
 }
