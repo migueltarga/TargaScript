@@ -11,6 +11,7 @@ Short, complete programs for everyday jobs. Each one runs as written. The exampl
 - [Test your code](#test-your-code)
 - [Call a web API](#call-a-web-api)
 - [Write a command-line tool](#write-a-command-line-tool)
+- [Run other programs](#run-other-programs)
 - [Serve a website and an API](#serve-a-website-and-an-api)
 
 ## Read a CSV file
@@ -247,6 +248,35 @@ repeat i, line in readFile(file).lines() {
 ```
 
 Run it with `targascript grep.tg "TODO" main.tg`, or make it a program anyone can run with `targascript build grep.tg`.
+
+## Run other programs
+
+`exec` runs a command line in the shell, or a program with a list of arguments, and returns its `output`, `errors`, exit `code` and whether it went `ok`:
+
+```targascript
+// Runs a command line and gives its output, or fails with its errors
+fn run(command) {
+    let result = exec(command)
+    if !result.ok { throw "${command} failed: ${result.errors.trim()}" }
+    result.output.trim()
+}
+
+writeFile("notes.txt", "milk\neggs\nbread\n")
+print(run("sort notes.txt").lines())
+print(run("wc -l < notes.txt"))
+print(try { run("cat shopping.txt") } catch e { e.message })
+
+// A list of arguments goes to the program as is, spaces and all
+writeFile("my notes.txt", "hi")
+print(exec("cat", ["my notes.txt"]).output)
+```
+
+```output
+["bread", "eggs", "milk"]
+3
+cat shopping.txt failed: cat: shopping.txt: No such file or directory
+hi
+```
 
 ## Serve a website and an API
 
