@@ -197,7 +197,7 @@ func evalInExpression(value, collection object.Object, line, column int) object.
 		if !ok {
 			return FALSE
 		}
-		_, found := collection.Pairs[key.HashKey()]
+		found := collection.Has(key.HashKey())
 		return nativeBoolToBooleanObject(found)
 	case *object.String:
 		part, ok := value.(*object.String)
@@ -360,7 +360,7 @@ func isTruthy(obj object.Object) bool {
 		case object.ARRAY_OBJ:
 			return len(obj.(*object.Array).Elements) > 0
 		case object.HASH_OBJ:
-			return len(obj.(*object.Hash).Pairs) > 0
+			return obj.(*object.Hash).Len() > 0
 		default:
 			return true
 		}
@@ -475,7 +475,7 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 		return newError(line, column, "%s can't be an object key", typeName(index))
 	}
 
-	pair, ok := hashObject.Pairs[key.HashKey()]
+	pair, ok := hashObject.Get(key.HashKey())
 	if !ok {
 		return NULL
 	}
@@ -505,13 +505,13 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 	case *object.Hash:
 
 		if propertyName == "length" {
-			return &object.Integer{Value: int64(len(obj.Pairs))}
+			return &object.Integer{Value: int64(obj.Len())}
 		}
 
 		key := &object.String{Value: propertyName}
 		hashKey := key.HashKey()
 
-		if pair, ok := obj.Pairs[hashKey]; ok {
+		if pair, ok := obj.Get(hashKey); ok {
 			return pair.Value
 		}
 		return NULL
@@ -783,7 +783,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "argument to `has` must be hashable, got %s", typeName(args[0]))
 			}
 
-			_, exists := obj.Pairs[hashable.HashKey()]
+			exists := obj.Has(hashable.HashKey())
 			return nativeBoolToBooleanObject(exists)
 
 		case "length":
@@ -791,13 +791,13 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				return newError(line, column, "wrong number of arguments for object.length(): got %d, want 0", len(args))
 			}
 
-			return &object.Integer{Value: int64(len(obj.Pairs))}
+			return &object.Integer{Value: int64(obj.Len())}
 
 		default:
 			key := &object.String{Value: method}
 			hashKey := key.HashKey()
 
-			if pair, ok := obj.Pairs[hashKey]; ok {
+			if pair, ok := obj.Get(hashKey); ok {
 				if isCallable(pair.Value) {
 					return withPosition(applyFunction(pair.Value, args), line, column)
 				} else {
@@ -812,7 +812,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			// The object's own functions are suggested before the methods
 			own := []string{}
-			for _, pair := range obj.Pairs {
+			for _, pair := range obj.OrderedPairs() {
 				if name, ok := pair.Key.(*object.String); ok && isCallable(pair.Value) {
 					own = append(own, name.Value)
 				}

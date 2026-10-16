@@ -58,7 +58,7 @@ func (vm *VM) thrown(f *frame, ip int, value object.Object) *object.Error {
 }
 
 func field(hash *object.Hash, name string) object.Object {
-	pair, ok := hash.Pairs[(&object.String{Value: name}).HashKey()]
+	pair, ok := hash.Get((&object.String{Value: name}).HashKey())
 	if !ok {
 		return nil
 	}

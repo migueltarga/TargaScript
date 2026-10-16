@@ -47,3 +47,9 @@ func BenchmarkFibVM(b *testing.B)     { benchmarkVM(b, benchFib) }
 func BenchmarkLoopVM(b *testing.B)    { benchmarkVM(b, benchLoop) }
 func BenchmarkObjectsVM(b *testing.B) { benchmarkVM(b, benchObjects) }
 func BenchmarkMethodsVM(b *testing.B) { benchmarkVM(b, benchMethods) }
+
+const benchSortObjects = `let items = []
+repeat i in 1..20000 { items.insert({id: i, score: (i * 7919) % 1000}) }
+items.sortBy(x => x.score).length`
+
+func BenchmarkSortObjectsVM(b *testing.B) { benchmarkVM(b, benchSortObjects) }

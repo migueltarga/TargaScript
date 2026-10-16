@@ -172,11 +172,12 @@ func valuesEqual(a, b object.Object, depth int) bool {
 
 	case *object.Hash:
 		b, ok := b.(*object.Hash)
-		if !ok || len(a.Pairs) != len(b.Pairs) {
+		if !ok || a.Len() != b.Len() {
 			return false
 		}
-		for key, pair := range a.Pairs {
-			other, ok := b.Pairs[key]
+		for i := range a.Len() {
+			key, pair := a.At(i)
+			other, ok := b.Get(key)
 			if !ok || !valuesEqual(pair.Value, other.Value, depth+1) {
 				return false
 			}
