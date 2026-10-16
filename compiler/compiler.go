@@ -939,6 +939,7 @@ var infixOpcodes = map[string]code.Opcode{
 	"*":  code.OpMul,
 	"/":  code.OpDiv,
 	"%":  code.OpMod,
+	"**": code.OpPow,
 	"^":  code.OpXor,
 	"==": code.OpEqual,
 	"!=": code.OpNotEqual,

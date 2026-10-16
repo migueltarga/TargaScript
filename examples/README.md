@@ -26,7 +26,7 @@ TargaScript provides a rich set of built-in functions for common operations:
 
 - `abs(num)` - Return the absolute value of a number
 - `sqrt(num)` - Return the square root of a number
-- `pow(base, exponent)` - Return base raised to the power of exponent
+- `pow(base, exponent)` - Return base raised to the power of exponent (or use `base ** exponent`, which keeps integers as integers)
 - `round(num)` - Round a number to the nearest integer
 - `floor(num)` - Round a number down to the nearest integer
 - `ceil(num)` - Round a number up to the nearest integer

@@ -21,6 +21,7 @@ const (
 	RANGE       // ..
 	SUM         // +
 	PRODUCT     // *
+	POWER       // **
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
 	INDEX       // array[index]
@@ -39,6 +40,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.POWER:    POWER,
 	token.MODULO:   PRODUCT,
 	token.XOR:      SUM,
 	token.LPAREN:   CALL,
@@ -111,6 +113,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.POWER, p.parseInfixExpression)
 	p.registerInfix(token.MODULO, p.parseInfixExpression)
 	p.registerInfix(token.XOR, p.parseInfixExpression)
 	p.registerInfix(token.RANGE, p.parseInfixExpression)
@@ -582,6 +585,10 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	}
 
 	precedence := p.curPrecedence()
+	if p.curTokenIs(token.POWER) {
+		// ** groups to the right: 2 ** 3 ** 2 is 2 ** (3 ** 2)
+		precedence--
+	}
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 

@@ -221,6 +221,15 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 		return &object.Integer{Value: leftVal % rightVal}
 	case "^":
 		return &object.Integer{Value: leftVal ^ rightVal}
+	case "**":
+		if rightVal < 0 {
+			return &object.Float{Value: math.Pow(float64(leftVal), float64(rightVal))}
+		}
+		value, ok := powInt(leftVal, rightVal)
+		if !ok {
+			return newError(line, column, "integer overflow")
+		}
+		return &object.Integer{Value: value}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -253,6 +262,8 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 		return &object.Float{Value: leftVal / rightVal}
 	case "%":
 		return &object.Float{Value: math.Mod(leftVal, rightVal)}
+	case "**":
+		return &object.Float{Value: math.Pow(leftVal, rightVal)}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
