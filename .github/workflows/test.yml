@@ -39,3 +39,31 @@ jobs:
             echo "== $f"
             ./targascript "$f" > /dev/null
           done
+
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: acifani/setup-tinygo@v2
+        with:
+          tinygo-version: "0.39.0"
+
+      - name: Build WebAssembly
+        run: |
+          ./web/build.sh build
+          ls -l build
+
+      - name: Compare examples with the CLI
+        run: |
+          go build -o targascript .
+          for f in examples/*.tg; do
+            # These use random numbers, the clock or load, which differ in the browser
+            case "$f" in examples/math_string_time.tg|examples/word_stats.tg) continue ;; esac
+            echo "== $f"
+            diff <(./targascript "$f" 2>/dev/null) <(node web/run-node.js build/targascript.wasm "$f" 2>/dev/null)
+          done

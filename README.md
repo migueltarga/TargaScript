@@ -93,6 +93,42 @@ Debug mode with AST visualization:
 go run main.go --debug path/to/script.tg
 ```
 
+## 🌐 TargaScript in the Browser
+
+TargaScript also runs in web pages. The interpreter is compiled to WebAssembly, and scripts reach JavaScript and the DOM through `js`, which is `globalThis`:
+
+```html
+<button id="hello">Say hello</button>
+
+<script src="targascript.js"></script>
+<script type="text/targascript">
+let button = js.document.getElementById("hello")
+let clicks = 0
+
+button.addEventListener("click", fn(event) {
+  clicks++
+  button.textContent = "Hello ${clicks}x!"
+})
+</script>
+```
+
+- `x.name`, `x.name = v`, `x.method(args)` and `x(args)` work on JavaScript values, and `x.new(args)` is `new x(args)`
+- numbers, strings, booleans, `null`/`undefined` and arrays become TargaScript values. Arrays and objects passed to JavaScript are copied
+- TargaScript functions passed to JavaScript, such as event handlers, can be called from JavaScript
+- a JavaScript exception becomes a TargaScript error
+- `print` writes to the browser console
+- scripts can have a `src`, and all scripts on a page share their variables
+- in a worker, `new Worker("targascript.js?src=worker.tg")` runs `worker.tg`, and `targascript.run(source, onOutput)` runs another program in a fresh environment
+- JavaScript can call `targascriptRun(source, onOutput)`, which returns the error message or `null`
+
+Build it with [TinyGo](https://tinygo.org) 0.39:
+
+```sh
+./web/build.sh build
+```
+
+and serve `build/targascript.js` and `build/targascript.wasm` (about 260 KB, 120 KB compressed) next to your page. In the browser, recursion is limited to about 400 nested calls, because the browser's stack is much smaller than a native one.
+
 ## 🤔 Why TargaScript?
 
 Creating a programming language is one of the most educational projects a developer can undertake! TargaScript is an experiment in language design, compiler construction, and a way to better understand how programming languages work under the hood.

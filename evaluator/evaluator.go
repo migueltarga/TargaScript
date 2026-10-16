@@ -24,11 +24,22 @@ var (
 
 	// Number of user function calls currently on the stack
 	callDepth int
+
+	// Number of nested Eval calls, and the limit set by SetMaxNesting
+	nesting, maxNesting int
 )
 
 // maxCallDepth limits recursion so runaway calls fail with an error
 // instead of overflowing the Go stack.
 const maxCallDepth = 10000
+
+// SetMaxNesting limits how deeply evaluation can nest, counting every
+// expression and statement being evaluated, so that recursion fails with an
+// error before overflowing a small native stack, such as WebAssembly's in a
+// browser. Zero, the default, means no limit besides maxCallDepth.
+func SetMaxNesting(depth int) {
+	maxNesting = depth
+}
 
 // SetOutput sets the writer to use for print statements
 func SetOutput(w io.Writer) {
@@ -42,6 +53,14 @@ func SetTraceMode(enabled bool) {
 
 // Eval evaluates the AST node and returns an object
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	if maxNesting > 0 {
+		if nesting >= maxNesting {
+			return newError(0, 0, "maximum call depth exceeded")
+		}
+		nesting++
+		defer func() { nesting-- }()
+	}
+
 	if node == nil {
 		return NULL
 	}
