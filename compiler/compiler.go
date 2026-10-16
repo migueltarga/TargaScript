@@ -44,6 +44,39 @@ type Compiler struct {
 	// Dir is the directory of the file being compiled, which load paths
 	// are relative to. Empty means the working directory.
 	Dir string
+
+	// Errors found while compiling, which the program raises if it gets
+	// to them
+	problems []Problem
+}
+
+// Problem is an error the compiler found in the code, like a name that isn't
+// defined. The compiled program raises it when it runs that code, but editors
+// can show it before.
+type Problem struct {
+	Line    int
+	Column  int
+	Message string
+}
+
+// Problems returns the errors found by the last Compile, in source order.
+func (c *Compiler) Problems() []Problem {
+	seen := map[Problem]bool{}
+	problems := []Problem{}
+	// Functions compiled more than once report their problems again
+	for _, p := range c.problems {
+		if !seen[p] {
+			seen[p] = true
+			problems = append(problems, p)
+		}
+	}
+	sort.SliceStable(problems, func(i, j int) bool {
+		if problems[i].Line != problems[j].Line {
+			return problems[i].Line < problems[j].Line
+		}
+		return problems[i].Column < problems[j].Column
+	})
+	return problems
 }
 
 // compilation is the code of the function being compiled.
@@ -73,6 +106,8 @@ func (c *Compiler) Globals() *GlobalTable {
 
 // Compile compiles a program into its main function.
 func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
+	c.problems = nil
+
 	// Names declared at the top level are globals from the start, so
 	// functions can use globals defined after them
 	for _, stmt := range program.Statements {
@@ -1090,6 +1125,7 @@ func (c *Compiler) compilePostfix(node *ast.PostfixExpression) error {
 // emitError compiles a runtime error, raised when the code runs.
 func (c *Compiler) emitError(tok token.Token, format string, a ...interface{}) {
 	message := fmt.Sprintf(format, a...)
+	c.problems = append(c.problems, Problem{Line: tok.Line, Column: tok.Column, Message: message})
 	c.emit(tok, code.OpError, c.addConstant(&object.String{Value: message}))
 }
 
