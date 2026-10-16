@@ -389,8 +389,16 @@ func (vm *VM) loopWords(base int) object.Object {
 				r = vm.stack[f.base:]
 				continue
 			}
-			args := make([]object.Object, argc)
-			copy(args, vm.stack[fn+1:fn+1+argc])
+			var args []object.Object
+			switch receiver.(type) {
+			case *object.Array, *object.String:
+				// Their methods only read their arguments, so they can
+				// read them where they are; append can't write past them
+				args = vm.stack[fn+1 : fn+1+argc : fn+1+argc]
+			default:
+				args = make([]object.Object, argc)
+				copy(args, vm.stack[fn+1:fn+1+argc])
+			}
 			f.ip = pc
 			result := evaluator.CallMethod(receiver, name.Value, args, 0, 0)
 			r = vm.stack[f.base:]
