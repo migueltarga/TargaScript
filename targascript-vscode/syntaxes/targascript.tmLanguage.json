@@ -49,7 +49,7 @@
       "patterns": [
         {
           "name": "keyword.control.targascript",
-          "match": "\\b(if|else|return|repeat|in|break|continue|load|as)\\b"
+          "match": "\\b(if|else|return|repeat|in|break|continue|load|as|await|try|catch|throw)\\b"
         }
       ]
     },

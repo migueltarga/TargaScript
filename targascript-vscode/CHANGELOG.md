@@ -2,6 +2,10 @@
 
 All notable changes to the "TargaScript" extension will be documented in this file.
 
+## [0.4.0] - 2026-10-16
+
+- Highlight the `await`, `try`, `catch` and `throw` keywords
+
 ## [0.3.0] - 2026-10-15
 
 - Highlight `/* */` block comments and toggle them with the block comment command

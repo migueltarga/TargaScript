@@ -30,7 +30,7 @@ let tokenPattern = js.RegExp.new(
     "(//[^\\n]*|/\\*[\\s\\S]*?(?:\\*/|$))" +
     "|(\"(?:\\\\[\\s\\S]|[^\"\\\\])*\"?)" +
     "|(\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b)" +
-    "|(\\b(?:let|const|fn|if|else|return|repeat|in|break|continue|load|as|print|true|false|null)\\b)" +
+    "|(\\b(?:let|const|fn|if|else|return|repeat|in|break|continue|load|as|await|try|catch|throw|print|true|false|null)\\b)" +
     "|(\\b[A-Za-z_]\\w*(?=\\s*\\())" +
     "|([^/\"\\w]+|[\\s\\S])",
     "g"
