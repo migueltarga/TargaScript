@@ -63,7 +63,21 @@ func (vm *VM) loopWords(base int) object.Object {
 		case code.RLoadFalse:
 			r[w.A()] = FALSE
 
-		case code.RAdd, code.RSub, code.RMul, code.RDiv, code.RMod, code.RPow, code.RXor,
+		case code.RAdd, code.RSub:
+			// Integers first, without looking up the operator
+			if l, ok := r[w.B()].(*object.Integer); ok {
+				if rv, ok := r[w.C()].(*object.Integer); ok && smallInt(l.Value) && smallInt(rv.Value) {
+					if op == code.RAdd {
+						r[w.A()] = vm.ints.get(l.Value + rv.Value)
+					} else {
+						r[w.A()] = vm.ints.get(l.Value - rv.Value)
+					}
+					continue
+				}
+			}
+			fallthrough
+
+		case code.RMul, code.RDiv, code.RMod, code.RPow, code.RXor,
 			code.REqual, code.RNotEqual, code.RGreater, code.RGreaterEqual, code.RLess, code.RLessEqual,
 			code.RRange, code.RIn:
 			left, right := r[w.B()], r[w.C()]
