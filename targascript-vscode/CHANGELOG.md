@@ -8,6 +8,7 @@ All notable changes to the "TargaScript" extension will be documented in this fi
 - Hover over a builtin to see its signature and what it does
 - Completion of builtins, with their docs, and keywords
 - Highlight `this`
+- Format Document lays files out like `targascript fmt`, so format on save works too
 - Run File (Cmd+F5 / Ctrl+F5, or the play button) and Run Tests in File, with the `targascript` command; set `targascript.path` if it isn't on the PATH
 - Highlight the pipe operator `|>`
 - Highlight hex, binary and octal numbers and digits separated by `_`, like `0xff` and `1_000_000`

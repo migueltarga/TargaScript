@@ -17,6 +17,7 @@ let status = byId("status")
 let runButton = byId("run")
 let stopButton = byId("stop")
 let shareButton = byId("share")
+let formatButton = byId("format")
 let examples = byId("examples")
 let nextButton = byId("next")
 
@@ -114,6 +115,11 @@ code.addEventListener("keydown", fn(event) {
     if event.key == "Enter" && (event.ctrlKey || event.metaKey) {
         event.preventDefault()
         run()
+        return null
+    }
+    if event.code == "KeyF" && event.shiftKey && event.altKey {
+        event.preventDefault()
+        formatCode()
         return null
     }
     if event.key == "Tab" && !event.shiftKey {
@@ -239,6 +245,28 @@ fn decompress(text) {
     let stream = response.body.pipeThrough(js.DecompressionStream.new("deflate-raw"))
     await js.Response.new(stream).text()
 }
+
+// Lays the code out like targascript fmt. Only spaces change, so the
+// cursor keeps its place among the other characters.
+fn formatCode() {
+    let formatted = js.targascriptFormat(code.value)
+    if formatted == code.value { return null }
+    let before = code.value.slice(0, code.selectionStart).replacePattern("\\s", "").length
+    // A cursor right before a word stays before it, not at the end of the
+    // line above
+    let atWord = !((code.value[code.selectionStart] ?? " ") in " \n\t")
+    setCode(formatted)
+    let position = 0
+    let seen = 0
+    repeat position < formatted.length && seen < before {
+        if !(formatted[position] in " \n\t") { seen++ }
+        position++
+    }
+    repeat atWord && position < formatted.length && formatted[position] in " \n\t" { position++ }
+    code.setSelectionRange(position, position)
+}
+
+formatButton.addEventListener("click", fn(event) { formatCode() })
 
 shareButton.addEventListener("click", fn(event) {
     let encoded = compress(code.value)

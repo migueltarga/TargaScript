@@ -6,6 +6,7 @@ This extension provides syntax highlighting, snippets and error checking for Tar
 
 - Errors while you edit: syntax errors, names that aren't defined (with "Did you mean...?" for typos), constants assigned again, `break` outside a loop. They're found by the TargaScript runtime itself, compiled to WebAssembly and included in the extension, so nothing else needs to be installed
 - Syntax highlighting for TargaScript files
+- Format Document (Shift+Alt+F), and format on save, lay files out like `targascript fmt`
 - Run the file with Cmd+F5 (Ctrl+F5) or the play button in the editor's title, and its tests with "TargaScript: Run Tests in File". They use the [`targascript` command](https://github.com/migueltarga/TargaScript#-installing); set `targascript.path` if it isn't on the PATH
 - Hover over a builtin, like `fetch` or `timeFormat`, to see how to call it and what it does; builtins and keywords also show up in completions
 - Snippets: type `fn`, `if`, `ifelse`, `repeat`, `match`, `try`, `fetch`, `test` or `serve` and press Tab

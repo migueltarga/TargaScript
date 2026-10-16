@@ -11,6 +11,7 @@ import (
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
+	"github.com/migueltarga/TargaScript/format"
 	"github.com/migueltarga/TargaScript/jsbridge"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
@@ -178,6 +179,14 @@ func check(source uint32) uint32 {
 
 	toJSON, _ := evaluator.Builtin("toJSON")
 	return jsbridge.Return(toJSON.Fn(problems))
+}
+
+// formatSource returns the string with handle source laid out like
+// targascript fmt does, as a handle.
+//
+//go:wasmexport format
+func formatSource(source uint32) uint32 {
+	return jsbridge.Return(&object.String{Value: format.Source(jsbridge.ReadString(source))})
 }
 
 // callback runs a TargaScript function passed to JavaScript.
