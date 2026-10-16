@@ -58,7 +58,8 @@ These work when running scripts from the command line, not in the browser. Paths
 #### Time Functions
 
 - `now()` - Return the current Unix timestamp (seconds since Jan 1, 1970)
-- `timeFormat(timestamp, format)` - Format a Unix timestamp using the provided format string
+- `timeFormat(timestamp, format)` - Format a Unix timestamp, e.g. `"YYYY-MM-DD HH:mm:ss"`
+- `clock()` - Milliseconds since the program started, for timing code
 
 ### Loop Constructs
 
