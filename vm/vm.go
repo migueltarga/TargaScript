@@ -265,8 +265,13 @@ func (vm *VM) waitFor(f *frame, ip, base int, promise *object.Promise) object.Ob
 	return &suspension{awaited: promise, line: line, column: column}
 }
 
-// canPause reports whether the run from base can pause at an await.
+// canPause reports whether the run from base can pause at an await. In a
+// function the VM runs for map, it can, as the evaluator's map lets each
+// call pause and gives its promise; for the other methods it can't.
 func (vm *VM) canPause(base int) bool {
+	if d := vm.innerDriver(base); d >= 0 {
+		return vm.frames[d].driver.method == "map"
+	}
 	if base == 0 {
 		return true
 	}
@@ -295,6 +300,11 @@ func (vm *VM) runFiber(base int, fb *fiber) object.Object {
 
 	result := vm.loop(base)
 	for {
+		if s, ok := result.(*suspension); ok && vm.pauseCall(base, s) {
+			// A call of the function of map paused, and map goes on
+			result = vm.loop(base)
+			continue
+		}
 		err, ok := result.(*object.Error)
 		if !ok || !vm.catch(base, err) {
 			break

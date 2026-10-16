@@ -6,11 +6,12 @@ import (
 )
 
 // driver runs map, filter, reduce, find, some, every, count or sortBy over
-// an array with a function of this
-// VM that can't pause, in the VM's loop: each call of the function returns
-// to it, which notes the result and calls the function again with the next
-// element. Going through the evaluator, each call would start the loop
-// again.
+// an array with a function of this VM, in the VM's loop: each call of the
+// function returns to it, which notes the result and calls the function
+// again with the next element. Going through the evaluator, each call would
+// start the loop again. A call of the function of map can pause at an
+// await, as there, and then its promise is the element's result; for the
+// other methods an await fails, as there.
 type driver struct {
 	method string
 	arr    *object.Array
@@ -42,7 +43,7 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 		return nil
 	}
 	cl, ok := vm.stack[fn+1].(*object.Closure)
-	if !ok || cl.Runner != vm || !cl.Fn.Leaf || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
+	if !ok || cl.Runner != vm || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
 		return nil
 	}
 	d := &driver{method: method, arr: arr, cl: cl, elems: arr.Elements}
@@ -162,4 +163,39 @@ func (vm *VM) countCall() *object.Error {
 		}
 	}
 	return nil
+}
+
+// innerDriver returns the index of the innermost frame from base that runs
+// the function of a method for a driver, or -1.
+func (vm *VM) innerDriver(base int) int {
+	for i := len(vm.frames) - 1; i >= base; i-- {
+		if vm.frames[i].driver != nil {
+			return i
+		}
+	}
+	return -1
+}
+
+// pauseCall pauses, when the run from base stopped at an await in a call
+// of the function of map, that call alone, as the evaluator's map does: its
+// frames go in a fiber of their own, its promise is the element's result,
+// and map goes on with the next element. It reports whether it did.
+func (vm *VM) pauseCall(base int, s *suspension) bool {
+	at := vm.innerDriver(base)
+	if at < 0 {
+		return false
+	}
+	call := vm.frames[at]
+	d, callBase := call.driver, call.base
+	call.driver = nil
+	fb := &fiber{promise: &object.Promise{Paused: true}}
+	vm.suspend(at, fb, s)
+	if !d.returned(fb.promise) {
+		vm.enter(d, callBase)
+		return true
+	}
+	vm.stack[callBase-1] = d.result()
+	caller := vm.frames[len(vm.frames)-1]
+	vm.sp = caller.base + caller.cl.Fn.NumRegisters
+	return true
 }
