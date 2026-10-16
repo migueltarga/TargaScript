@@ -83,6 +83,17 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.newToken(token.ASTERISK, string(l.ch), tokenLine, tokenColumn)
 	case '%':
 		tok = l.newToken(token.MODULO, string(l.ch), tokenLine, tokenColumn)
+	case '?':
+		switch l.peekChar() {
+		case '?':
+			l.readChar()
+			tok = l.newToken(token.NULLISH, "??", tokenLine, tokenColumn)
+		case '.':
+			l.readChar()
+			tok = l.newToken(token.OPTIONAL, "?.", tokenLine, tokenColumn)
+		default:
+			tok = l.newToken(token.ILLEGAL, string(l.ch), tokenLine, tokenColumn)
+		}
 	case '^':
 		tok = l.newToken(token.XOR, string(l.ch), tokenLine, tokenColumn)
 	case '.':

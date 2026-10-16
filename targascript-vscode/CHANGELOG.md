@@ -5,6 +5,7 @@ All notable changes to the "TargaScript" extension will be documented in this fi
 ## [0.4.0] - 2026-10-16
 
 - Highlight the `await`, `try`, `catch` and `throw` keywords
+- Highlight the `??` and `?.` operators
 
 ## [0.3.0] - 2026-10-15
 

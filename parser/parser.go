@@ -13,6 +13,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	NULLISH     // ??
 	OR          // ||
 	AND         // &&
 	EQUALS      // ==
@@ -46,6 +47,8 @@ var precedences = map[token.TokenType]int{
 	token.ASSIGN:   ASSIGN,
 	token.AND:      AND,
 	token.OR:       OR,
+	token.NULLISH:  NULLISH,
+	token.OPTIONAL: INDEX,
 
 	// Postfix x++ and x-- bind to their operand like indexing
 	token.INCREMENT: INDEX,
@@ -116,6 +119,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 	p.registerInfix(token.DOT, p.parseDotExpression)
+	p.registerInfix(token.OPTIONAL, p.parseDotExpression)
+	p.registerInfix(token.NULLISH, p.parseInfixExpression)
 	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
 	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
 	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
@@ -822,14 +827,15 @@ func hashKeyName(key ast.Expression, index int) string {
 
 func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 	expression := &ast.DotExpression{
-		Token: p.curToken,
-		Left:  left,
+		Token:    p.curToken,
+		Left:     left,
+		Optional: p.curTokenIs(token.OPTIONAL),
 	}
 
 	p.nextToken()
 
 	if !p.curTokenIs(token.IDENT) {
-		p.errorAt(p.curToken.Line, p.curToken.Column, "expected a property or method name after \".\", found %s", describe(p.curToken))
+		p.errorAt(p.curToken.Line, p.curToken.Column, "expected a property or method name after %q, found %s", expression.Token.Literal, describe(p.curToken))
 		return nil
 	}
 
@@ -837,9 +843,10 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 	if p.peekTokenIs(token.LPAREN) {
 		methodCall := &ast.MethodCallExpression{
-			Token:  expression.Token,
-			Object: left,
-			Method: propertyName,
+			Token:    expression.Token,
+			Object:   left,
+			Method:   propertyName,
+			Optional: expression.Optional,
 		}
 
 		p.nextToken()

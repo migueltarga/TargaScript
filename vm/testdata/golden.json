@@ -381,7 +381,7 @@
  },
  "let h = {}\nh.a.b": {
   "output": "",
-  "value": "ERROR ERROR at line 2, column 4: dot operator not supported for NULL"
+  "value": "ERROR ERROR at line 2, column 4: cannot read property \"b\" of null"
  },
  "let h = {}\nh.x = 1\nh.x++\nh": {
   "output": "",

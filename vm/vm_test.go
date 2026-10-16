@@ -99,8 +99,12 @@ func TestMain(m *testing.M) {
 		for input, r := range golden {
 			raw[input] = map[string]string{"value": r.value, "output": r.output}
 		}
-		data, _ := json.MarshalIndent(raw, "", " ")
-		os.WriteFile("testdata/golden.json", append(data, '\n'), 0o644)
+		var data bytes.Buffer
+		encoder := json.NewEncoder(&data)
+		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", " ")
+		encoder.Encode(raw)
+		os.WriteFile("testdata/golden.json", data.Bytes(), 0o644)
 	}
 	os.Exit(code)
 }

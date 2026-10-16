@@ -486,6 +486,9 @@ type DotExpression struct {
 	Token    token.Token
 	Left     Expression
 	Property *Identifier
+
+	// Optional is set for left?.property, which is null when left is null
+	Optional bool
 }
 
 func (de *DotExpression) expressionNode()      {}
@@ -494,7 +497,7 @@ func (de *DotExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(de.Left.String())
-	out.WriteString(".")
+	out.WriteString(de.Token.Literal)
 	out.WriteString(de.Property.String())
 
 	return out.String()
@@ -505,6 +508,10 @@ type MethodCallExpression struct {
 	Object    Expression
 	Method    *Identifier
 	Arguments []Expression
+
+	// Optional is set for object?.method(), which is null when object is
+	// null
+	Optional bool
 }
 
 func (mce *MethodCallExpression) expressionNode()      {}
@@ -518,7 +525,7 @@ func (mce *MethodCallExpression) String() string {
 	}
 
 	out.WriteString(mce.Object.String())
-	out.WriteString(".")
+	out.WriteString(mce.Token.Literal)
 	out.WriteString(mce.Method.String())
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
