@@ -136,8 +136,8 @@ func TestExternalErrors(t *testing.T) {
 		{`ext.broken`, "cannot read broken"},
 		{`ext.readonly = 1`, "readonly is read-only"},
 		{`ext.nothing()`, "nothing is not a function"},
-		{`ext[true]`, "index must be a string or an integer, got: BOOLEAN"},
-		{`ext[1.5] = 1`, "index must be a string or an integer, got: FLOAT"},
+		{`ext[true]`, "index must be a string or an integer, got a boolean"},
+		{`ext[1.5] = 1`, "index must be a string or an integer, got a float"},
 	}
 
 	for _, tt := range tests {

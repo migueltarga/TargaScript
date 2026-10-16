@@ -15,7 +15,7 @@ func TestRepeatKeyValue(t *testing.T) {
 		{`let out = []` + "\nrepeat k in {\"x\": 1} { out.insert(k) }\nout", `["x"]`},
 		{"let total = 0\nrepeat i, x in [10, 20, 30] { if i == 1 { continue }\ntotal = total + x }\ntotal", "40"},
 		{"let fs = []\nrepeat i, x in [\"a\", \"b\"] { fs.insert(fn() { \"${i}${x}\" }) }\nfs.map(fn(f) { f() })", `["0a", "1b"]`},
-		{"repeat i, x in 5.5 { }", "ERROR at line 1, column 1: cannot iterate over FLOAT"},
+		{"repeat i, x in 5.5 { }", "ERROR at line 1, column 1: cannot iterate over a float"},
 	}
 
 	for _, tt := range tests {

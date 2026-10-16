@@ -50,7 +50,7 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 		for i, arg := range args {
 			n, isInt := arg.(*object.Integer)
 			if !isInt {
-				return newError(line, column, "arguments to array.slice() must be INTEGER, got %s", arg.Type()), true
+				return newError(line, column, "arguments to array.slice() must be an integer, got %s", typeName(arg)), true
 			}
 			bounds[i] = clampSliceIndex(n.Value, length)
 		}
@@ -119,7 +119,7 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 			case *object.Float:
 				return result.Value < 0
 			default:
-				sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", result.Type())
+				sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
 			}
 			return false
 		}

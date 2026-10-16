@@ -84,9 +84,9 @@ func TestArrayMethodErrors(t *testing.T) {
 	}{
 		{`[1, "a"].sort()`, `cannot sort: cannot use "<" with a string and an integer`},
 		{"[true, false].sort()", `cannot sort: cannot use "<" with a boolean and a boolean`},
-		{`[1, 2].sort(fn(a, b) { "x" })`, "compare function must return a number, got STRING"},
+		{`[1, 2].sort(fn(a, b) { "x" })`, "compare function must return a number, got a string"},
 		{"[1, 2].sort(fn(a, b) { missing })", `"missing" is not defined`},
-		{"[1].slice(\"a\")", "arguments to array.slice() must be INTEGER, got STRING"},
+		{"[1].slice(\"a\")", "arguments to array.slice() must be an integer, got a string"},
 		{"[1].find(1)", "array.find() takes one FUNCTION argument"},
 		{"[1].contains()", "wrong number of arguments for array.contains(): got 0, want 1"},
 	}

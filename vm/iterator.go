@@ -3,6 +3,7 @@ package vm
 import (
 	"fmt"
 
+	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
 )
 
@@ -46,7 +47,7 @@ func newIterator(collection object.Object) (iterator, error) {
 	case *object.Integer:
 		return &rangeIterator{next: 1, end: c.Value}, nil
 	}
-	return nil, fmt.Errorf("cannot iterate over %s", collection.Type())
+	return nil, fmt.Errorf("cannot iterate over %s", evaluator.TypeName(collection))
 }
 
 type listIterator struct {

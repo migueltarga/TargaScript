@@ -38,8 +38,8 @@ func TestPostfixErrors(t *testing.T) {
 	}{
 		{"const c = 1\nc++", "cannot reassign constant: c"},
 		{"missing++", `"missing" is not defined`},
-		{"let s = \"a\"\ns++", "operator ++ not supported for STRING"},
-		{"let b = true\nb--", "operator -- not supported for BOOLEAN"},
+		{"let s = \"a\"\ns++", `cannot use "++" on a string`},
+		{"let b = true\nb--", `cannot use "--" on a boolean`},
 		{"5++", "invalid assignment target: *ast.IntegerLiteral"},
 	}
 
