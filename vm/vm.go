@@ -188,13 +188,12 @@ func (vm *VM) step(f *frame, ip int) *object.Error {
 	return nil
 }
 
-// ownMethod returns the function an object holds under name, when calling
-// the method name calls it and it runs on this VM. keys, values, has and
-// length are methods every object has, which its own functions don't
-// replace.
+// ownMethod returns the function an object holds under name, when it runs
+// on this VM. An object's own functions come before the methods every
+// object has, like keys.
 func (vm *VM) ownMethod(obj object.Object, name string) *object.Closure {
 	hash, ok := obj.(*object.Hash)
-	if !ok || name == "keys" || name == "values" || name == "has" || name == "length" {
+	if !ok {
 		return nil
 	}
 	pair, ok := hash.Get((&object.String{Value: name}).HashKey())
@@ -621,14 +620,17 @@ func (vm *VM) loop(base int) object.Object {
 			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
 			name := nameObj.Value
 			f.ip += 2
-			// Fast path for objects, with the hash of the name computed once
-			if hash, ok := vm.stack[vm.sp-1].(*object.Hash); ok && name != "length" {
+			// Fast path for objects, with the hash of the name computed once;
+			// an object without a length property counts its keys
+			if hash, ok := vm.stack[vm.sp-1].(*object.Hash); ok {
 				if pair, ok := hash.Get(nameObj.HashKey()); ok {
 					vm.stack[vm.sp-1] = pair.Value
-				} else {
-					vm.stack[vm.sp-1] = NULL
+					continue
 				}
-				continue
+				if name != "length" {
+					vm.stack[vm.sp-1] = NULL
+					continue
+				}
 			}
 			result := evaluator.GetProperty(vm.pop(), name, 0, 0)
 			if err, ok := result.(*object.Error); ok {

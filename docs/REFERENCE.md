@@ -184,7 +184,7 @@ print(point(1, 2).plus(point(3, 4)).x)           // → 4
 
 Inside a function called as a method, `obj.method()`, `this` is the object. Arrow functions see the `this` of the function around them, so `this.items.map(i => this.total + i)` works. Elsewhere `this` is `null`.
 
-Object methods: `keys()`, `values()`, `entries()`, `has(key)`, `get(key, default)`, `remove(key)`, `length`. These come before an object's own functions of the same name. A missing property reads as `null`.
+Object methods: `keys()`, `values()`, `entries()`, `has(key)`, `get(key, default)`, `remove(key)`, and `length`, the number of keys. An object's own properties come first: `{"length": 300}.length` is `300`, and an object's own `keys` function replaces the method. A missing property reads as `null`.
 
 ## Control flow
 
