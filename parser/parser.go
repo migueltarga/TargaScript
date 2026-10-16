@@ -307,6 +307,14 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 				}
 				continue
 			}
+			// [a, b = 2] reads b = 2 as an assignment
+			if assign, ok := element.(*ast.AssignmentExpression); ok && assign.Operator == "" {
+				if ident, ok := assign.Left.(*ast.Identifier); ok {
+					pattern.Names = append(pattern.Names, ident)
+					setDefault(pattern, len(pattern.Names)-1, assign.Value)
+					continue
+				}
+			}
 			ident, ok := element.(*ast.Identifier)
 			if !ok {
 				return nil
@@ -336,6 +344,14 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 	return nil
 }
 
+// setDefault sets the default value of the name at i in a pattern.
+func setDefault(pattern *ast.Pattern, i int, value ast.Expression) {
+	for len(pattern.Defaults) <= i {
+		pattern.Defaults = append(pattern.Defaults, nil)
+	}
+	pattern.Defaults[i] = value
+}
+
 // parsePattern parses `[a, b]` or `{a, b}` after let or const, with the
 // opening bracket as the current token.
 func (p *Parser) parsePattern() *ast.Pattern {
@@ -362,6 +378,15 @@ func (p *Parser) parsePattern() *ast.Pattern {
 			return nil
 		}
 		pattern.Names = append(pattern.Names, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+		if p.peekTokenIs(token.ASSIGN) {
+			p.nextToken()
+			p.nextToken()
+			value := p.parseExpression(LOWEST)
+			if value == nil {
+				return nil
+			}
+			setDefault(pattern, len(pattern.Names)-1, value)
+		}
 		if !p.peekTokenIs(closing) && !p.expectPeek(token.COMMA) {
 			return nil
 		}
