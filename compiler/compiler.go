@@ -604,6 +604,13 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 	}
 
 	if stmt.Iterator == nil {
+		// repeat 3 { } runs three times, instead of looping forever on a
+		// condition that is always true
+		if count, ok := stmt.Collection.(*ast.IntegerLiteral); ok {
+			counted := *stmt
+			counted.Iterator = &ast.Identifier{Token: count.Token, Value: "\x00count"}
+			return c.compileRepeat(&counted)
+		}
 		return c.compileWhile(stmt)
 	}
 

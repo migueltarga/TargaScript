@@ -150,6 +150,7 @@ let size = match n {
 print(size)                                   // → several
 
 repeat i in 1..3 { print(i) }                 // 1, 2, 3
+repeat 2 { print("twice") }                   // a number of times
 repeat i in 2 { print("time", i) }           // an integer n counts from 1 to n
 repeat i, name in ["a", "b"] { print(i, name) }        // index and element
 repeat key, value in {"x": 1} { print(key, value) }    // key and value
