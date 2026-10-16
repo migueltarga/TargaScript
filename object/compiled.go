@@ -66,6 +66,10 @@ func (cf *CompiledFunction) PositionAt(offset int) (int, int) {
 // builtins that take a function.
 type ClosureRunner interface {
 	CallClosure(closure *Closure, args []Object) Object
+
+	// CallClosureAsync is like CallClosure, but the closure can pause at
+	// an await, and then the result is a promise of what it returns.
+	CallClosureAsync(closure *Closure, args []Object) Object
 }
 
 // Closure is a compiled function with the variables it captured. Scripts see

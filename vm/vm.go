@@ -65,6 +65,11 @@ type VM struct {
 	// awaited was rejected
 	pendingError *object.Error
 
+	// asyncBases are the bases of the runs that can pause at an await
+	// besides the outermost one: closures called with CallClosureAsync
+	// and resumed fibers, which nothing waits for
+	asyncBases []int
+
 	// Output is where print writes while this VM runs, including when a
 	// paused run resumes later. When nil, print uses evaluator.SetOutput.
 	Output io.Writer
@@ -139,6 +144,27 @@ func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Objec
 		return err
 	}
 	return vm.run(base)
+}
+
+// CallClosureAsync is CallClosure for a closure that can pause at an await,
+// like the function of map: then it returns the promise of its result.
+func (vm *VM) CallClosureAsync(cl *object.Closure, args []object.Object) object.Object {
+	vm.asyncBases = append(vm.asyncBases, len(vm.frames))
+	defer func() { vm.asyncBases = vm.asyncBases[:len(vm.asyncBases)-1] }()
+	return vm.CallClosure(cl, args)
+}
+
+// canPause reports whether the run from base can pause at an await.
+func (vm *VM) canPause(base int) bool {
+	if base == 0 {
+		return true
+	}
+	for i := len(vm.asyncBases) - 1; i >= 0; i-- {
+		if vm.asyncBases[i] == base {
+			return true
+		}
+	}
+	return false
 }
 
 // run executes instructions until the frame at index base returns, and
@@ -674,10 +700,10 @@ func (vm *VM) loop(base int) object.Object {
 				continue
 			}
 			line, column := f.cl.Fn.PositionAt(ip)
-			if base != 0 {
-				// Go code called this function, and its stack can't be saved
+			if !vm.canPause(base) {
+				// Go code called this function and needs its result now
 				return evaluator.NewError(line, column,
-					"await can't pause here: this function was called by a builtin such as map or sort")
+					"await can't pause here: this function was called by a builtin such as filter or sort")
 			}
 			return &suspension{awaited: awaitable, line: line, column: column}
 

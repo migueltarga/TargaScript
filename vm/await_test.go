@@ -119,13 +119,13 @@ func TestAwaitAlreadySettledAndPlainValues(t *testing.T) {
 
 func TestAwaitInBuiltinCallback(t *testing.T) {
 	p := object.NewPromise()
-	result, _ := awaitRun(t, "[1].map(fn(x) {\n  await p\n})", map[string]*object.Promise{"p": p})
+	result, _ := awaitRun(t, "[1].filter(fn(x) {\n  await p\n})", map[string]*object.Promise{"p": p})
 
 	err, ok := result.(*object.Error)
 	if !ok {
 		t.Fatalf("expected an error, got %s", result.Inspect())
 	}
-	if err.Message != "await can't pause here: this function was called by a builtin such as map or sort" || err.Line != 2 {
+	if err.Message != "await can't pause here: this function was called by a builtin such as filter or sort" || err.Line != 2 {
 		t.Errorf("got %s", err.Inspect())
 	}
 }

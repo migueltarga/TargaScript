@@ -402,6 +402,15 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	}
 }
 
+// applyFunctionAsync is applyFunction for a function that can pause at an
+// await, in which case it returns the promise of its result.
+func applyFunctionAsync(fn object.Object, args []object.Object) object.Object {
+	if closure, ok := fn.(*object.Closure); ok {
+		return closure.Runner.CallClosureAsync(closure, args)
+	}
+	return applyFunction(fn, args)
+}
+
 func isCallable(obj object.Object) bool {
 	switch obj.(type) {
 	case *object.Builtin, *object.Closure, object.External:
@@ -670,7 +679,8 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			result := make([]object.Object, 0, len(obj.Elements))
 			for _, elem := range obj.Elements {
-				mappedValue := applyFunction(fn, []object.Object{elem})
+				// A function that awaits gives a promise, for all()
+				mappedValue := applyFunctionAsync(fn, []object.Object{elem})
 				if isError(mappedValue) {
 					return mappedValue
 				}
