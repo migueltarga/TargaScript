@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"hash/fnv"
+	"math"
 	"strconv"
 	"strings"
 
@@ -63,7 +64,12 @@ type Float struct {
 }
 
 func (f *Float) Type() ObjectType { return FLOAT_OBJ }
-func (f *Float) Inspect() string  { return fmt.Sprintf("%g", f.Value) }
+func (f *Float) Inspect() string {
+	if math.IsInf(f.Value, 1) {
+		return "Inf"
+	}
+	return fmt.Sprintf("%g", f.Value)
+}
 
 type Boolean struct {
 	Value bool
