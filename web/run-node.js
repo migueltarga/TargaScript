@@ -13,7 +13,7 @@ load(fs.readFileSync(wasmPath)).then((run) => {
   const error = run(fs.readFileSync(file, "utf8"), (text) => { output += text; });
   process.stdout.write(output);
   if (error) {
-    process.stderr.write(`Execution Error: ${error}\n`);
+    process.stderr.write(`${error}\n`);
     process.exitCode = 1;
   }
 });
