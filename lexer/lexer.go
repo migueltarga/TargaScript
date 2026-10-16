@@ -381,7 +381,12 @@ func (l *Lexer) readString() (string, bool, bool) {
 				result.WriteRune('"')
 			case '\\':
 				result.WriteRune('\\')
+			case '$':
+				// \${ is a literal ${
+				result.WriteRune('$')
 			default:
+				// Other backslashes stay, so patterns like "\d+" read as written
+				result.WriteRune('\\')
 				result.WriteRune(l.ch)
 			}
 			escaped = false

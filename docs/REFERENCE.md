@@ -78,7 +78,7 @@ print("  pad ".trim(), "7".padStart(3, "0"), "ab".repeat(3))   // → pad 007 ab
 repeat c in "abc" { print(c) }
 ```
 
-`${value:spec}` formats like [`format`](#builtin-functions). Strings can be joined with `+`, which turns the right side into text: `"n = " + 5`.
+Escapes are `\n`, `\t`, `\r`, `\"`, `\\` and `\$` (for a literal `${`); other backslashes stay as written, so `"\d+"` is `\d+`. `${value:spec}` formats like [`format`](#builtin-functions). Strings can be joined with `+`, which turns the right side into text: `"n = " + 5`.
 
 String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`. Positions count characters, and `str[i]` is `null` outside the string.
 
