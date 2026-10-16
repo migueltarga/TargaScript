@@ -95,6 +95,7 @@ func (c *Compiler) Problems() []Problem {
 type compilation struct {
 	instructions instructions
 	flow         *emitFlow
+	translation  *translation
 	positions    []object.Position
 	caches       int // property caches given out
 	outer        *compilation
@@ -212,6 +213,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			c.fn.implicitIt = lit.ImplicitIt
 		}
 		c.scope = &compilation{outer: c.scope, flow: newEmitFlow()}
+		c.scope.translation = newTranslation(c, c.fn, c.scope)
 
 		for _, p := range params {
 			s := c.fn.defineLocal(p.Value, false)
@@ -260,7 +262,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			continue
 		}
 
-		words, positions, registers, err := translate(scope.instructions, scope.flow, scope.positions, fn.numLocals, fn.cells, c.constants)
+		words, positions, registers, err := scope.translation.finish(fn.numLocals)
 		if err != nil {
 			return nil, strfmt.Errorf("internal error in %s: %w", functionName(name), err)
 		}
@@ -749,6 +751,8 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 		pairs = 1
 	}
 	enter := c.emit(token.Token{}, code.OpLoopEnter, 9999, 9999)
+	// Each round jumps back to take the next value
+	c.scope.flow.markTarget(len(c.scope.instructions))
 	next := c.emit(token.Token{}, code.OpIterNext, 9999, pairs)
 
 	c.fn.loops++
@@ -904,6 +908,7 @@ func (c *Compiler) leaveTries(loops int) error {
 func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 	enter := c.emit(token.Token{}, code.OpLoopEnter, 9999, 9999)
 	start := len(c.scope.instructions)
+	c.scope.flow.markTarget(start)
 
 	if err := c.compileExpression(stmt.Collection); err != nil {
 		return err
@@ -1444,6 +1449,7 @@ func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
 	copy(ins.args[:], operands)
 	pos := len(c.scope.instructions)
 	c.scope.flow.add(pos, ins)
+	defer c.scope.translation.advance(false)
 	if tok.Line > 0 {
 		c.scope.positions = append(c.scope.positions, object.Position{Offset: pos, Line: tok.Line, Column: tok.Column})
 	} else if n := len(c.scope.positions); n > 0 && c.scope.positions[n-1].Line != 0 {
@@ -1463,6 +1469,7 @@ func (c *Compiler) changeOperands(pos int, operands ...int) {
 	default:
 		c.scope.flow.retarget(pos, operands[0])
 	}
+	c.scope.translation.advance(false)
 }
 
 func hasSpread(expressions []ast.Expression) bool {

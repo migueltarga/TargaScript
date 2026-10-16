@@ -21,6 +21,11 @@ type emitFlow struct {
 	jumps map[int]arrival
 	loops []*loopFlow
 	err   error
+
+	// targets are the instructions jumps go to, also from code nothing
+	// reaches, and pending the jumps whose target isn't set yet
+	targets map[int]bool
+	pending map[int]bool
 }
 
 type arrival struct{ depth, tries int }
@@ -40,7 +45,8 @@ type breakFlow struct {
 }
 
 func newEmitFlow() *emitFlow {
-	return &emitFlow{live: true, breaks: map[int]*breakFlow{}, arrivals: map[int]arrival{}, jumps: map[int]arrival{}}
+	return &emitFlow{live: true, breaks: map[int]*breakFlow{}, arrivals: map[int]arrival{}, jumps: map[int]arrival{},
+		targets: map[int]bool{}, pending: map[int]bool{}}
 }
 
 func (f *emitFlow) fail(message string, at int) {
@@ -70,8 +76,16 @@ func (f *emitFlow) arrive(at, target, depth, tries int) {
 // placeholder is the target of a jump made before its target is known.
 const placeholder = 9999
 
+// markTarget notes that jumps go to the instruction at, as to the start of a
+// loop, which jumps back to it only after it's made.
+func (f *emitFlow) markTarget(at int) { f.targets[at] = true }
+
 // retarget notes the target a jump at gets once it's known.
 func (f *emitFlow) retarget(at, target int) {
+	if f.pending[at] {
+		delete(f.pending, at)
+		f.targets[target] = true
+	}
 	if a, ok := f.jumps[at]; ok {
 		delete(f.jumps, at)
 		f.arrive(at, target, a.depth, a.tries)
@@ -86,6 +100,16 @@ func (f *emitFlow) add(at int, ins instruction) {
 			f.fail("different stack depths at", at)
 		}
 		f.live, f.depth, f.tries = true, a.depth, a.tries
+	}
+	// Jumps note their targets, even in code nothing reaches
+	switch ins.op {
+	case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
+		code.OpJumpNotNullKeep, code.OpJumpNullKeep, code.OpIterNext, code.OpTry:
+		if ins.args[0] == placeholder {
+			f.pending[at] = true
+		} else {
+			f.targets[ins.args[0]] = true
+		}
 	}
 	// Loops open and close where they're written, even in code nothing
 	// reaches
@@ -163,6 +187,7 @@ func (f *emitFlow) endLoop(end, start int) {
 		return
 	}
 	loop := f.loops[len(f.loops)-1]
+	f.targets[end] = true
 	for _, b := range loop.breaks {
 		b.target = end
 		if b.continues {

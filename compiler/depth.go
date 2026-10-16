@@ -57,22 +57,6 @@ func functionName(name string) string {
 	return name
 }
 
-// jumpTargets returns the offsets that jumps, loops and try blocks go to.
-func jumpTargets(ins instructions) map[int]bool {
-	targets := map[int]bool{}
-	for i := range ins {
-		switch ins[i].op {
-		case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
-			code.OpJumpNotNullKeep, code.OpJumpNullKeep, code.OpIterNext, code.OpTry:
-			targets[ins[i].args[0]] = true
-		case code.OpLoopEnter:
-			targets[ins[i].args[0]] = true
-			targets[ins[i].args[1]] = true
-		}
-	}
-	return targets
-}
-
 // flowError is an error of analyze, about the instruction at an offset: a
 // bug of the compiler. It formats without fmt, which is large in the
 // WebAssembly build.
