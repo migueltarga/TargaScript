@@ -20,7 +20,7 @@
   "exp": ["exp(x)", "E to the power x."],
   "fetch": ["fetch(url, options?)", "A promise of an HTTP response with `status`, `ok`, `headers`, `text` and `json()`. Options: `method`, `headers`, `body`."],
   "floor": ["floor(x)", "The largest integer not greater than x."],
-  "format": ["format(format, ...values)", "Formats values like printf and returns the text: `format(\"%.2f\", 3.14159)`."],
+  "format": ["format(format, ...values)", "Formats values like printf and returns the text: `format(\"%.2f\", 3.14159)`; `%,d` groups the thousands."],
   "hypot": ["hypot(x, y)", "The length of the vector (x, y): sqrt(x² + y²)."],
   "input": ["input(prompt?)", "Prints the prompt and returns the line the user types, or null when the input has ended. Command line only."],
   "listDir": ["listDir(path)", "The names in a directory, sorted. Command line only."],

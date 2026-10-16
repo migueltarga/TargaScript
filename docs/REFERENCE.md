@@ -86,6 +86,7 @@ print(result)   // → 16
 let name = "Ana"
 print("Hello, ${name}! 2 + 2 = ${2 + 2}")   // → Hello, Ana! 2 + 2 = 4
 print("${3.14159:.2f} [${7:3d}] [${"x":-3s}]")  // → 3.14 [  7] [x  ]
+print("${1234567:,} ${9876.5:,.2f}")            // → 1,234,567 9,876.50
 print("line one\nline two\ttabbed \"quoted\"")
 
 let s = "Hello, World"
@@ -379,7 +380,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | Function | Does |
 |---|---|
 | `print(...values)` | prints values separated by spaces; it is a function like any other, so `x \|> print` works |
-| `printf(format, ...values)` / `format(format, ...values)` | prints / returns values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`... |
+| `printf(format, ...values)` / `format(format, ...values)` | prints / returns values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`...; `%,d` and `%,.2f` group the thousands |
 | `type(value)` | `"integer"`, `"float"`, `"string"`, `"boolean"`, `"null"`, `"array"`, `"object"`, `"function"`, `"promise"` |
 | `toString(v)`, `toInt(v)`, `toFloat(v)` | convert values |
 | `abs`, `sqrt`, `pow`, `floor`, `ceil`, `trunc`, `sign`, `clamp(x, min, max)` | math |
