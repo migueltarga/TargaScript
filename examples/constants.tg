@@ -19,7 +19,7 @@ const ITEMS = [1, 2, 3]
 const CONFIG = {"debug": true, "timeout": 30}
 
 print("Various constants:")
-print("NAME =", NAME) 
+print("NAME =", NAME)
 print("AGE =", AGE)
 print("IS_VALID =", IS_VALID)
 print("ITEMS =", ITEMS)
@@ -31,4 +31,4 @@ print("Attempting to reassign PI from 3.14159 to 3.0:")
 print("(This should generate an error)")
 PI = 3.0  // This should cause an error
 
-print("This line should not be reached if constants are working correctly.") 
+print("This line should not be reached if constants are working correctly.")

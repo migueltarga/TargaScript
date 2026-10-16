@@ -1,7 +1,7 @@
 // loops.tg
 // ===============================================================
 // Comprehensive demonstration of various loop constructs in TargaScript
-// This example covers different ways to iterate over collections, 
+// This example covers different ways to iterate over collections,
 // ranges, and how to control loop flow.
 // ===============================================================
 
@@ -213,7 +213,7 @@ repeat q < items.length {
         q = q + 1
         continue
     }
-    
+
     if items[q] % 5 == 0 {
         print("  - Found:", items[q])
         break
@@ -238,4 +238,4 @@ repeat i5 <= 6 {
 }
 
 print("")
-print("Loop constructs demonstration completed!") 
+print("Loop constructs demonstration completed!")

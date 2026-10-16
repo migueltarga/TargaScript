@@ -18,7 +18,7 @@ print("Original numbers:", numbers)
 
 // Using anonymous function for transformation
 let squared = numbers.map(fn(num) {
-  return num * num
+    return num * num
 })
 print("Squared numbers:", squared)
 
@@ -27,13 +27,13 @@ let names = ["alice", "bob", "charlie", "david"]
 print("Original names:", names)
 
 let uppercase = names.map(fn(name) {
-  return name.upper()
+    return name.upper()
 })
 print("Uppercase names:", uppercase)
 
 // Example 3: Adding a prefix to each name
 let prefixed = names.map(fn(name) {
-  return "user_" + name
+    return "user_" + name
 })
 print("Names with prefix:", prefixed)
 
@@ -51,20 +51,20 @@ let mixed_numbers = range(1, 10)
 print("Original numbers:", mixed_numbers)
 
 let even_numbers = mixed_numbers.filter(fn(num) {
-  return num % 2 == 0
+    return num % 2 == 0
 })
 print("Even numbers only:", even_numbers)
 
 // Example 2: Filtering by string length
 print("Original names:", names)
 let long_names = names.filter(fn(name) {
-  return name.length > 4
+    return name.length > 4
 })
 print("Names longer than 4 characters:", long_names)
 
 // Example 3: Compound filtering
 let special_numbers = mixed_numbers.filter(fn(num) {
-  return (num > 3) && (num < 8)
+    return (num > 3) && (num < 8)
 })
 print("Numbers between 3 and 8:", special_numbers)
 
@@ -80,16 +80,16 @@ print("=== Reduce Method Examples ===")
 // Example 1: Sum of numbers
 print("Numbers:", mixed_numbers)
 let sum = mixed_numbers.reduce(fn(acc, num) {
-  return acc + num
+    return acc + num
 }, 0)
 print("Sum of all numbers:", sum)
 
 // Example 2: Finding maximum value
 let max_val = mixed_numbers.reduce(fn(acc, num) {
-  if (num > acc) {
-    return num
-  }
-  return acc
+    if (num > acc) {
+        return num
+    }
+    return acc
 }, mixed_numbers[0])
 print("Maximum value:", max_val)
 
@@ -112,9 +112,9 @@ print("Original numbers:", original)
 
 // One-line method chaining
 let result = original
-  .map(fn(x) { return x * x })
-  .filter(fn(x) { return x > 20 })
-  .reduce(fn(acc, x) { return acc + x }, 0)
+    .map(fn(x) { return x * x })
+    .filter(fn(x) { return x > 20 })
+    .reduce(fn(acc, x) { return acc + x }, 0)
 
 print("Final result from chained operations:", result)
 
@@ -129,4 +129,4 @@ print("After filter (> 20):", filtered)
 
 // Step 3: Sum the remaining values
 let total = filtered.reduce(fn(acc, x) { return acc + x }, 0)
-print("After reduce (sum):", total) 
+print("After reduce (sum):", total)
