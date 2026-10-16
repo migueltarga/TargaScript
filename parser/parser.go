@@ -1760,7 +1760,7 @@ func (p *Parser) parseInterpolation(source string, line, column int) ast.Express
 		if value == nil {
 			return nil
 		}
-		return &ast.FormatExpression{Token: p.curToken, Value: value, Spec: spec}
+		return &ast.FormatExpression{Token: p.curToken, Value: value, Spec: completeFormatSpec(spec)}
 	}
 
 	sub := New(lexer.NewAt(source, line, column))
@@ -1815,12 +1815,25 @@ func validFormatSpec(spec string) bool {
 		switch {
 		case last && strings.ContainsRune("dfFeEgGsqvxXobct", c):
 			return true
-		case !last && strings.ContainsRune("+-# 0123456789.", c):
+		case strings.ContainsRune("+-# 0123456789.,", c):
+			// Flags alone, like the , of ${total:,}, format as %v does
+			if last {
+				return true
+			}
 		default:
 			return false
 		}
 	}
 	return false
+}
+
+// completeFormatSpec adds v to a spec of flags without a verb: ${n:,} is
+// ${n:,v}.
+func completeFormatSpec(spec string) string {
+	if strings.ContainsRune("dfFeEgGsqvxXobct", rune(spec[len(spec)-1])) {
+		return spec
+	}
+	return spec + "v"
 }
 
 // matchingBrace returns the index of the "}" closing the "{" at open,
