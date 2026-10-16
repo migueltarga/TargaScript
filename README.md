@@ -13,7 +13,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a WebAssembly runtime under 200 KB: add `<script type="text/targascript">` to a page, with no build step.
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
-- **Small, modern syntax.** String interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **Small, modern syntax.** Arrow functions, `match`, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **A bytecode VM.** Programs compile to bytecode, which runs several times faster than the original tree-walking interpreter and allows 10,000 nested calls, in the browser too.
 
@@ -25,7 +25,7 @@ let url = "https://api.github.com/repos/migueltarga/TargaScript/commits?per_page
 let response = await fetch(url)
 if !response.ok { throw "GitHub answered ${response.status}" }
 
-let byAuthor = response.json().groupBy(fn({commit}) { commit.author.name })
+let byAuthor = response.json().groupBy(({commit}) => commit.author.name)
 
 repeat name, commits in byAuthor {
     print("${name.padEnd(20)} ${commits.length} commits")

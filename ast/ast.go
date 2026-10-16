@@ -287,6 +287,9 @@ type FunctionLiteral struct {
 	Rest       bool         // the last parameter collects the extra arguments
 	Patterns   []*Pattern   // a pattern taking a parameter apart, or nil
 	Body       *BlockStatement
+
+	// Arrow is set for functions written x => body
+	Arrow bool
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -295,6 +298,10 @@ func (fl *FunctionLiteral) String() string {
 	var out bytes.Buffer
 
 	params := ParameterStrings(fl.Parameters, fl.Defaults, fl.Rest)
+
+	if fl.Arrow {
+		return "(" + strings.Join(params, ", ") + ") => " + fl.Body.String()
+	}
 
 	out.WriteString(fl.TokenLiteral())
 
