@@ -44,6 +44,7 @@ const (
 	MODULO    = "%"
 	XOR       = "^"
 	NULLISH   = "??"
+	PIPE      = "|>"
 	OPTIONAL  = "?."
 
 	// Delimiters

@@ -14,6 +14,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	PIPE        // |>
 	NULLISH     // ??
 	OR          // ||
 	AND         // &&
@@ -53,6 +54,7 @@ var precedences = map[token.TokenType]int{
 	token.AND:       AND,
 	token.OR:        OR,
 	token.NULLISH:   NULLISH,
+	token.PIPE:      PIPE,
 	token.OPTIONAL:  INDEX,
 
 	// Postfix x++ and x-- bind to their operand like indexing
@@ -138,6 +140,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.DOT, p.parseDotExpression)
 	p.registerInfix(token.OPTIONAL, p.parseDotExpression)
 	p.registerInfix(token.NULLISH, p.parseInfixExpression)
+	p.registerInfix(token.PIPE, p.parsePipeExpression)
 	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
 	p.registerInfix(token.OP_ASSIGN, p.parseAssignmentExpression)
 	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
@@ -903,6 +906,30 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 	exp.Arguments = p.parseCallArguments()
 	return exp
+}
+
+// parsePipeExpression reads value |> f as f(value), and value |> f(a) or
+// value |> obj.f(a) with value as the first argument, so calls chain left
+// to right.
+func (p *Parser) parsePipeExpression(value ast.Expression) ast.Expression {
+	pipe := p.curToken
+	p.nextToken()
+	target := p.parseExpression(PIPE)
+	if target == nil {
+		return nil
+	}
+
+	switch call := target.(type) {
+	case *ast.CallExpression:
+		piped := *call
+		piped.Arguments = append([]ast.Expression{value}, call.Arguments...)
+		return &piped
+	case *ast.MethodCallExpression:
+		piped := *call
+		piped.Arguments = append([]ast.Expression{value}, call.Arguments...)
+		return &piped
+	}
+	return &ast.CallExpression{Token: pipe, Function: target, Arguments: []ast.Expression{value}}
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {

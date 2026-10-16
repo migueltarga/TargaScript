@@ -52,6 +52,7 @@ From loosest to tightest:
 | Operators | Meaning |
 |---|---|
 | `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` | assignment |
+| `\|>` | pipe: `x \|> f` is `f(x)`, and `x \|> f(a)` is `f(x, a)` |
 | `??` | the right side when the left is null |
 | `\|\|` | or: the left side if truthy, else the right side |
 | `&&` | and: the left side if falsy, else the right side |
@@ -65,6 +66,18 @@ From loosest to tightest:
 | `x++` `x--` `f()` `a[i]` `o.p` `o?.p` | increment, call, index, property, optional property |
 
 `false`, `null`, `0`, `0.0`, `""`, `[]` and `{}` are falsy; everything else is truthy.
+
+The pipe passes a value through functions from left to right, as the first argument, and a line can start with it:
+
+```targascript
+fn double(x) { x * 2 }
+fn add(x, n) { x + n }
+
+let result = 5
+    |> add(3)
+    |> double
+print(result)   // → 16
+```
 
 ## Strings
 

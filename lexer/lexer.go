@@ -48,6 +48,9 @@ func (l *Lexer) NextToken() token.Token {
 			ch := l.ch
 			l.readChar()
 			tok = l.newToken(token.OR, string(ch)+string(l.ch), tokenLine, tokenColumn)
+		} else if l.peekChar() == '>' {
+			l.readChar()
+			tok = l.newToken(token.PIPE, "|>", tokenLine, tokenColumn)
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.ch), tokenLine, tokenColumn)
 		}
