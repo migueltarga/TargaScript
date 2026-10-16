@@ -417,6 +417,7 @@ targascript                       # the REPL: unfinished code continues on the n
 targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(2 ** 10)'   # run code given on the command line
 targascript test                  # run the *_test.tg files, see Testing
+targascript check                 # find problems in the .tg files without running them
 cat script.tg | targascript -     # run code from standard input
 ```
 

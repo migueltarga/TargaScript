@@ -40,10 +40,13 @@ func main() {
 		return
 	}
 
-	// test runs the tests, unless there's a file named test to run
-	if len(args) > 0 && args[0] == "test" {
-		if _, err := os.Stat("test"); err != nil {
-			os.Exit(runTests(args[1:], noColor))
+	// test and check are commands, unless there's a file with their name
+	if len(args) > 0 && (args[0] == "test" || args[0] == "check") {
+		if _, err := os.Stat(args[0]); err != nil {
+			if args[0] == "test" {
+				os.Exit(runTests(args[1:], noColor))
+			}
+			os.Exit(runCheck(args[1:]))
 		}
 	}
 
