@@ -15,6 +15,7 @@ import (
 
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
+	"github.com/migueltarga/TargaScript/format"
 )
 
 // Checker finds the problems in a program, like repl.Check.
@@ -110,11 +111,12 @@ func (s *Server) handle(m message) {
 		s.reply(m.ID, map[string]any{
 			"capabilities": map[string]any{
 				// The editor sends the whole text on every change
-				"textDocumentSync":       1,
-				"completionProvider":     map[string]any{},
-				"hoverProvider":          true,
-				"definitionProvider":     true,
-				"documentSymbolProvider": true,
+				"textDocumentSync":           1,
+				"completionProvider":         map[string]any{},
+				"hoverProvider":              true,
+				"definitionProvider":         true,
+				"documentSymbolProvider":     true,
+				"documentFormattingProvider": true,
 			},
 			"serverInfo": map[string]any{"name": "targascript"},
 		})
@@ -161,6 +163,15 @@ func (s *Server) handle(m message) {
 			return
 		}
 		s.reply(m.ID, s.definition(p.TextDocument.URI, p.Position))
+	case "textDocument/formatting":
+		var p struct {
+			TextDocument textDocument `json:"textDocument"`
+		}
+		if json.Unmarshal(m.Params, &p) != nil {
+			s.reply(m.ID, nil)
+			return
+		}
+		s.reply(m.ID, s.format(p.TextDocument.URI))
 	case "textDocument/documentSymbol":
 		var p struct {
 			TextDocument textDocument `json:"textDocument"`
@@ -288,6 +299,22 @@ func (s *Server) definition(uri string, at position) any {
 		return nil
 	}
 	return map[string]any{"uri": uri, "range": nameRange(d)}
+}
+
+// format returns the edit that lays the file out like targascript fmt: the
+// whole text replaced, or no edits when it's laid out already.
+func (s *Server) format(uri string) []any {
+	text := s.files[uri]
+	formatted := format.Source(text)
+	if formatted == text {
+		return []any{}
+	}
+	lines := strings.Split(text, "\n")
+	end := position{len(lines) - 1, len(lines[len(lines)-1])}
+	return []any{map[string]any{
+		"range":   map[string]any{"start": position{0, 0}, "end": end},
+		"newText": formatted,
+	}}
 }
 
 // symbols lists the functions, variables and constants declared at the top

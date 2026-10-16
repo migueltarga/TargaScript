@@ -161,3 +161,24 @@ func TestDefinitionsAndSymbols(t *testing.T) {
 		t.Errorf("completion misses the file's names, builtins or keywords")
 	}
 }
+
+func TestFormatting(t *testing.T) {
+	uri := "file:///x/messy.tg"
+	none := func(string, string) []diag.Diagnostic { return nil }
+	sent := replies(t, none,
+		map[string]any{"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri, "text": "fn f() {\nreturn 1   \n}"}}},
+		map[string]any{"jsonrpc": "2.0", "id": 1, "method": "textDocument/formatting", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri}}},
+		map[string]any{"jsonrpc": "2.0", "method": "exit"},
+	)
+	edits := sent[1]["result"].([]any)
+	if len(edits) != 1 {
+		t.Fatalf("edits: %v", edits)
+	}
+	edit := edits[0].(map[string]any)
+	end := edit["range"].(map[string]any)["end"].(map[string]any)
+	if edit["newText"] != "fn f() {\n    return 1\n}\n" || end["line"].(float64) != 2 || end["character"].(float64) != 1 {
+		t.Errorf("edit: %v", edit)
+	}
+}
