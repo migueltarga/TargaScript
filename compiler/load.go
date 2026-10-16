@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -21,12 +22,48 @@ type moduleName struct {
 }
 
 // ResolveLoadPath returns the absolute path of a file loaded from code in
-// dir, or the working directory when dir is empty.
-func ResolveLoadPath(dir, path string) (string, error) {
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(dir, path)
+// dir, or the working directory when dir is empty. Web addresses stay as
+// they are, and a relative path loaded from one is relative to it.
+func ResolveLoadPath(dir, file string) (string, error) {
+	if IsURL(file) {
+		return file, nil
 	}
-	return filepath.Abs(path)
+	if IsURL(dir) {
+		if strings.HasPrefix(file, "/") {
+			return origin(dir) + path.Clean(file), nil
+		}
+		return origin(dir) + path.Clean(dir[len(origin(dir)):]+"/"+file), nil
+	}
+	if !filepath.IsAbs(file) {
+		file = filepath.Join(dir, file)
+	}
+	return filepath.Abs(file)
+}
+
+// IsURL reports whether a load path is a web address.
+func IsURL(file string) bool {
+	return strings.HasPrefix(file, "https://") || strings.HasPrefix(file, "http://")
+}
+
+// origin returns the scheme and host of a web address: https://example.com.
+func origin(url string) string {
+	rest := url[strings.Index(url, "://")+3:]
+	if i := strings.IndexByte(rest, '/'); i >= 0 {
+		return url[:len(url)-len(rest)+i]
+	}
+	return url
+}
+
+// ModuleDir returns the directory of a loaded file, which the files it
+// loads are relative to.
+func ModuleDir(file string) string {
+	if IsURL(file) {
+		if i := strings.LastIndexByte(file, '/'); i > len(origin(file)) {
+			return file[:i]
+		}
+		return origin(file)
+	}
+	return filepath.Dir(file)
 }
 
 // ReadFile reads the files programs load. The browser build replaces it, as
@@ -78,16 +115,16 @@ func moduleNames(program *ast.Program, dir string, seen map[string]bool) []modul
 				byName[stmt.Alias.Value] = false
 				continue
 			}
-			path, err := ResolveLoadPath(dir, stmt.Path.Value)
-			if err != nil || seen[path] {
+			file, err := ResolveLoadPath(dir, stmt.Path.Value)
+			if err != nil || seen[file] {
 				continue
 			}
-			seen[path] = true
-			loaded, message := ReadModule(path, stmt.Path.Value)
+			seen[file] = true
+			loaded, message := ReadModule(file, stmt.Path.Value)
 			if message != "" {
 				continue
 			}
-			for _, n := range moduleNames(loaded, filepath.Dir(path), seen) {
+			for _, n := range moduleNames(loaded, ModuleDir(file), seen) {
 				byName[n.name] = n.isConst
 			}
 		}
@@ -113,7 +150,7 @@ func (c *Compiler) loadedNames(stmt *ast.LoadStatement) (string, []moduleName, s
 	if message != "" {
 		return path, nil, message
 	}
-	return path, moduleNames(program, filepath.Dir(path), map[string]bool{path: true}), ""
+	return path, moduleNames(program, ModuleDir(path), map[string]bool{path: true}), ""
 }
 
 func (c *Compiler) compileLoad(stmt *ast.LoadStatement) error {

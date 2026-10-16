@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"path/filepath"
 	"sort"
 
 	"github.com/migueltarga/TargaScript/compiler"
@@ -36,7 +35,7 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 	}
 
 	c := compiler.New()
-	c.Dir = filepath.Dir(path)
+	c.Dir = compiler.ModuleDir(path)
 	bytecode, err := c.Compile(program)
 	if err != nil {
 		return evaluator.NewError(line, column, "cannot load %q: %s", shown, err)

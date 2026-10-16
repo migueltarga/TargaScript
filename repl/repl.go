@@ -44,6 +44,7 @@ func init() {
 	evaluator.SetHost(loop)
 	evaluator.SetSystem(osSystem{})
 	evaluator.SetServer(httpServer{loop})
+	compiler.ReadFile = readModule
 	evaluator.SetRegexEngine(goRegex{})
 }
 

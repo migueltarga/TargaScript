@@ -330,6 +330,14 @@ load "lib/text.tg" as text    // or are kept in an object: text.shout(...)
 
 Paths are relative to the file with the `load`. A file runs once, however many times it's loaded. In web pages, `targascript.js` fetches the files from the same server.
 
+From the command line, a file can also be loaded from a web address, so code can be shared with a link. The files it loads with relative paths come from the same place:
+
+```
+load "https://raw.githubusercontent.com/ana/tg-utils/main/text.tg" as text
+```
+
+It's downloaded each time the program runs. Load only code you trust: it runs with the same access to files as your program.
+
 ## Builtin functions
 
 | Function | Does |
