@@ -114,6 +114,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.TEMPLATE, p.parseTemplateLiteral)
+	p.registerPrefix(token.THROW, p.parseThrowExpression)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
@@ -1139,6 +1140,17 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 	}
 	p.nextToken()
 
+	return expression
+}
+
+// parseThrowExpression parses throw where a value goes, which raises the
+// error instead of giving one.
+func (p *Parser) parseThrowExpression() ast.Expression {
+	expression := &ast.ThrowExpression{Token: p.curToken}
+	p.nextToken()
+	if expression.Value = p.parseExpression(LOWEST); expression.Value == nil {
+		return nil
+	}
 	return expression
 }
 

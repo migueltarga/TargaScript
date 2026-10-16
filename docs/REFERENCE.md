@@ -295,6 +295,8 @@ print(result)                                // → 0
 
 An error stops the program, showing where it happened, unless a `try` around it catches it. The caught error is an object with `message`, `line` and `column`; `throw err` raises it again. `try` is an expression, like `if`.
 
+`throw` also works where a value goes, to fail instead of giving one: `let port = config.port ?? throw "no port set"`, or `_ => throw "unknown command"` in a `match`.
+
 ## Asynchronous code
 
 ```targascript
