@@ -772,6 +772,16 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	return ident
 }
 
+// implicitIt is the function of it that an expression using it stands for.
+func implicitIt(tok token.Token, body ast.Expression) *ast.FunctionLiteral {
+	it := &ast.Identifier{Token: tok, Value: "it"}
+	return &ast.FunctionLiteral{
+		Token: tok, Parameters: []*ast.Identifier{it}, Defaults: []ast.Expression{nil}, Patterns: []*ast.Pattern{nil},
+		Arrow: true, ImplicitIt: true,
+		Body: &ast.BlockStatement{Token: tok, Statements: []ast.Statement{&ast.ExpressionStatement{Token: tok, Expression: body}}},
+	}
+}
+
 // parseArguments parses the arguments of a call. An argument that uses it
 // becomes a function of it: xs.map(it * 2) is xs.map(it => it * 2).
 func (p *Parser) parseArguments() []ast.Expression {
@@ -783,13 +793,14 @@ func (p *Parser) parseArguments() []ast.Expression {
 		arg := p.parseExpression(LOWEST)
 		uses := p.usesIt[len(p.usesIt)-1]
 		p.usesIt = p.usesIt[:len(p.usesIt)-1]
-		if uses && arg != nil {
-			it := &ast.Identifier{Token: tok, Value: "it"}
-			arg = &ast.FunctionLiteral{
-				Token: tok, Parameters: []*ast.Identifier{it}, Defaults: []ast.Expression{nil}, Patterns: []*ast.Pattern{nil},
-				Arrow: true, ImplicitIt: true,
-				Body: &ast.BlockStatement{Token: tok, Statements: []ast.Statement{&ast.ExpressionStatement{Token: tok, Expression: arg}}},
+		if ident, bare := arg.(*ast.Identifier); uses && bare && ident.Value == "it" {
+			// f(it) passes the it around the call, as a function that
+			// returns its argument would be no use
+			if len(p.usesIt) > 0 {
+				p.usesIt[len(p.usesIt)-1] = true
 			}
+		} else if uses && arg != nil {
+			arg = implicitIt(tok, arg)
 		}
 		list = append(list, arg)
 		if !p.peekTokenIs(token.COMMA) {
@@ -1231,9 +1242,17 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 func (p *Parser) parsePipeExpression(value ast.Expression) ast.Expression {
 	pipe := p.curToken
 	p.nextToken()
+	tok := p.curToken
+	p.usesIt = append(p.usesIt, false)
 	target := p.parseExpression(PIPE)
+	uses := p.usesIt[len(p.usesIt)-1]
+	p.usesIt = p.usesIt[:len(p.usesIt)-1]
 	if target == nil {
 		return nil
+	}
+	// value |> it.map(f) is a function of it, the value
+	if uses {
+		return &ast.CallExpression{Token: pipe, Function: implicitIt(tok, target), Arguments: []ast.Expression{value}}
 	}
 
 	switch call := target.(type) {
