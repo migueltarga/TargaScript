@@ -172,12 +172,19 @@ let x = 1
 let y = 2
 print({x, y})                                    // → {"x": 1, "y": 2}
 
-let counter = {"count": 0, "inc": fn() { counter.count += 1 }}
+let counter = {"count": 0, "inc": fn() { this.count += 1 }}
 counter.inc()
 print(counter.count)                             // → 1
+
+fn point(x, y) {
+    {x, y, plus: fn(other) { point(this.x + other.x, this.y + other.y) }}
+}
+print(point(1, 2).plus(point(3, 4)).x)           // → 4
 ```
 
-Object methods: `keys()`, `values()`, `entries()`, `has(key)`, `get(key, default)`, `remove(key)`, `length`. A missing property reads as `null`.
+Inside a function called as a method, `obj.method()`, `this` is the object. Arrow functions see the `this` of the function around them, so `this.items.map(i => this.total + i)` works. Elsewhere `this` is `null`.
+
+Object methods: `keys()`, `values()`, `entries()`, `has(key)`, `get(key, default)`, `remove(key)`, `length`. These come before an object's own functions of the same name. A missing property reads as `null`.
 
 ## Control flow
 

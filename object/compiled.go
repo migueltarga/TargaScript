@@ -32,6 +32,11 @@ type CompiledFunction struct {
 	// in an array
 	Variadic bool
 
+	// HasThis is set for functions other than arrow functions, which have
+	// a local, just after the parameters, for this: the object a method
+	// was called on, or null
+	HasThis bool
+
 	// Positions, sorted by offset, for error messages
 	Positions []Position
 
