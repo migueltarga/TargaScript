@@ -83,6 +83,23 @@ func Builtin(name string) (*object.Builtin, bool) {
 	return builtin, ok
 }
 
+// BuiltinWithHost binds asynchronous builtins to one runtime. Other builtins
+// keep their shared definitions.
+func BuiltinWithHost(name string, h Host) (*object.Builtin, bool) {
+	switch name {
+	case "sleep":
+		return &object.Builtin{Name: name, Fn: func(args ...object.Object) object.Object {
+			return sleepWithHost(h, args...)
+		}}, true
+	case "fetch":
+		return &object.Builtin{Name: name, Fn: func(args ...object.Object) object.Object {
+			return fetchWithHost(h, args...)
+		}}, true
+	default:
+		return Builtin(name)
+	}
+}
+
 // BuiltinNames returns the names of the builtin functions, sorted.
 func BuiltinNames() []string {
 	names := make([]string, 0, len(builtins))

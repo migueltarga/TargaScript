@@ -20,6 +20,10 @@ func init() {
 // string is sent as JSON. The response has status, ok, url, headers, text
 // (the body) and json(), which parses the body.
 func fetch(args ...object.Object) object.Object {
+	return fetchWithHost(host, args...)
+}
+
+func fetchWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
 		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for fetch. got=%d, want=1 or 2", len(args))}
 	}
@@ -39,12 +43,12 @@ func fetch(args ...object.Object) object.Object {
 		}
 	}
 
-	if host == nil {
+	if h == nil {
 		return &object.Error{Message: "fetch is not available here"}
 	}
 
 	promise := object.NewPromise()
-	host.Fetch(request, func(response FetchResponse, err error) {
+	h.Fetch(request, func(response FetchResponse, err error) {
 		if err != nil {
 			promise.Reject(&object.Error{Message: fmt.Sprintf("fetch %s failed: %s", request.URL, err)})
 			return

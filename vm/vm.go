@@ -50,6 +50,7 @@ type VM struct {
 	globals   []object.Object
 	names     *compiler.GlobalTable
 	builtins  []*object.Builtin
+	host      evaluator.Host
 
 	stack []object.Object
 	sp    int // the next free slot; the top is stack[sp-1]
@@ -82,8 +83,9 @@ type VM struct {
 
 	// MaxSteps, when above zero, stops a run with an error after that many
 	// loop iterations and calls, to bound programs that might not end
-	MaxSteps int
-	steps    int
+	MaxSteps   int
+	steps      int
+	nestedRuns int
 }
 
 func New(globals *compiler.GlobalTable) *VM {
@@ -97,6 +99,34 @@ func New(globals *compiler.GlobalTable) *VM {
 		vm.builtins = append(vm.builtins, builtin)
 	}
 	return vm
+}
+
+// SetHost gives this VM its own asynchronous builtins. Loaded modules inherit it.
+func (vm *VM) SetHost(h evaluator.Host) {
+	vm.host = h
+	for i, name := range evaluator.BuiltinNames() {
+		vm.builtins[i], _ = evaluator.BuiltinWithHost(name, h)
+	}
+}
+
+// Host returns the host used by this VM's asynchronous builtins.
+func (vm *VM) Host() evaluator.Host { return vm.host }
+
+// RestrictBuiltins replaces host capabilities that an embedding application
+// did not grant, even if another package configured the evaluator globally.
+func (vm *VM) RestrictBuiltins(names ...string) {
+	indexes := map[string]int{}
+	for i, name := range evaluator.BuiltinNames() {
+		indexes[name] = i
+	}
+	for _, name := range names {
+		if i, ok := indexes[name]; ok {
+			name := name
+			vm.builtins[i] = &object.Builtin{Name: name, Fn: func(...object.Object) object.Object {
+				return evaluator.NewError(0, 0, "%s is not available in embedded scripts", name)
+			}}
+		}
+	}
 }
 
 // Run runs a compiled program and returns the value of its last statement,
@@ -128,23 +158,24 @@ func (vm *VM) SetGlobal(name string, value object.Object) {
 	vm.globals[i] = value
 }
 
-var (
-	// Closures running for code outside a VM, each nested in Go's stack
-	nestedRuns int
-
-	// MaxNestedRuns limits nestedRuns where the native stack is small, as
-	// in WebAssembly. Zero means no limit.
-	MaxNestedRuns int
-)
+// MaxNestedRuns limits nestedRuns where the native stack is small, as
+// in WebAssembly. Zero means no limit.
+var MaxNestedRuns int
 
 // CallClosure runs a closure for code outside the VM, such as a builtin that
 // takes a function, and returns its result.
 func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Object {
-	if MaxNestedRuns > 0 && nestedRuns >= MaxNestedRuns {
+	if MaxNestedRuns > 0 && vm.nestedRuns >= MaxNestedRuns {
 		return evaluator.NewError(0, 0, "maximum call depth exceeded")
 	}
-	nestedRuns++
-	defer func() { nestedRuns-- }()
+	if vm.MaxSteps > 0 {
+		vm.steps++
+		if vm.steps > vm.MaxSteps {
+			return evaluator.NewError(0, 0, "the program took more than %d steps", vm.MaxSteps)
+		}
+	}
+	vm.nestedRuns++
+	defer func() { vm.nestedRuns-- }()
 
 	base := len(vm.frames)
 	vm.push(cl)
@@ -691,7 +722,7 @@ func (vm *VM) loop(base int) object.Object {
 			if value == nil {
 				name := vm.names.Names()[i]
 				// A builtin is still usable before a global with its name is set
-				if builtin, ok := evaluator.Builtin(name); ok {
+				if builtin, ok := vm.builtin(name); ok {
 					value = builtin
 				} else {
 					return vm.notDefined(f, ip, name)
@@ -859,6 +890,11 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpCallArray:
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, ip); err != nil {
+					return err
+				}
+			}
 			args := vm.pop().(*object.Array)
 			for _, arg := range args.Elements {
 				vm.push(arg)
@@ -875,6 +911,11 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpCallMethodArray:
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, ip); err != nil {
+					return err
+				}
+			}
 			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
 			name := nameObj.Value
 			f.ip += 2
@@ -965,6 +1006,11 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpCallMethod:
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, ip); err != nil {
+					return err
+				}
+			}
 			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
 			name := nameObj.Value
 			argc := int(ins[ip+3])
