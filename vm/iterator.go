@@ -39,10 +39,11 @@ func newIterator(collection object.Object, ints *ints) (iterator, error) {
 	case *object.Array:
 		return &listIterator{values: c.Elements, ints: ints}, nil
 	case *object.Hash:
-		it := &listIterator{keysFirst: true}
-		for _, pair := range c.OrderedPairs() {
-			it.keys = append(it.keys, pair.Key)
-			it.values = append(it.values, pair.Value)
+		n := c.Len()
+		it := &listIterator{keysFirst: true, keys: make([]object.Object, n), values: make([]object.Object, n)}
+		for i := range n {
+			_, pair := c.At(i)
+			it.keys[i], it.values[i] = pair.Key, pair.Value
 		}
 		return it, nil
 	case *object.Integer:

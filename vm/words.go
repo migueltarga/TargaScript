@@ -499,6 +499,25 @@ func (vm *VM) loopWords(base int) object.Object {
 				}
 				continue
 			}
+			if it, ok := r[w.A()].(*listIterator); ok {
+				// Arrays, strings and objects
+				if it.i >= len(it.values) {
+					if op == code.RIterNext {
+						pc = w.C()
+					}
+					continue
+				}
+				if it.keysFirst {
+					r[w.B()] = it.keys[it.i]
+				} else {
+					r[w.B()] = it.values[it.i]
+				}
+				it.i++
+				if op == code.RIterLoop {
+					pc = w.C()
+				}
+				continue
+			}
 			it := r[w.A()].(iterator)
 			key, value, ok := it.Next(it.KeysFirst())
 			if !ok {
@@ -517,6 +536,20 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 
 		case code.RIterNextPair:
+			if it, ok := r[w.A()].(*listIterator); ok {
+				if it.i >= len(it.values) {
+					pc = w.C()
+					continue
+				}
+				if it.keys != nil {
+					r[w.B()] = it.keys[it.i]
+				} else {
+					r[w.B()] = vm.ints.get(int64(it.i))
+				}
+				r[w.B()+1] = it.values[it.i]
+				it.i++
+				continue
+			}
 			it := r[w.A()].(iterator)
 			key, value, ok := it.Next(true)
 			if !ok {
