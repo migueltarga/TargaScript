@@ -279,7 +279,7 @@ func (vm *VM) loopWords(base int) object.Object {
 			// Calls of this VM's closures with the right number of
 			// arguments, the usual case, start here
 			if cl, ok := vm.stack[fn].(*object.Closure); ok && cl.Runner == vm &&
-				argc == cl.Fn.NumParams && !cl.Fn.Variadic && !cl.Fn.HasThis && len(vm.frames) <= evaluator.MaxCallDepth {
+				argc == cl.Fn.SimpleCall && len(vm.frames) <= evaluator.MaxCallDepth {
 				callee := fn + 1
 				top := callee + cl.Fn.NumRegisters
 				if top+256 > len(vm.stack) {
@@ -381,10 +381,10 @@ func (vm *VM) loopWords(base int) object.Object {
 				return vm.notDefinedRegister(f, pc-1, w.A())
 			}
 			vm.frames = vm.frames[:len(vm.frames)-1]
-			vm.sp = f.base - 1
-			vm.push(value)
+			// The result goes where the function was, the register of the call
+			vm.stack[f.base-1] = value
 			if len(vm.frames) == base {
-				vm.sp--
+				vm.sp = f.base - 1
 				f.ip = pc
 				return value
 			}

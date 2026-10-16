@@ -358,6 +358,23 @@ func (t *translation) run() {
 		}
 		t.out[f.at] = code.MakeWord(w.Op(), a, b, c)
 	}
+	t.shortenReturns()
+}
+
+// shortenReturns returns values where they are: a jump to a return
+// becomes the return, and a move into the register a return reads becomes
+// the return. The instructions they stand for stay, for other jumps to them.
+func (t *translation) shortenReturns() {
+	for i, w := range t.out {
+		if w.Op() == code.RJump && t.out[w.A()].Op() == code.RReturn {
+			t.out[i] = t.out[w.A()]
+		}
+	}
+	for i, w := range t.out {
+		if w.Op() == code.RMove && i+1 < len(t.out) && t.out[i+1].Op() == code.RReturn && t.out[i+1].A() == w.A() {
+			t.out[i] = code.MakeWord(code.RReturn, w.B(), 0, 0)
+		}
+	}
 }
 
 // fused reports whether the instruction at next is op and nothing jumps
