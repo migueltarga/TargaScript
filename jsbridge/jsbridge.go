@@ -164,6 +164,23 @@ func fromHost(handle uint32) object.Object {
 // Arrays and hashes are copied, and functions become JavaScript functions
 // that call back into the script.
 func toHost(obj object.Object) (handle uint32, temporary bool) {
+	return toHostSeen(obj, nil)
+}
+
+// toHostSeen is toHost with the arrays and hashes being converted, the
+// ones that contain obj, so one inside itself becomes a JavaScript value
+// that refers to itself.
+func toHostSeen(obj object.Object, converting map[object.Object]uint32) (handle uint32, temporary bool) {
+	if h, ok := converting[obj]; ok {
+		return h, false
+	}
+	switch obj.(type) {
+	case *object.Array, *object.Hash:
+		if converting == nil {
+			converting = map[object.Object]uint32{}
+		}
+	}
+
 	switch obj := obj.(type) {
 	case *Value:
 		return obj.handle, false
@@ -183,28 +200,32 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 		return handleNull, false
 	case *object.Array:
 		array := hostMakeArray()
+		converting[obj] = array
 		for _, element := range obj.Elements {
-			h, temporary := toHost(element)
+			h, temporary := toHostSeen(element, converting)
 			hostPush(array, h)
 			if temporary {
 				hostRelease(h)
 			}
 		}
+		delete(converting, obj)
 		return array, true
 	case *object.Hash:
 		hash := hostMakeObject()
+		converting[obj] = hash
 		for _, pair := range obj.OrderedPairs() {
 			key := pair.Key.Inspect()
 			if s, ok := pair.Key.(*object.String); ok {
 				key = s.Value
 			}
 			ptr, n := stringPtr(key)
-			h, temporary := toHost(pair.Value)
+			h, temporary := toHostSeen(pair.Value, converting)
 			hostSet(hash, ptr, n, h)
 			if temporary {
 				hostRelease(h)
 			}
 		}
+		delete(converting, obj)
 		return hash, true
 	case *object.Builtin, *object.Closure:
 		if h, ok := callbackHandles[obj]; ok {

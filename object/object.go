@@ -164,12 +164,21 @@ type Array struct {
 }
 
 func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
-func (ao *Array) Inspect() string {
+func (ao *Array) Inspect() string  { return ao.inspect(nil) }
+
+// inspect formats the array inside the arrays and hashes in parents, the
+// ones that contain it. An array inside itself shows as [...].
+func (ao *Array) inspect(parents []Object) string {
+	if contains(parents, ao) {
+		return "[...]"
+	}
+	parents = append(parents, ao)
+
 	var out bytes.Buffer
 
 	elements := []string{}
 	for _, e := range ao.Elements {
-		elements = append(elements, inspectNested(e))
+		elements = append(elements, inspectNested(e, parents))
 	}
 
 	out.WriteString("[")
@@ -228,13 +237,21 @@ func (h *Hash) OrderedPairs() []HashPair {
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }
-func (h *Hash) Inspect() string {
+func (h *Hash) Inspect() string  { return h.inspect(nil) }
+
+// inspect is like Array.inspect: a hash inside itself shows as {...}.
+func (h *Hash) inspect(parents []Object) string {
+	if contains(parents, h) {
+		return "{...}"
+	}
+	parents = append(parents, h)
+
 	var out bytes.Buffer
 
 	pairs := []string{}
 	for _, pair := range h.OrderedPairs() {
 		pairs = append(pairs, fmt.Sprintf("%s: %s",
-			inspectNested(pair.Key), inspectNested(pair.Value)))
+			inspectNested(pair.Key, parents), inspectNested(pair.Value, parents)))
 	}
 
 	out.WriteString("{")
@@ -246,9 +263,23 @@ func (h *Hash) Inspect() string {
 
 // inspectNested formats a value inside an array or hash. Strings are quoted
 // there, so ["1", 1] and {"a": "b"} print unambiguously.
-func inspectNested(obj Object) string {
-	if str, ok := obj.(*String); ok {
-		return strconv.Quote(str.Value)
+func inspectNested(obj Object, parents []Object) string {
+	switch obj := obj.(type) {
+	case *String:
+		return strconv.Quote(obj.Value)
+	case *Array:
+		return obj.inspect(parents)
+	case *Hash:
+		return obj.inspect(parents)
 	}
 	return obj.Inspect()
+}
+
+func contains(objects []Object, obj Object) bool {
+	for _, o := range objects {
+		if o == obj {
+			return true
+		}
+	}
+	return false
 }
