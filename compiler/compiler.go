@@ -9,6 +9,7 @@ import (
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/parser"
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -869,6 +870,10 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		}
 		for _, key := range node.Order {
 			pair := node.Pairs[key]
+			if parser.PatternOnly(pair) {
+				c.emitError(node.Token, "{%s = ...} gives a default to a name in a pattern; in an object, write {%s: ...}", key, key)
+				return nil
+			}
 			if ident, ok := pair.Key.(*ast.Identifier); ok {
 				// Bare keys are names, like in `{name: "Ana"}`
 				c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.String{Value: ident.Value}))
