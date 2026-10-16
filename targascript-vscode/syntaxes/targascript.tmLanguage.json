@@ -83,6 +83,10 @@
         {
           "name": "constant.language.targascript",
           "match": "\\b(true|false|null)\\b"
+        },
+        {
+          "name": "variable.language.this.targascript",
+          "match": "\\bthis\\b"
         }
       ]
     },

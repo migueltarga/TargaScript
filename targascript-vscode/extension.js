@@ -12,7 +12,7 @@ const DELAY = 300; // milliseconds to wait after a change before checking
 const BUILTINS = require("./builtins.json");
 
 const KEYWORDS = ["let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
-  "continue", "load", "as", "await", "try", "catch", "throw", "match", "true", "false", "null"];
+  "continue", "load", "as", "await", "try", "catch", "throw", "match", "true", "false", "null", "this"];
 
 const builtinDocs = (name) => {
   const [signature, description] = BUILTINS[name];
