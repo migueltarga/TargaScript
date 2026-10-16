@@ -51,6 +51,10 @@ type CompiledFunction struct {
 	// work on them: NumParams, or -1 for functions with rest parameters
 	SimpleCall int
 
+	// Leaf is set for functions that call nothing and don't await, so they
+	// can't pause, which the VM can run for map, filter and reduce itself
+	Leaf bool
+
 	// Names of the locals and captured variables, for error messages
 	LocalNames []string
 	FreeNames  []string

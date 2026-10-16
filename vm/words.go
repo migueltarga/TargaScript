@@ -391,6 +391,19 @@ func (vm *VM) loopWords(base int) object.Object {
 				r = vm.stack[f.base:]
 				continue
 			}
+			if d := vm.drive(receiver, name.Value, argc, fn); d != nil {
+				f.ip = pc
+				if len(d.elems) == 0 {
+					vm.stack[fn] = d.result()
+					continue
+				}
+				if err := vm.countCall(); err != nil {
+					return vm.positioned(f, pc-1, err)
+				}
+				f = vm.enter(d, fn+1)
+				words, r, pc = f.cl.Fn.Code, vm.stack[f.base:], 0
+				continue
+			}
 			var args []object.Object
 			switch receiver.(type) {
 			case *object.Array, *object.String:
@@ -444,6 +457,19 @@ func (vm *VM) loopWords(base int) object.Object {
 			vm.frames = vm.frames[:len(vm.frames)-1]
 			// The result goes where the function was, the register of the call
 			vm.stack[f.base-1] = value
+			if d := f.driver; d != nil {
+				if !d.returned(value) {
+					// The next element
+					if err := vm.countCall(); err != nil {
+						caller := vm.frames[len(vm.frames)-1]
+						return vm.positioned(caller, caller.ip-1, err)
+					}
+					f = vm.enter(d, f.base)
+					words, r, pc = f.cl.Fn.Code, vm.stack[f.base:], 0
+					continue
+				}
+				vm.stack[f.base-1] = d.result()
+			}
 			if len(vm.frames) == base {
 				vm.sp = f.base - 1
 				f.ip = pc

@@ -26,6 +26,9 @@ type frame struct {
 	ip       int
 	base     int
 	handlers []handler
+	// driver is set for a call of the function of map, filter or reduce
+	// that the VM runs itself
+	driver *driver
 }
 
 // handler is an open try block: where its catch block starts, and the
@@ -369,7 +372,7 @@ func (vm *VM) pushFrame(cl *object.Closure, base int) *frame {
 		f = &frame{}
 		vm.frames[n] = f
 	}
-	f.cl, f.ip, f.base = cl, 0, base
+	f.cl, f.ip, f.base, f.driver = cl, 0, base, nil
 	f.handlers = f.handlers[:0]
 	return f
 }
