@@ -53,10 +53,10 @@ func TestTemplateLiteralErrors(t *testing.T) {
 		expected string
 	}{
 		{`"${}"`, "empty ${} in string"},
-		{`"${1 +}"`, "line 1:1: in ${1 +}: no prefix parse function for EOF found"},
+		{`"${1 +}"`, `line 1:1: in ${1 +}: expected a value after "+"`},
 		{`"${1 2}"`, `in ${1 2}: unexpected "2"`},
-		{`"${1"`, "unterminated string"},
-		{`"${"a}"`, "unterminated string"},
+		{`"${1"`, "this string is never closed"},
+		{`"${"a}"`, "this string is never closed"},
 	}
 
 	for _, tt := range tests {
