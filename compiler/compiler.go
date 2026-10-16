@@ -958,6 +958,7 @@ var infixOpcodes = map[string]code.Opcode{
 	"%":  code.OpMod,
 	"**": code.OpPow,
 	"^":  code.OpXor,
+	"in": code.OpIn,
 	"==": code.OpEqual,
 	"!=": code.OpNotEqual,
 	">":  code.OpGreaterThan,
@@ -984,6 +985,17 @@ func (c *Compiler) compileInfix(node *ast.InfixExpression) error {
 			return err
 		}
 		c.changeOperands(pos, len(c.scope.instructions))
+		return nil
+	}
+
+	if r, ok := node.Right.(*ast.InfixExpression); ok && node.Operator == "in" && r.Operator == ".." {
+		// x in a..b compares with the ends instead of building the range
+		for _, operand := range []ast.Expression{node.Left, r.Left, r.Right} {
+			if err := c.compileExpression(operand); err != nil {
+				return err
+			}
+		}
+		c.emit(node.Token, code.OpInRange)
 		return nil
 	}
 
