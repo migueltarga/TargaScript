@@ -2,7 +2,7 @@
   "name": "targascript",
   "displayName": "TargaScript",
   "description": "Syntax highlighting and error checking for TargaScript (.tg) files",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "migueltarga",
   "icon": "icon.png",
   "engines": {
@@ -36,6 +36,12 @@
         "scopeName": "source.targascript",
         "path": "./syntaxes/targascript.tmLanguage.json"
       }
+    ],
+    "snippets": [
+      {
+        "language": "targascript",
+        "path": "./snippets/targascript.json"
+      }
     ]
   },
   "repository": {
@@ -47,6 +53,7 @@
     "tg",
     "syntax",
     "highlighting",
+    "snippets",
     "diagnostics"
   ],
   "author": "Miguel Targa",

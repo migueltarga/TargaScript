@@ -1,0 +1,54 @@
+{
+  "Function": {
+    "prefix": "fn",
+    "body": ["fn ${1:name}(${2:params}) {", "\t$0", "}"],
+    "description": "A named function"
+  },
+  "If": {
+    "prefix": "if",
+    "body": ["if ${1:condition} {", "\t$0", "}"],
+    "description": "if"
+  },
+  "If else": {
+    "prefix": "ifelse",
+    "body": ["if ${1:condition} {", "\t$2", "} else {", "\t$0", "}"],
+    "description": "if with else"
+  },
+  "Repeat in": {
+    "prefix": "repeat",
+    "body": ["repeat ${1:item} in ${2:list} {", "\t$0", "}"],
+    "description": "Loop over an array, an object or a range"
+  },
+  "Match": {
+    "prefix": "match",
+    "body": ["match ${1:value} {", "\t${2:pattern} => ${3:result}", "\t_ => ${0:null}", "}"],
+    "description": "Pick a result by matching a value"
+  },
+  "Try": {
+    "prefix": "try",
+    "body": ["try {", "\t$1", "} catch ${2:err} {", "\t$0", "}"],
+    "description": "Catch errors"
+  },
+  "Fetch": {
+    "prefix": "fetch",
+    "body": ["let ${1:response} = await fetch(\"${2:https://}\")", "let ${3:data} = ${1:response}.json()", "$0"],
+    "description": "Fetch JSON from a URL"
+  },
+  "Test": {
+    "prefix": "test",
+    "body": ["test(\"${1:does something}\", fn() {", "\tassertEqual(${2:actual}, ${3:expected})$0", "})"],
+    "description": "A test, run with targascript test"
+  },
+  "Serve": {
+    "prefix": "serve",
+    "body": [
+      "serve(${1:8080}, fn(req) {",
+      "\tmatch req.path {",
+      "\t\t\"/\" => \"${2:Hello from TargaScript}\"",
+      "\t\t_ => response(\"Not found\", {status: 404})",
+      "\t}",
+      "})"
+    ],
+    "description": "An HTTP server"
+  }
+}

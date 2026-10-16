@@ -2,6 +2,12 @@
 
 All notable changes to the "TargaScript" extension will be documented in this file.
 
+## [0.6.0] - 2026-10-16
+
+- Snippets for functions, `if`, `repeat`, `match`, `try`, `fetch`, tests and `serve`
+- Highlight the pipe operator `|>`
+- Highlight hex, binary and octal numbers and digits separated by `_`, like `0xff` and `1_000_000`
+
 ## [0.5.0] - 2026-10-16
 
 - Highlight the `match` keyword
