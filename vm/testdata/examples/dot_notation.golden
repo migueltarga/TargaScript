@@ -1,0 +1,35 @@
+TargaScript Method-Style Dot Notation
+====================================
+
+1. String Methods:
+Original string: "  Hello, World!  "
+After trim().upper(): "HELLO, WORLD!"
+
+Original CSV string: apple,banana,cherry,date
+After split(","): ["apple", "banana", "cherry", "date"]
+
+Original sentence: The quick brown fox jumps over the lazy dog
+After replace("fox", "cat"): The quick brown cat jumps over the lazy dog
+
+Original complex string: "  mixed CASE string with EXTRA   spaces  "
+After trim().lower(): "mixed case string with extra   spaces"
+
+2. Array Methods:
+Original array: [1, 2, 3, 4, 5]
+After join("-"): 1-2-3-4-5
+After map(double): [2, 4, 6, 8, 10]
+After filter(even): [2, 4]
+After reduce(sum, 0): 15
+
+Odd numbers squared: [1, 9, 25]
+Result of complex chaining: 24
+
+3. Mixed Method Types:
+Original array of strings: ["hello", "WORLD", "  TargaScript  "]
+After processing and joining: "hello world targascript"
+
+Original data string: NAME:John,AGE:30,CITY:New York
+Processed data entries: [{"key": "name", "value": "John"}, {"key": "age", "value": "30"}, {"key": "city", "value": "New York"}]
+
+Method-style dot notation examples completed!
+--- NULL null

@@ -1,0 +1,37 @@
+Initial values:
+x = outer-x
+y = outer-y
+
+Calling function with parameter:
+
+Inside function (parameter shadows outer x):
+x = parameter-value (should be parameter value, not outer x)
+y = outer-y (should be outer-y)
+After modifying parameter:
+x = modified-parameter (should be modified-parameter)
+
+After function call:
+x = outer-x (should still be outer-x)
+y = outer-y (should still be outer-y)
+
+Calling outer function:
+
+In outer function:
+a = outer-parameter-value (parameter value)
+x = outer-x (outer scope x)
+
+In inner function:
+a = outer-parameter-value (from outer function)
+x = inner-parameter-value (parameter value, shadows outer x)
+After modifying inner parameter:
+x = modified-inner-parameter
+
+After inner function call:
+x = outer-x (should still be outer-x, not modified)
+
+Final outer scope values:
+x = outer-x (should still be outer-x)
+y = outer-y (should still be outer-y)
+
+Test completed successfully!
+--- NULL null

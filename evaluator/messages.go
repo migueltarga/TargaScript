@@ -47,12 +47,6 @@ func operatorError(line, column int, operator string, left, right object.Object)
 	return newError(line, column, "cannot use %q with %s and %s", operator, typeName(left), typeName(right))
 }
 
-// notDefinedError reports an unknown name, suggesting a similar one from
-// the environment or the builtins.
-func notDefinedError(line, column int, name string, env *object.Environment) *object.Error {
-	return NotDefined(line, column, name, env.Names())
-}
-
 // NotDefined reports an unknown name, suggesting a similar one from
 // candidates, the builtins or print.
 func NotDefined(line, column int, name string, candidates []string) *object.Error {

@@ -1,0 +1,105 @@
+TargaScript Format Specifiers and printf
+=======================================
+
+1. Basic Format Specifiers:
+  Integer (%d):
+    Decimal: 42
+
+    Negative: -42
+
+  Float (%f):
+    Default precision: 3.141590
+
+    Two decimal places: 3.14
+
+    Zero decimal places: 3
+
+  Boolean (%t):
+    True: true
+
+    False: false
+
+  String (%s):
+    Hello: Hello, World!
+
+    Empty string: ''
+
+
+2. Multiple Values:
+  Alice is 30 years old and 5.8 feet tall.
+
+
+3. Expressions in Format:
+  5 + 10 = 15
+
+  Current length of name: 5
+
+  Age in 5 years: 35
+
+
+4. Formatting Composite Types:
+  Array Formatting:
+    Complete array: [1, 2, 3, 4, 5]
+
+    First element: 1
+
+    Array length: 5
+
+  Object Formatting:
+    Complete object: {"name": "Bob", "age": 25, "city": "New York"}
+
+    Person's name: Bob
+
+    Person's age: 25
+
+
+5. Width and Alignment:
+  Right Alignment (Default):
+    |   42|
+
+    |     hello|
+
+  Left Alignment:
+    |42   |
+
+    |hello     |
+
+  Zero Padding (Numbers):
+    |00042|
+
+    |0003.14|
+
+
+6. Precision for Floating Point:
+  Default: 3.141593
+
+  One decimal: 3.1
+
+  Four decimals: 3.1416
+
+  Zero decimals: 3
+
+
+7. Width and Precision Combined:
+  |      3.14|
+
+  |3.14      |
+
+
+8. Practical Example - Product Inventory:
+  PRODUCT INVENTORY REPORT
+  ========================
+  ID  | Name            | Price    | Stock | Value
+  ----|-----------------|----------|-------|----------
+  101 | Laptop          | $ 1299.99 |    15 | $ 19499.85
+
+  205 | Smartphone      | $  699.50 |    42 | $ 29379.00
+
+  316 | Wireless Earbuds | $  149.00 |    78 | $ 11622.00
+
+  ========================
+  TOTAL INVENTORY VALUE: $   60500.85
+
+
+Format specifiers and printf demonstration completed!
+--- NULL null

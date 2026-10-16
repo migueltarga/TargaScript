@@ -8,7 +8,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/object"
 )
 
@@ -19,297 +18,15 @@ var (
 
 	// Default output to stdout
 	output io.Writer = os.Stdout
-	// Trace mode for debugging
-	traceMode bool = false
-
-	// Number of user function calls currently on the stack
-	callDepth int
-
-	// Number of nested Eval calls, and the limit set by SetMaxNesting
-	nesting, maxNesting int
 )
 
 // maxCallDepth limits recursion so runaway calls fail with an error
 // instead of overflowing the Go stack.
 const maxCallDepth = 10000
 
-// SetMaxNesting limits how deeply evaluation can nest, counting every
-// expression and statement being evaluated, so that recursion fails with an
-// error before overflowing a small native stack, such as WebAssembly's in a
-// browser. Zero, the default, means no limit besides maxCallDepth.
-func SetMaxNesting(depth int) {
-	maxNesting = depth
-}
-
 // SetOutput sets the writer to use for print statements
 func SetOutput(w io.Writer) {
 	output = w
-}
-
-// SetTraceMode enables or disables trace logging
-func SetTraceMode(enabled bool) {
-	traceMode = enabled
-}
-
-// Eval evaluates the AST node and returns an object
-func Eval(node ast.Node, env *object.Environment) object.Object {
-	if maxNesting > 0 {
-		if nesting >= maxNesting {
-			return newError(0, 0, "maximum call depth exceeded")
-		}
-		nesting++
-		defer func() { nesting-- }()
-	}
-
-	if node == nil {
-		return NULL
-	}
-
-	if traceMode {
-		fmt.Fprintf(os.Stdout, "TRACE: Evaluating %T: %s\n", node, node.String())
-	}
-
-	switch node := node.(type) {
-	// Statements
-	case *ast.Program:
-		return evalProgram(node.Statements, env)
-
-	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
-
-	case *ast.RepeatStatement:
-		return evalRepeatStatement(node, env)
-
-	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
-		if isError(val) {
-			return val
-		}
-		return &object.ReturnValue{Value: val}
-
-	case *ast.BlockStatement:
-		return evalBlockStatements(node.Statements, env)
-
-	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-
-		if env.IsLocalConstant(node.Name.Value) {
-			return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", node.Name.Value)
-		}
-		env.SetLocal(node.Name.Value, val)
-		return val
-
-	case *ast.ConstStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-
-		if env.HasLocal(node.Name.Value) {
-			return newError(node.Token.Line, node.Token.Column, "identifier already declared: %s", node.Name.Value)
-		}
-		env.SetConst(node.Name.Value, val)
-		return val
-
-	case *ast.FunctionStatement:
-		fn := &object.Function{
-			Parameters: node.Parameters,
-			Body:       node.Body,
-			Env:        env,
-			Name:       node.Name.Value,
-		}
-		if env.IsLocalConstant(node.Name.Value) {
-			return newError(node.Token.Line, node.Token.Column, "cannot reassign constant: %s", node.Name.Value)
-		}
-		env.SetLocal(node.Name.Value, fn)
-		return fn
-
-	case *ast.BreakStatement:
-		return &object.Break{Line: node.Token.Line, Column: node.Token.Column}
-
-	case *ast.ContinueStatement:
-		return &object.Continue{Line: node.Token.Line, Column: node.Token.Column}
-
-	// Expressions
-	case *ast.IntegerLiteral:
-		return &object.Integer{Value: node.Value}
-
-	case *ast.FloatLiteral:
-		return &object.Float{Value: node.Value}
-
-	case *ast.StringLiteral:
-		return &object.String{Value: node.Value}
-
-	case *ast.TemplateLiteral:
-		var out strings.Builder
-		for _, part := range node.Parts {
-			value := Eval(part, env)
-			if isError(value) {
-				return value
-			}
-			out.WriteString(objectToString(value))
-		}
-		return &object.String{Value: out.String()}
-
-	case *ast.Boolean:
-		return nativeBoolToBooleanObject(node.Value)
-
-	case *ast.NullLiteral:
-		return NULL
-
-	case *ast.PrefixExpression:
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-		return evalPrefixExpression(node.Operator, right, node.Token.Line, node.Token.Column)
-
-	case *ast.InfixExpression:
-		if node.Operator == "&&" || node.Operator == "||" {
-			left := Eval(node.Left, env)
-			if isError(left) {
-				return left
-			}
-
-			if node.Operator == "&&" {
-				if !isTruthy(left) {
-					return left
-				}
-			} else if node.Operator == "||" {
-				if isTruthy(left) {
-					return left
-				}
-			}
-
-			right := Eval(node.Right, env)
-			if isError(right) {
-				return right
-			}
-
-			return right
-		}
-
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-
-		return evalInfixExpression(node.Operator, left, right, node.Token.Line, node.Token.Column)
-
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
-
-	case *ast.Identifier:
-		return evalIdentifier(node, env)
-
-	case *ast.FunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		name := ""
-		if node.Name != nil {
-			name = node.Name.Value
-		}
-		return &object.Function{Parameters: params, Body: body, Env: env, Name: name}
-
-	case *ast.CallExpression:
-		function := Eval(node.Function, env)
-		if isError(function) {
-			return function
-		}
-		args := evalExpressions(node.Arguments, env)
-		if len(args) == 1 && isError(args[0]) {
-			return args[0]
-		}
-		result := applyFunction(function, args)
-		if err, ok := result.(*object.Error); ok && err.Line == 0 {
-			err.Line, err.Column = node.Token.Line, node.Token.Column
-		}
-		return result
-
-	case *ast.ArrayLiteral:
-		elements := evalExpressions(node.Elements, env)
-		if len(elements) == 1 && isError(elements[0]) {
-			return elements[0]
-		}
-		return &object.Array{Elements: elements}
-
-	case *ast.IndexExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-		index := Eval(node.Index, env)
-		if isError(index) {
-			return index
-		}
-		return evalIndexExpression(left, index, node.Token.Line, node.Token.Column)
-
-	case *ast.HashLiteral:
-		return evalHashLiteral(node, env)
-
-	case *ast.LoadStatement:
-		return evalLoadStatement(node, env)
-
-	case *ast.PrintStatement:
-		return evalPrintExpression(node, env)
-
-	case *ast.DotExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-		return evalDotExpression(left, node, env)
-
-	case *ast.MethodCallExpression:
-		object := Eval(node.Object, env)
-		if isError(object) {
-			return object
-		}
-		args := evalExpressions(node.Arguments, env)
-		if len(args) == 1 && isError(args[0]) {
-			return args[0]
-		}
-		return evalMethodCallExpression(object, node.Method.Value, args, node.Token.Line, node.Token.Column)
-
-	case *ast.PostfixExpression:
-		return evalPostfixExpression(node, env)
-
-	case *ast.AssignmentExpression:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-
-		return assign(node.Left, val, env, node.Token.Line, node.Token.Column)
-	}
-
-	return newError(0, 0, "unsupported node: %T", node)
-}
-
-// evalPostfixExpression handles x++ and x--: it adds or subtracts 1 from a
-// numeric variable, property or element and returns the new value.
-func evalPostfixExpression(node *ast.PostfixExpression, env *object.Environment) object.Object {
-	line, column := node.Token.Line, node.Token.Column
-
-	current := Eval(node.Left, env)
-	if isError(current) {
-		return current
-	}
-
-	updated := increment(current, node.Operator, line, column)
-	if isError(updated) {
-		return updated
-	}
-
-	return assign(node.Left, updated, env, line, column)
 }
 
 // increment returns current + 1 for "++" or current - 1 for "--".
@@ -330,47 +47,6 @@ func increment(current object.Object, operator string, line, column int) object.
 		return &object.Float{Value: current.Value + float64(delta)}
 	default:
 		return newError(line, column, "operator %s not supported for %s", operator, current.Type())
-	}
-}
-
-// assign stores val in target, which must be a variable, a property
-// (obj.name) or an index (arr[i], hash[key]).
-func assign(target ast.Expression, val object.Object, env *object.Environment, line, column int) object.Object {
-	switch left := target.(type) {
-	case *ast.Identifier:
-		if env.IsConstant(left.Value) {
-			return newError(line, column, "cannot reassign constant: %s", left.Value)
-		}
-
-		if _, ok := env.Get(left.Value); !ok {
-			return notDefinedError(line, column, left.Value, env)
-		}
-		result, _ := env.Set(left.Value, val)
-		return result
-
-	case *ast.DotExpression:
-		obj := Eval(left.Left, env)
-		if isError(obj) {
-			return obj
-		}
-
-		return setProperty(obj, left.Property.Value, val, line, column)
-
-	case *ast.IndexExpression:
-		container := Eval(left.Left, env)
-		if isError(container) {
-			return container
-		}
-
-		index := Eval(left.Index, env)
-		if isError(index) {
-			return index
-		}
-
-		return setIndex(container, index, val, line, column)
-
-	default:
-		return newError(line, column, "invalid assignment target: %T", target)
 	}
 }
 
@@ -424,53 +100,6 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 	}
 
 	return newError(line, column, "index assignment not supported for: %s", container.Type())
-}
-
-func evalProgram(statements []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object
-
-	for _, statement := range statements {
-		result = Eval(statement, env)
-
-		switch result := result.(type) {
-		case *object.ReturnValue:
-			return result.Value
-		case *object.Error:
-			return result
-		}
-		if err := loopControlError(result); err != nil {
-			return err
-		}
-	}
-
-	return result
-}
-
-func evalBlockStatements(statements []ast.Statement, env *object.Environment) object.Object {
-	return evalStatements(statements, object.NewEnclosedEnvironment(env))
-}
-
-// evalStatements runs statements directly in env, without a new scope. Used
-// where the caller already created the scope (function calls, loop iterations).
-func evalStatements(statements []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object
-
-	for _, statement := range statements {
-		result = Eval(statement, env)
-
-		if result != nil {
-			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ || rt == object.BREAK_OBJ || rt == object.CONTINUE_OBJ {
-				return result
-			}
-		}
-	}
-
-	if result == nil {
-		return NULL
-	}
-
-	return result
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
@@ -640,34 +269,6 @@ func toFloat(obj object.Object) *object.Float {
 	return &object.Float{Value: float64(obj.(*object.Integer).Value)}
 }
 
-func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
-	condition := Eval(ie.Condition, env)
-	if isError(condition) {
-		return condition
-	}
-
-	// Each branch is a block, which gets its own scope
-	if isTruthy(condition) {
-		return Eval(ie.Consequence, env)
-	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
-	} else {
-		return NULL
-	}
-}
-
-func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	if val, ok := env.Get(node.Value); ok {
-		return val
-	}
-
-	if builtin, ok := builtins[node.Value]; ok {
-		return builtin
-	}
-
-	return notDefinedError(node.Token.Line, node.Token.Column, node.Value, env)
-}
-
 func isTruthy(obj object.Object) bool {
 	switch obj {
 	case NULL:
@@ -709,54 +310,12 @@ func isError(obj object.Object) bool {
 	return false
 }
 
-func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
-	var result []object.Object
-
-	for _, e := range exps {
-		evaluated := Eval(e, env)
-		if isError(evaluated) {
-			return []object.Object{evaluated}
-		}
-		result = append(result, evaluated)
-	}
-
-	return result
-}
-
 func applyFunction(fn object.Object, args []object.Object) object.Object {
 	if fn == nil {
 		return newError(0, 0, "function is nil")
 	}
 
 	switch fn := fn.(type) {
-	case *object.Function:
-		if fn == nil {
-			return newError(0, 0, "function object is nil")
-		}
-		if callDepth >= maxCallDepth {
-			return newError(0, 0, "maximum call depth exceeded (%d)", maxCallDepth)
-		}
-		// A call uses more native stack than other evaluation, so it also
-		// counts towards the nesting limit
-		if maxNesting > 0 && nesting >= maxNesting {
-			return newError(0, 0, "maximum call depth exceeded")
-		}
-		callDepth++
-		nesting++
-		defer func() {
-			callDepth--
-			nesting--
-		}()
-
-		extendedEnv := extendFunctionEnv(fn, args)
-
-		// Parameters and the body's own variables share one scope
-		evaluated := evalStatements(fn.Body.Statements, extendedEnv)
-		if err := loopControlError(evaluated); err != nil {
-			return err
-		}
-
-		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
 		if fn == nil || fn.Fn == nil {
 			return newError(0, 0, "builtin function is nil")
@@ -773,44 +332,11 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 func isCallable(obj object.Object) bool {
 	switch obj.(type) {
-	case *object.Function, *object.Builtin, *object.Closure, object.External:
+	case *object.Builtin, *object.Closure, object.External:
 		return true
 	default:
 		return false
 	}
-}
-
-func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
-	env := object.NewEnclosedEnvironment(fn.Env)
-
-	for paramIdx, param := range fn.Parameters {
-		if paramIdx < len(args) {
-			env.SetLocal(param.Value, args[paramIdx])
-		} else {
-			env.SetLocal(param.Value, NULL)
-		}
-	}
-
-	return env
-}
-
-// loopControlError reports a break or continue that escaped every loop.
-func loopControlError(obj object.Object) *object.Error {
-	switch obj := obj.(type) {
-	case *object.Break:
-		return newError(obj.Line, obj.Column, "break outside of a loop")
-	case *object.Continue:
-		return newError(obj.Line, obj.Column, "continue outside of a loop")
-	}
-	return nil
-}
-
-func unwrapReturnValue(obj object.Object) object.Object {
-	if returnValue, ok := obj.(*object.ReturnValue); ok {
-		return returnValue.Value
-	}
-
-	return obj
 }
 
 func evalIndexExpression(left, index object.Object, line, column int) object.Object {
@@ -851,38 +377,6 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 	return arrayObject.Elements[idx]
 }
 
-func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
-	hash := object.NewHash()
-
-	for _, name := range node.Order {
-		pair := node.Pairs[name]
-		var key object.Object
-		if ident, ok := pair.Key.(*ast.Identifier); ok {
-			// Bare keys are names, like in `{name: "Ana"}` and `person.name`
-			key = &object.String{Value: ident.Value}
-		} else {
-			key = Eval(pair.Key, env)
-		}
-		if isError(key) {
-			return key
-		}
-
-		hashKey, ok := key.(object.Hashable)
-		if !ok {
-			return newError(node.Token.Line, node.Token.Column, "unusable as hash key: %s", key.Type())
-		}
-
-		value := Eval(pair.Value, env)
-		if isError(value) {
-			return value
-		}
-
-		hash.Set(hashKey, value)
-	}
-
-	return hash
-}
-
 func evalHashIndexExpression(hash, index object.Object, line, column int) object.Object {
 	hashObject := hash.(*object.Hash)
 
@@ -897,10 +391,6 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 	}
 
 	return pair.Value
-}
-
-func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.Environment) object.Object {
-	return getProperty(obj, node.Property.Value, node.Token.Line, node.Token.Column)
 }
 
 // getProperty returns obj.name.
@@ -1225,119 +715,6 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 	}
 }
 
-func evalRepeatStatement(rs *ast.RepeatStatement, env *object.Environment) object.Object {
-	if traceMode {
-		fmt.Fprintf(os.Stdout, "TRACE: Entering repeat statement\n")
-	}
-
-	if rs.Collection == nil {
-		return newError(rs.Token.Line, rs.Token.Column,
-			"invalid repeat statement: missing iterator or condition")
-	}
-
-	if rs.Iterator == nil {
-		for {
-			condition := Eval(rs.Collection, env)
-			if isError(condition) {
-				return condition
-			}
-
-			if !isTruthy(condition) {
-				if traceMode {
-					fmt.Fprintf(os.Stdout, "TRACE: Condition is falsy, exiting loop\n")
-				}
-				break
-			}
-
-			if result, stop := runLoopBody(rs.Body, object.NewEnclosedEnvironment(env)); stop {
-				return result
-			}
-		}
-		return NULL
-	}
-
-	// Iterate over start..end without building the array
-	if rangeExpr, ok := rs.Collection.(*ast.InfixExpression); ok && rangeExpr.Operator == ".." {
-		start, end, err := evalRangeBounds(rangeExpr, env)
-		if err != nil {
-			return err
-		}
-		for i := start; i <= end; i++ {
-			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.Integer{Value: i})); stop {
-				return result
-			}
-		}
-		return NULL
-	}
-
-	collection := Eval(rs.Collection, env)
-	if isError(collection) {
-		return collection
-	}
-
-	if traceMode {
-		fmt.Fprintf(os.Stdout, "TRACE: Repeat collection evaluated to: %s (%s)\n",
-			collection.Type(), collection.Inspect())
-	}
-
-	switch collection := collection.(type) {
-	case *object.String:
-		for _, char := range collection.Value {
-			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.String{Value: string(char)})); stop {
-				return result
-			}
-		}
-
-	case *object.Array:
-		for _, element := range collection.Elements {
-			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, element)); stop {
-				return result
-			}
-		}
-
-	case *object.Integer:
-		for i := int64(1); i <= collection.Value; i++ {
-			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, &object.Integer{Value: i})); stop {
-				return result
-			}
-		}
-
-	case *object.Hash:
-		// Iterate over the keys as they are now, in insertion order, so
-		// adding keys in the body doesn't affect the loop
-		for _, pair := range collection.OrderedPairs() {
-			if result, stop := runLoopBody(rs.Body, iterationEnv(env, rs.Iterator, pair.Key)); stop {
-				return result
-			}
-		}
-
-	default:
-		return newError(rs.Token.Line, rs.Token.Column,
-			"cannot iterate over %s", collection.Type())
-	}
-
-	return NULL
-}
-
-func evalRangeBounds(node *ast.InfixExpression, env *object.Environment) (int64, int64, object.Object) {
-	left := Eval(node.Left, env)
-	if isError(left) {
-		return 0, 0, left
-	}
-	right := Eval(node.Right, env)
-	if isError(right) {
-		return 0, 0, right
-	}
-
-	start, startOk := left.(*object.Integer)
-	end, endOk := right.(*object.Integer)
-	if !startOk || !endOk {
-		return 0, 0, newError(node.Token.Line, node.Token.Column,
-			"range bounds must be integers, got %s..%s", left.Type(), right.Type())
-	}
-	return start.Value, end.Value, nil
-}
-
 // maxRangeSize limits the arrays built by ranges so a typo like 1..1e12
 // fails with an error instead of exhausting memory.
 const maxRangeSize = 10_000_000
@@ -1357,65 +734,6 @@ func integerRange(start, end int64, line, column int) object.Object {
 		elements = append(elements, &object.Integer{Value: i})
 	}
 	return &object.Array{Elements: elements}
-}
-
-// iterationEnv creates the scope for one loop iteration with the iterator
-// bound in it, so closures created in the body keep that iteration's value.
-func iterationEnv(env *object.Environment, iterator *ast.Identifier, value object.Object) *object.Environment {
-	iterEnv := object.NewEnclosedEnvironment(env)
-	iterEnv.SetLocal(iterator.Value, value)
-	return iterEnv
-}
-
-// runLoopBody evaluates one loop iteration in env, the iteration's scope. It
-// reports stop when the loop must end, returning what the loop should
-// evaluate to: the error or return value to propagate, or NULL after a break.
-func runLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
-	result := evalStatements(body.Statements, env)
-
-	if traceMode && result != nil {
-		fmt.Fprintf(os.Stdout, "TRACE: Loop body returned: %s (%s)\n", result.Type(), result.Inspect())
-	}
-
-	switch result.(type) {
-	case *object.Error, *object.ReturnValue:
-		return result, true
-	case *object.Break:
-		return NULL, true
-	default:
-		// Continue and normal results move on to the next iteration
-		return nil, false
-	}
-}
-
-func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object.Object {
-	if traceMode {
-		fmt.Fprintf(os.Stdout, "TRACE: evalPrintExpression - arguments: %d\n", len(pe.Arguments))
-	}
-
-	args := []object.Object{}
-
-	for i, arg := range pe.Arguments {
-		if traceMode {
-			fmt.Fprintf(os.Stdout, "TRACE: Evaluating print arg %d: %s\n", i, arg.String())
-		}
-
-		evaluated := Eval(arg, env)
-
-		if traceMode && evaluated != nil {
-			fmt.Fprintf(os.Stdout, "TRACE: Print arg %d evaluated to: %s (%s)\n",
-				i, evaluated.Type(), evaluated.Inspect())
-		}
-
-		if isError(evaluated) {
-			return evaluated
-		}
-		args = append(args, evaluated)
-	}
-
-	printValues(args)
-
-	return NULL
 }
 
 // printValues prints values separated by spaces, followed by a newline.

@@ -18,33 +18,36 @@ import (
 
 const PROMPT = ">> "
 
-func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
-	return evalSource(source, newSession(), out, noColor, debug, isRepl, trace)
+// mainDir is the directory load paths are relative to in the main program.
+var mainDir string
+
+// SetMainDir sets the directory used to resolve `load` paths in the main
+// program, normally the directory of the script being run. Empty means the
+// working directory.
+func SetMainDir(dir string) {
+	mainDir = dir
 }
 
-// session keeps the variables of a program between REPL lines. Code runs on
-// the bytecode VM, or on the evaluator in trace mode, which only it supports.
+func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl bool) error {
+	return evalSource(source, newSession(), out, noColor, debug, isRepl)
+}
+
+// session keeps the variables of a program between REPL lines.
 type session struct {
 	compiler *compiler.Compiler
 	machine  *vm.VM
-	env      *object.Environment
 }
 
 func newSession() *session {
 	c := compiler.New()
-	c.Dir = evaluator.MainDir()
-	s := &session{compiler: c, machine: vm.New(c.Globals()), env: object.NewEnvironment()}
-
-	s.env.Set("NULL", evaluator.NULL)
+	c.Dir = mainDir
+	s := &session{compiler: c, machine: vm.New(c.Globals())}
 	s.machine.SetGlobal("NULL", evaluator.NULL)
 	return s
 }
 
-// run evaluates a parsed program and returns its value or error.
-func (s *session) run(program *ast.Program, trace bool) object.Object {
-	if trace {
-		return evaluator.Eval(program, s.env)
-	}
+// run compiles and runs a parsed program, returning its value or error.
+func (s *session) run(program *ast.Program) object.Object {
 	bytecode, err := s.compiler.Compile(program)
 	if err != nil {
 		return &object.Error{Message: err.Error()}
@@ -52,7 +55,7 @@ func (s *session) run(program *ast.Program, trace bool) object.Object {
 	return s.machine.Run(bytecode)
 }
 
-func evalSource(source string, sess *session, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
+func evalSource(source string, sess *session, out io.Writer, noColor bool, debug bool, isRepl bool) error {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParseProgram()
@@ -78,7 +81,6 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 		io.WriteString(out, "\n")
 	}
 
-	evaluator.SetTraceMode(trace)
 	evaluator.SetOutput(out)
 
 	var evaluated object.Object
@@ -89,7 +91,7 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 			}
 		}()
 
-		evaluated = sess.run(program, trace)
+		evaluated = sess.run(program)
 	}()
 
 	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ &&
@@ -112,7 +114,7 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 	return nil
 }
 
-func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
+func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 	scanner := bufio.NewScanner(in)
 	sess := newSession()
 
@@ -124,7 +126,7 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 		}
 
 		line := scanner.Text()
-		evalSource(line, sess, out, noColor, debug, true, trace)
+		evalSource(line, sess, out, noColor, debug, true)
 	}
 }
 

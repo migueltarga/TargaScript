@@ -1,0 +1,124 @@
+TargaScript Logical Operators Test
+=================================
+
+1. Boolean Operands:
+  Logical AND (&&):
+    true && true = true
+    true && false = false
+    false && true = false
+    false && false = false
+  Logical OR (||):
+    true || true = true
+    true || false = true
+    false || true = true
+    false || false = false
+  Logical NOT (!):
+    !true = false
+    !false = true
+    !!true = true
+    !!false = false
+
+2. Integer Operands:
+  Integer truthiness:
+    0 evaluates as: falsy
+    1 evaluates as: truthy
+    -10 evaluates as: truthy
+  Logical operations with integers:
+    1 && 5 = 5
+    0 && 5 = 0
+    5 && 0 = 0
+    1 || 5 = 1
+    0 || 5 = 5
+    5 || 0 = 5
+    !0 = false
+    !1 = false
+
+3. Float Operands:
+  Float truthiness:
+    0.0 evaluates as: falsy
+    3.14159 evaluates as: truthy
+  Logical operations with floats:
+    3.14 && 2.71 = 2.71
+    0.0 && 2.71 = 0
+    3.14 && 0.0 = 0
+    3.14 || 2.71 = 3.14159
+    0.0 || 2.71 = 2.71
+    3.14 || 0.0 = 3.14159
+    !0.0 = false
+    !3.14 = false
+
+4. String Operands:
+  String truthiness:
+    "" evaluates as: falsy
+    "Hello" evaluates as: truthy
+  Logical operations with strings:
+    "Hello" && "World" = World
+    "" && "World" = 
+    "Hello" && "" = 
+    "Hello" || "World" = Hello
+    "" || "World" = World
+    "Hello" || "" = Hello
+    !"" = false
+    !"Hello" = false
+
+5. Array Operands:
+  Array truthiness:
+    [] evaluates as: falsy
+    [1, 2, 3] evaluates as: truthy
+  Logical operations with arrays:
+    [1, 2, 3] && [4, 5] = [4, 5]
+    [] && [4, 5] = []
+    [1, 2, 3] && [] = []
+    [1, 2, 3] || [4, 5] = [1, 2, 3]
+    [] || [4, 5] = [4, 5]
+    [1, 2, 3] || [] = [1, 2, 3]
+    ![] = false
+    ![1, 2, 3] = false
+
+6. Object Operands:
+  Object truthiness:
+    {} evaluates as: falsy
+    {"name": "Alice"} evaluates as: truthy
+  Logical operations with objects:
+    {"name": "Alice"} && {"city": "NY"} = {"city": "NY"}
+    {} && {"city": "NY"} = {}
+    {"name": "Alice"} && {} = {}
+    {"name": "Alice"} || {"city": "NY"} = {"name": "Alice", "age": 30}
+    {} || {"city": "NY"} = {"city": "NY"}
+    {"name": "Alice"} || {} = {"name": "Alice", "age": 30}
+    !{} = false
+    !{"name": "Alice"} = false
+
+7. Mixed Type Operations:
+  Logical AND between different types:
+    true && 1 = 1
+    true && "Hello" = Hello
+    0 && "Hello" = 0
+    "Hello" && [1, 2, 3] = [1, 2, 3]
+    [] && {"key": "value"} = []
+    5 && 3.14 = 3.14
+  Logical OR between different types:
+    false || 1 = 1
+    false || "Hello" = Hello
+    0 || "Hello" = Hello
+    "" || [1, 2, 3] = [1, 2, 3]
+    [] || {"key": "value"} = {"key": "value"}
+    0 || 3.14 = 3.14
+
+8. Short-Circuit Evaluation:
+  false && function(): result = false , function called = false
+  true && function(): result = Function Called , function called = true
+  true || function(): result = true , function called = false
+  false || function(): result = Function Called , function called = true
+
+9. Complex Expressions:
+  Complex boolean logic:
+    (true || false) && !(false || false) = true
+    !(true && true) || (!false && true) = true
+  Mixed types in complex expressions:
+    (5 > 3) && ("Hello" || "") = Hello
+    ([] || [1, 2, 3]) && (0 || true) = true
+    !("" || 0) && (!false && "success") = false
+
+Logical operators comprehensive test completed!
+--- NULL null

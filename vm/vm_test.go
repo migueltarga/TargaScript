@@ -2,9 +2,12 @@ package vm
 
 import (
 	"bytes"
+	"encoding/json"
+	"flag"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/migueltarga/TargaScript/compiler"
@@ -60,37 +63,73 @@ func runVM(t *testing.T, input string) result {
 	return result{describe(machine.Run(bytecode)), out.String()}
 }
 
-func runEvaluator(t *testing.T, input string) result {
-	t.Helper()
-	p := parse(t, input)
-	program := p.ParseProgram()
+// update rewrites the expected results in testdata with what the VM
+// produces now: go test ./vm -update. They were first recorded from the
+// tree-walking evaluator the VM replaced.
+var update = flag.Bool("update", false, "rewrite the expected results in testdata")
 
-	var out bytes.Buffer
-	evaluator.SetOutput(&out)
-	defer evaluator.SetOutput(os.Stdout)
+var (
+	goldenOnce sync.Once
+	golden     map[string]result
+)
 
-	evaluator.SetMainDir(sourceDir)
-	evaluator.ResetModules()
-	env := object.NewEnvironment()
-	return result{describe(evaluator.Eval(program, env)), out.String()}
+func loadGolden(t *testing.T) map[string]result {
+	goldenOnce.Do(func() {
+		golden = map[string]result{}
+		data, err := os.ReadFile("testdata/golden.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw := map[string]struct{ Value, Output string }{}
+		if err := json.Unmarshal(data, &raw); err != nil {
+			t.Fatal(err)
+		}
+		for input, r := range raw {
+			golden[input] = result{r.Value, r.Output}
+		}
+	})
+	return golden
 }
 
-// expectSame checks that the VM gives the same value, error and output as
-// the evaluator.
-func expectSame(t *testing.T, inputs []string) {
+func TestMain(m *testing.M) {
+	flag.Parse()
+	code := m.Run()
+	if *update && golden != nil {
+		raw := map[string]map[string]string{}
+		for input, r := range golden {
+			raw[input] = map[string]string{"value": r.value, "output": r.output}
+		}
+		data, _ := json.MarshalIndent(raw, "", " ")
+		os.WriteFile("testdata/golden.json", append(data, '\n'), 0o644)
+	}
+	os.Exit(code)
+}
+
+// expectGolden checks that each program gives the value, error and output
+// recorded in testdata/golden.json.
+func expectGolden(t *testing.T, inputs []string) {
 	t.Helper()
+	expected := loadGolden(t)
 	for _, input := range inputs {
-		want := runEvaluator(t, input)
 		got := runVM(t, input)
+		want, ok := expected[input]
+		if *update {
+			expected[input] = got
+			continue
+		}
+		if !ok {
+			t.Errorf("%q: no expected result, run go test ./vm -update", input)
+			continue
+		}
 		if got != want {
-			t.Errorf("%q\n  vm:        %s | output %q\n  evaluator: %s | output %q",
+			t.Errorf("%q\n  got:  %s | output %q\n  want: %s | output %q",
 				input, got.value, got.output, want.value, want.output)
 		}
 	}
 }
 
 func TestLiteralsAndOperators(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		"1", "1.5", `"hi"`, "true", "false", "null",
 		"1 + 2 * 3", "(1 + 2) * 3", "10 / 3", "10 % 3", "7.5 / 2", "1 / 0", "1.0 / 0",
 		"5 ^ 3", "2 < 3", "2 >= 3", "1 == 1.0", `"a" == "a"`, `"a" + 1`, `"a" - 1`,
@@ -103,7 +142,7 @@ func TestLiteralsAndOperators(t *testing.T) {
 }
 
 func TestVariablesAndScopes(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		"let a = 1\na", "let a = 1\nlet a = 2\na", "const c = 1\nc = 2", "const c = 1\nconst c = 2",
 		"const c = 1\nlet c = 2", "x", "x = 1", "let a = 1\na = 5\na",
 		"let a = 1\nif true { let a = 2\na } ", "let a = 1\nif true { a = 2 }\na",
@@ -117,7 +156,7 @@ func TestVariablesAndScopes(t *testing.T) {
 }
 
 func TestFunctionsAndClosures(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		"fn add(a, b) { a + b }\nadd(1, 2)", "let f = fn(x) { x * 2 }\nf(4)",
 		"fn f(a, b) { b }\nf(1)", "fn f(a) { a }\nf(1, 2, 3)", "fn f() { return }\nf()",
 		"fn f() { }\nf()", "fn f() { let x = 5 }\nf()", "fn f(n) { if n < 2 { return n }\nf(n - 1) + f(n - 2) }\nf(15)",
@@ -140,7 +179,7 @@ func TestFunctionsAndClosures(t *testing.T) {
 }
 
 func TestLoops(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		"let n = 0\nrepeat i in 1..10 { n = n + i }\nn", "let n = 0\nrepeat i in 5 { n = n + i }\nn",
 		`let s = ""` + "\nrepeat c in \"héllo\" { s = c + s }\ns",
 		`let ks = []` + "\nrepeat k in {\"b\": 1, \"a\": 2} { ks.insert(k) }\nks",
@@ -160,7 +199,7 @@ func TestLoops(t *testing.T) {
 }
 
 func TestBuiltinsAndMethods(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		`print("a", 1, [2, "b"], {"k": null})`, `printf("%d-%s", 1, "x")`, `len("abc")`,
 		`type([])`, `toString(1.5)`, `"Hello".upper().lower()`, `"a,b".split(",")`,
 		`[1, 2, 3].reduce(fn(a, b) { a + b }, 10)`, `[1, 2].join("-")`, `{"a": 1}.keys()`,
@@ -170,14 +209,16 @@ func TestBuiltinsAndMethods(t *testing.T) {
 }
 
 func TestErrorsHavePositions(t *testing.T) {
-	expectSame(t, []string{
+	expectGolden(t, []string{
 		"let a = 1\nlet b = a + true", "fn f() {\n  missing\n}\nf()", "let x = [1]\nx.foo()",
 		"fn f(n) {\n  return n / 0\n}\nf(1)", "[1, 2].map(fn(x) {\n  x + \"a\" - 1\n})",
 		"let h = {}\nh.a.b", `"a"["x"]`, "abs(\"x\")",
 	})
 }
 
-func TestExamplesMatchEvaluator(t *testing.T) {
+// TestExamples checks the output of every example against
+// testdata/examples, except math_string_time.tg, which prints the time.
+func TestExamples(t *testing.T) {
 	sourceDir, _ = filepath.Abs("../examples")
 	defer func() { sourceDir = "" }()
 
@@ -187,12 +228,26 @@ func TestExamplesMatchEvaluator(t *testing.T) {
 		if !strings.HasSuffix(name, ".tg") || name == "math_string_time.tg" {
 			continue
 		}
-		source, err := os.ReadFile("../examples/" + name)
-		if err != nil {
-			t.Fatal(err)
-		}
 		t.Run(name, func(t *testing.T) {
-			expectSame(t, []string{string(source)})
+			source, err := os.ReadFile("../examples/" + name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := runVM(t, string(source))
+			text := got.output + "--- " + got.value + "\n"
+
+			path := "testdata/examples/" + strings.TrimSuffix(name, ".tg") + ".golden"
+			if *update {
+				os.WriteFile(path, []byte(text), 0o644)
+				return
+			}
+			want, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("%s, run go test ./vm -update", err)
+			}
+			if text != string(want) {
+				t.Errorf("output differs from %s:\n%s", path, text)
+			}
 		})
 	}
 }

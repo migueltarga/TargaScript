@@ -1,0 +1,75 @@
+TargaScript Built-in Functions Demo
+===================================
+
+1. Type Conversion Functions:
+  Original values:
+    num = 42 (type: INTEGER)
+    float_val = 3.14 (type: FLOAT)
+    bool_val = true (type: BOOLEAN)
+  toString() conversions:
+    toString(num): 42 (type: STRING)
+    toString(float_val): 3.14 (type: STRING)
+    toString(bool_val): true (type: STRING)
+  toInt() conversions:
+    toInt("42"): 42 (type: INTEGER)
+    toInt(float_val): 3 (type: INTEGER)
+    toInt(bool_val): 1 (type: INTEGER)
+  toFloat() conversions:
+    toFloat(num): 42 (type: FLOAT)
+    toFloat("3.14"): 3.14 (type: FLOAT)
+    toFloat(bool_val): 1 (type: FLOAT)
+
+2. Type Function:
+  type(42): INTEGER
+  type(3.14): FLOAT
+  type("hello"): STRING
+  type(true): BOOLEAN
+  type([1, 2, 3]): ARRAY
+  type({"name": "Alice"}): HASH
+
+3. Length Property:
+  "hello".length: 5
+  [1, 2, 3, 4, 5].length: 5
+  {"a": 1, "b": 2, "c": 3}.length: 3
+
+4. Math Functions:
+  abs() - Absolute value:
+    abs(42): 42
+    abs(-42): 42
+    abs(3.14): 3.14
+    abs(-3.14): 3.14
+  Additional math functions (see math_string_time.tg for more examples):
+    sqrt(16): 4
+    pow(2, 3): 8
+    floor(3.7): 3
+    ceil(3.2): 4
+    round(3.5): 4
+
+5. String Methods:
+  split() - Splits string into array:
+    Original string: Hello,World,TargaScript
+    split result: ["Hello", "World", "TargaScript"]
+  join() - Joins array into string:
+    Original array: ["Hello", "beautiful", "world"]
+    join result: Hello beautiful world
+  Additional string methods (see string_operations.tg for more examples):
+    "  hello  ".trim(): hello
+    "hello".upper(): HELLO
+    "HELLO".lower(): hello
+
+6. Range Function:
+  range(1, 5): [1, 2, 3, 4, 5]
+  range(10, 20): [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  range(10, 5) (empty): []
+
+7. Array Methods:
+  Original array: [1, 2, 3, 4, 5]
+  map() - Transform each element:
+    Doubled: [2, 4, 6, 8, 10]
+  filter() - Select elements that match condition:
+    Even numbers: [2, 4]
+  reduce() - Combine elements into single value:
+    Sum of all elements: 15
+
+Built-in functions demo completed successfully!
+--- NULL null

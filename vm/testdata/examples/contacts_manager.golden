@@ -1,0 +1,18 @@
+Adding contacts...
+DEBUG: Adding contact: John Doe
+DEBUG: Current contacts count: 1
+DEBUG: Adding contact: Jane Smith
+DEBUG: Current contacts count: 2
+DEBUG: Adding contact: Bob Jones
+DEBUG: Current contacts count: 3
+
+All Contacts:
+John Doe - john@example.com - 555-1234
+Jane Smith - jane@example.com - 555-5678
+Bob Jones - bob@example.com - 555-9012
+Contact count: 3
+DEBUG: Searching for contact: Jane Smith
+DEBUG: Current contacts count: 3
+DEBUG: Checking contact: John Doe
+DEBUG: Checking contact: Jane Smith
+--- ERROR ERROR at line 115, column 15: "NULL" is not defined

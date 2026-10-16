@@ -1,0 +1,22 @@
+Starting Todo List Application...
+Creating todo list...
+Adding todo items...
+All Todo Items:
+[✗] Buy groceries (high)
+[✗] Call dentist (medium)
+[✗] Fix bug in code (high)
+[✗] Read book (low)
+Marking items as completed...
+Completed Todo Items:
+✓ Buy groceries
+✓ Read book
+High Priority Todo Items:
+[✓] Buy groceries
+[✗] Fix bug in code
+Updating todo priority...
+Call dentist - New Priority: high
+Deleting a todo item...
+Deleted todo with ID 3: true
+Todo count: 3
+Todo list application completed successfully.
+--- NULL null
