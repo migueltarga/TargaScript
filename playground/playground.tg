@@ -216,8 +216,7 @@ let lessons = []
 fn addGroup(label, entries) {
     let group = doc.createElement("optgroup")
     group.label = label
-    repeat entry in entries {
-        let [path, title] = entry
+    repeat [path, title] in entries {
         let option = doc.createElement("option")
         option.value = path
         option.textContent = title

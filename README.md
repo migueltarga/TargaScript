@@ -95,7 +95,18 @@ fn minmax(list) { [list.sort().first(), list.last()] }
 let [lowest, highest] = minmax([5, 1, 9])
 ```
 
-Missing elements and properties are null.
+Missing elements and properties are null. Patterns also work in loops and parameters, and `{name, age}` is short for `{"name": name, "age": age}`:
+
+```
+repeat [x, y] in [[1, 2], [3, 4]] { print(x * y) }
+
+fn area({width, height}) { width * height }
+print(area({"width": 3, "height": 4}))
+
+let name = "Ana"
+let age = 30
+print({name, age})    // {"name": "Ana", "age": 30}
+```
 
 `...` spreads arrays into arrays and calls, and objects into objects:
 

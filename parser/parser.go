@@ -73,6 +73,10 @@ type Parser struct {
 
 	// Number of errors already handled by statement recovery
 	recovered int
+
+	// Patterns of the parameters being parsed, as parseFunctionParameters
+	// returns enough already
+	patterns []*ast.Pattern
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -274,6 +278,36 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	}
 
 	return stmt
+}
+
+// literalPattern turns an array or object literal of names, like [x, y] or
+// {name, age}, into a pattern, or returns nil.
+func literalPattern(expression ast.Expression) *ast.Pattern {
+	switch literal := expression.(type) {
+	case *ast.ArrayLiteral:
+		pattern := &ast.Pattern{Token: literal.Token}
+		for _, element := range literal.Elements {
+			ident, ok := element.(*ast.Identifier)
+			if !ok {
+				return nil
+			}
+			pattern.Names = append(pattern.Names, ident)
+		}
+		return pattern
+	case *ast.HashLiteral:
+		pattern := &ast.Pattern{Token: literal.Token, Object: true}
+		for _, name := range literal.Order {
+			pair := literal.Pairs[name]
+			key, ok := pair.Key.(*ast.Identifier)
+			value, isIdent := pair.Value.(*ast.Identifier)
+			if !ok || !isIdent || key != value {
+				return nil
+			}
+			pattern.Names = append(pattern.Names, key)
+		}
+		return pattern
+	}
+	return nil
 }
 
 // parsePattern parses `[a, b]` or `{a, b}` after let or const, with the
@@ -626,7 +660,11 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
+	outer := p.patterns
+	p.patterns = nil
 	lit.Parameters, lit.Defaults, lit.Rest = p.parseFunctionParameters()
+	lit.Patterns = p.patterns
+	p.patterns = outer
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
@@ -647,6 +685,31 @@ func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression,
 
 	for !p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
+
+		// A pattern takes the argument apart: fn area({width, height})
+		if p.curTokenIs(token.LBRACKET) || p.curTokenIs(token.LBRACE) {
+			pattern := p.parsePattern()
+			if pattern == nil {
+				return nil, nil, false
+			}
+			p.patterns = append(p.patterns, pattern)
+			identifiers = append(identifiers, &ast.Identifier{Token: pattern.Token, Value: pattern.String()})
+			var defaultValue ast.Expression
+			if p.peekTokenIs(token.ASSIGN) {
+				p.nextToken()
+				p.nextToken()
+				if defaultValue = p.parseExpression(LOWEST); defaultValue == nil {
+					return nil, nil, false
+				}
+			}
+			defaults = append(defaults, defaultValue)
+			if !p.peekTokenIs(token.COMMA) {
+				break
+			}
+			p.nextToken()
+			continue
+		}
+		p.patterns = append(p.patterns, nil)
 
 		if p.curTokenIs(token.SPREAD) {
 			rest = true
@@ -790,10 +853,18 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.COMMA) {
 		stmt.Key = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		p.nextToken()
-		if !p.expectPeek(token.IDENT) {
-			return nil
+		if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
+			p.nextToken()
+			if stmt.Pattern = p.parsePattern(); stmt.Pattern == nil {
+				return nil
+			}
+			stmt.Iterator = &ast.Identifier{Token: stmt.Pattern.Token, Value: stmt.Pattern.String()}
+		} else {
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		}
-		stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		if !p.expectPeek(token.IN) {
 			return nil
 		}
@@ -807,6 +878,20 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	} else {
 		stmt.Iterator = nil
 		stmt.Collection = p.parseExpression(LOWEST)
+
+		// A literal followed by in is a pattern: repeat [x, y] in points
+		if p.peekTokenIs(token.IN) {
+			pattern := literalPattern(stmt.Collection)
+			if pattern == nil {
+				p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected a name or a pattern like [a, b] before \"in\"")
+				return nil
+			}
+			stmt.Pattern = pattern
+			stmt.Iterator = &ast.Identifier{Token: pattern.Token, Value: pattern.String()}
+			p.nextToken()
+			p.nextToken()
+			stmt.Collection = p.parseExpression(LOWEST)
+		}
 	}
 
 	if !p.peekTokenIs(token.LBRACE) {
@@ -873,6 +958,21 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 
 		key := p.parseExpression(LOWEST)
+
+		// {name, age} is short for {"name": name, "age": age}
+		if ident, ok := key.(*ast.Identifier); ok && (p.peekTokenIs(token.COMMA) || p.peekTokenIs(token.RBRACE)) {
+			name := hashKeyName(key, len(hash.Order))
+			if _, exists := hash.Pairs[name]; !exists {
+				hash.Order = append(hash.Order, name)
+			}
+			hash.Pairs[name] = ast.HashPair{Key: ident, Value: ident}
+			if !p.peekTokenIs(token.COMMA) {
+				break
+			}
+			p.nextToken()
+			continue
+		}
+
 		if spread, ok := key.(*ast.SpreadExpression); ok {
 			name := fmt.Sprintf("\x00spread%d", len(hash.Order))
 			hash.Order = append(hash.Order, name)
@@ -1033,7 +1133,11 @@ func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 		return nil
 	}
 
+	outer := p.patterns
+	p.patterns = nil
 	stmt.Parameters, stmt.Defaults, stmt.Rest = p.parseFunctionParameters()
+	stmt.Patterns = p.patterns
+	p.patterns = outer
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
