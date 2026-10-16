@@ -1355,7 +1355,7 @@ func (p *Parser) parseTemplateLiteral() ast.Expression {
 		switch {
 		case ch == '\\' && i+1 < len(raw):
 			i++
-			text.WriteRune(unescape(raw[i]))
+			text.WriteString(unescape(raw[i]))
 		case ch == '$' && i+1 < len(raw) && raw[i+1] == '{':
 			end := matchingBrace(raw, i+1)
 			source := string(raw[i+2 : end])
@@ -1477,15 +1477,19 @@ func matchingBrace(raw []rune, open int) int {
 	return len(raw) - 1
 }
 
-func unescape(ch rune) rune {
+// unescape returns what an escape like \n stands for. Unknown escapes keep
+// their backslash, as in plain strings.
+func unescape(ch rune) string {
 	switch ch {
 	case 'n':
-		return '\n'
+		return "\n"
 	case 't':
-		return '\t'
+		return "\t"
 	case 'r':
-		return '\r'
+		return "\r"
+	case '"', '\\', '$':
+		return string(ch)
 	default:
-		return ch
+		return "\\" + string(ch)
 	}
 }
