@@ -422,10 +422,22 @@ targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(2 ** 10)'   # run code given on the command line
 targascript test                  # run the *_test.tg files, see Testing
 targascript check                 # find problems in the .tg files without running them
+targascript build app.tg -o app   # make an executable that runs app.tg, see below
 cat script.tg | targascript -     # run code from standard input
 ```
 
 Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
+
+### Executables
+
+`targascript build app.tg` makes an executable, `app`, with the program and every file it loads inside. It runs where TargaScript isn't installed, and every argument goes to the program's `args`:
+
+```sh
+targascript build tools/report.tg -o report
+./report sales.csv
+```
+
+The executable is for the system it's built on. It's a copy of the `targascript` binary with the program added at its end.
 
 ### Web servers
 
