@@ -472,6 +472,16 @@ func PatternOnly(pair ast.HashPair) bool {
 	return ok
 }
 
+// isKeyword reports whether a token is a keyword like if or load, which can
+// name a property. true, false and null are values there.
+func isKeyword(tok token.Token) bool {
+	switch tok.Type {
+	case token.IDENT, token.TRUE, token.FALSE, token.NULL:
+		return false
+	}
+	return token.LookupIdent(tok.Literal) == tok.Type
+}
+
 // setKey sets the property the name at i takes in an object pattern.
 func setKey(pattern *ast.Pattern, i int, key string) {
 	for len(pattern.Keys) <= i {
@@ -511,8 +521,8 @@ func (p *Parser) parsePattern() *ast.Pattern {
 			break
 		}
 		// {key: name} takes the property key into name, and the key can be
-		// a string: {"first name": first}
-		if pattern.Object && p.peekTokenIs(token.STRING) {
+		// a string, {"first name": first}, or a keyword, {if: condition}
+		if pattern.Object && (p.peekTokenIs(token.STRING) || isKeyword(p.peekToken)) {
 			p.nextToken()
 			key := p.curToken.Literal
 			if !p.expectPeek(token.COLON) {
@@ -1448,7 +1458,13 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	for !p.peekTokenIs(token.RBRACE) {
 		p.nextToken()
 
-		key := p.parseExpression(LOWEST)
+		// Keywords are names before a colon, as after a dot: {if: 1, load: f}
+		var key ast.Expression
+		if p.peekTokenIs(token.COLON) && isKeyword(p.curToken) {
+			key = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		} else {
+			key = p.parseExpression(LOWEST)
+		}
 
 		// {name, age} is short for {"name": name, "age": age}
 		if ident, ok := key.(*ast.Identifier); ok && (p.peekTokenIs(token.COMMA) || p.peekTokenIs(token.RBRACE)) {
