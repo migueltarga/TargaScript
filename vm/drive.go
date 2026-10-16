@@ -5,7 +5,8 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
-// driver runs map, filter or reduce over an array with a function of this
+// driver runs map, filter, reduce, find, some, every or count over an
+// array with a function of this
 // VM that can't pause, in the VM's loop: each call of the function returns
 // to it, which notes the result and calls the function again with the next
 // element. Going through the evaluator, each call would start the loop
@@ -16,7 +17,8 @@ type driver struct {
 	elems  []object.Object
 	i      int // the element of the call running
 	out    []object.Object
-	acc    object.Object
+	acc    object.Object // the accumulator of reduce, or the result once known
+	count  int64
 }
 
 // drive returns a driver for receiver.method with argc arguments from the
@@ -26,8 +28,15 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 	if !ok || len(vm.frames) > evaluator.MaxCallDepth {
 		return nil
 	}
-	switch {
-	case (method == "map" || method == "filter") && argc == 1, method == "reduce" && argc == 2:
+	switch method {
+	case "map", "filter", "find", "some", "every", "count":
+		if argc != 1 {
+			return nil
+		}
+	case "reduce":
+		if argc != 2 {
+			return nil
+		}
 	default:
 		return nil
 	}
@@ -36,20 +45,34 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 		return nil
 	}
 	d := &driver{method: method, cl: cl, elems: arr.Elements}
-	if method == "reduce" {
+	switch method {
+	case "reduce":
 		d.acc = vm.stack[fn+2]
-	} else {
+	case "map", "filter":
 		d.out = make([]object.Object, 0, len(arr.Elements))
 	}
 	return d
 }
 
-// result is what the method returns.
+// result is what the method returns, once done.
 func (d *driver) result() object.Object {
-	if d.method == "reduce" {
+	switch d.method {
+	case "map", "filter":
+		return &object.Array{Elements: d.out}
+	case "count":
+		return &object.Integer{Value: d.count}
+	}
+	if d.acc != nil {
 		return d.acc
 	}
-	return &object.Array{Elements: d.out}
+	// No element decided it
+	switch d.method {
+	case "some":
+		return FALSE
+	case "every":
+		return TRUE
+	}
+	return NULL
 }
 
 // enter starts the call of the function for the current element, with its
@@ -99,8 +122,27 @@ func (d *driver) returned(value object.Object) bool {
 		if evaluator.IsTruthy(value) {
 			d.out = append(d.out, d.elems[d.i])
 		}
-	default:
+	case "reduce":
 		d.acc = value
+	case "count":
+		if evaluator.IsTruthy(value) {
+			d.count++
+		}
+	case "find":
+		if evaluator.IsTruthy(value) {
+			d.acc = d.elems[d.i]
+			return true
+		}
+	case "some":
+		if evaluator.IsTruthy(value) {
+			d.acc = TRUE
+			return true
+		}
+	case "every":
+		if !evaluator.IsTruthy(value) {
+			d.acc = FALSE
+			return true
+		}
 	}
 	d.i++
 	return d.i >= len(d.elems)

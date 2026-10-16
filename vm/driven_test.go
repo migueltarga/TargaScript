@@ -28,3 +28,30 @@ func TestDrivenCallbacks(t *testing.T) {
 		}
 	}
 }
+
+func TestDrivenSearches(t *testing.T) {
+	tests := []struct{ input, expected string }{
+		{"[5, 6, 7].find(x => x > 5)", "6"},
+		{"[5, 6, 7].find((x, i) => i == 2)", "7"},
+		{"[5, 6].find(x => x > 9)", "null"},
+		{"[].find(x => true)", "null"},
+		{"[1, 2].some(x => x > 1)", "true"},
+		{"[1, 2].some(x => x > 5)", "false"},
+		{"[].some(x => true)", "false"},
+		{"[1, 2].every(x => x > 0)", "true"},
+		{"[1, 2].every((x, i) => i == 0)", "false"},
+		{"[].every(x => false)", "true"},
+		{"[1, 2, 3].count(x => x > 1)", "2"},
+		{"[1, 2, 3].count((x, i) => i > 0)", "2"},
+		{"[1, 2, 1].count(1)", "2"},
+		{"[].count(x => true)", "0"},
+		// They stop at the element that decides
+		{"let n = 0\n[1, 2, 3].find(x => { n += 1\nx == 2 })\nn", "2"},
+		{"let n = 0\n[1, 2, 3].every(x => { n += 1\nx < 2 })\nn", "2"},
+	}
+	for _, tt := range tests {
+		if got := testEval(tt.input).Inspect(); got != tt.expected {
+			t.Errorf("%s: got %s, want %s", tt.input, got, tt.expected)
+		}
+	}
+}
