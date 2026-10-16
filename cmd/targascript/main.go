@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/repl"
 )
 
@@ -14,6 +15,12 @@ import (
 var version = "dev"
 
 func main() {
+	// An executable made by targascript build runs its program, and every
+	// argument is the program's
+	if b, ok := readBundle(); ok {
+		os.Exit(runBundle(b))
+	}
+
 	showVersion := flag.Bool("version", false, "Print the version and exit")
 	code := flag.String("e", "", "Run the given code instead of a file")
 	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
@@ -40,13 +47,18 @@ func main() {
 		return
 	}
 
-	// test and check are commands, unless there's a file with their name
-	if len(args) > 0 && (args[0] == "test" || args[0] == "check") {
+	// test, check and build are commands, unless there's a file with
+	// their name
+	if len(args) > 0 && (args[0] == "test" || args[0] == "check" || args[0] == "build") {
 		if _, err := os.Stat(args[0]); err != nil {
-			if args[0] == "test" {
+			switch args[0] {
+			case "test":
 				os.Exit(runTests(args[1:], noColor))
+			case "check":
+				os.Exit(runCheck(args[1:]))
+			default:
+				os.Exit(runBuild(args[1:]))
 			}
-			os.Exit(runCheck(args[1:]))
 		}
 	}
 
@@ -120,4 +132,22 @@ func executeFile(input string, debug bool, noColor bool) (err error) {
 		return err
 	}
 	return nil
+}
+
+// runBundle runs the program of a built executable, reading the files it
+// loads from the bundle, and returns the exit code.
+func runBundle(b *bundle) int {
+	fallback := compiler.ReadFile
+	compiler.ReadFile = func(path string) ([]byte, error) {
+		if source, ok := b.Files[path]; ok {
+			return []byte(source), nil
+		}
+		return fallback(path)
+	}
+	repl.SetArgs(os.Args[1:])
+	repl.SetMainDir(filepath.Dir(b.Main))
+	if executeFile(b.Files[b.Main], false, false) != nil {
+		return 1
+	}
+	return 0
 }

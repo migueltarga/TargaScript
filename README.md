@@ -17,6 +17,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match` with guards, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
 - **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
+- **Ship one file.** `targascript build app.tg` makes an executable with the program and everything it loads; whoever gets it doesn't need TargaScript.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **As fast as Python.** Programs compile to bytecode for a VM that runs about as fast as CPython on [these benchmarks](bench/), and allows 10,000 nested calls, in the browser too.
@@ -301,6 +302,7 @@ targascript -e 'print(pow(2, 10))' # run code from the command line
 cat script.tg | targascript -     # run code from standard input
 targascript test                  # run the *_test.tg files
 targascript check                 # find problems in .tg files without running them
+targascript build app.tg          # make ./app, an executable to share, nothing to install
 targascript --debug script.tg     # print the syntax tree before running
 ```
 
