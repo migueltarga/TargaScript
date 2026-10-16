@@ -97,3 +97,26 @@ func TestShapes(t *testing.T) {
 		}
 	}
 }
+
+func TestNewHashFromPairs(t *testing.T) {
+	s := func(v string) Object { return &String{Value: v} }
+	n := func(v int64) Object { return &Integer{Value: v} }
+	var cache PropertyCache
+	a, _ := NewHashFromPairs([]Object{s("x"), n(1), s("y"), n(2)}, &cache)
+	b, _ := NewHashFromPairs([]Object{s("x"), n(3), s("y"), n(4)}, &cache)
+	if a.shape != b.shape || cache.shape != a.shape {
+		t.Fatal("a literal's objects don't share the shape in its cache")
+	}
+	// Keys computed at run time can differ between objects of one literal
+	c, _ := NewHashFromPairs([]Object{s("y"), n(5), s("x"), n(6)}, &cache)
+	if pairs := c.OrderedPairs(); pairs[0].Key.Inspect() != "y" || pairs[1].Value.Inspect() != "6" {
+		t.Errorf("other keys: %v", pairs)
+	}
+	d, _ := NewHashFromPairs([]Object{s("x"), n(7), s("x"), n(8)}, &cache)
+	if d.Len() != 1 || d.OrderedPairs()[0].Value.Inspect() != "8" {
+		t.Errorf("repeated key: %v", d.OrderedPairs())
+	}
+	if _, bad := NewHashFromPairs([]Object{s("x"), n(1), &Array{}, n(2)}, &cache); bad != 2 {
+		t.Errorf("bad key at %d, want 2", bad)
+	}
+}
