@@ -1,0 +1,127 @@
+// app.tg
+// A Markdown editor with a live preview, written in TargaScript and
+// running in the browser. The converter below is plain TargaScript: regular
+// expressions with functions for the inline parts, and a match over each
+// line for the blocks.
+
+let doc = js.document
+let editor = doc.getElementById("editor")
+let preview = doc.getElementById("preview")
+let stats = doc.getElementById("stats")
+
+const STORAGE_KEY = "targascript-markdown"
+
+// Bold, italics, code and links inside a line. The text is escaped first,
+// so what's typed can't add its own tags.
+fn inline(text) {
+    escapeHTML(text)
+        .replacePattern("`([^`]+)`", (all, code) => "<code>${code}</code>")
+        .replacePattern("\*\*(.+?)\*\*", (all, bold) => "<strong>${bold}</strong>")
+        .replacePattern("\*(.+?)\*", (all, italic) => "<em>${italic}</em>")
+        .replacePattern("\[([^\]]+)\]\(([^)]+)\)", (all, label, url) => {
+            // A javascript: link would run code when clicked
+            let safe = if url.trim().lower().startsWith("javascript:") { "#" } else { url }
+            `<a href="${safe}">${label}</a>`
+        })
+}
+
+fn render(source) {
+    let html = []
+    let list = null      // "ul" or "ol" while inside a list
+    let code = null      // the lines of a fenced code block
+    let paragraph = []   // the lines of the paragraph being read
+
+    fn closeList() {
+        if list != null {
+            html.insert("</${list}>")
+            list = null
+        }
+    }
+    // Lines in a row are one paragraph
+    fn closeParagraph() {
+        if paragraph.length > 0 {
+            html.insert("<p>${paragraph.join(" ")}</p>")
+            paragraph = []
+        }
+    }
+
+    repeat line in source.lines() {
+        if code != null {
+            if line.startsWith("```") {
+                html.insert("<pre><code>${escapeHTML(code.join("\n"))}</code></pre>")
+                code = null
+            } else {
+                code.insert(line)
+            }
+            continue
+        }
+
+        let heading = line.match("^(#{1,6}) (.*)")
+        let bullet = line.match("^[-*] (.*)")
+        let numbered = line.match("^\d+\. (.*)")
+        if bullet == null && numbered == null { closeList() }
+        let text = heading == null && bullet == null && numbered == null && !line.startsWith("```")
+            && !line.startsWith("> ") && line.trim() != "---" && line.trim() != ""
+        if !text { closeParagraph() }
+
+        match true {
+            _ if line.startsWith("```") => { code = [] }
+            _ if heading != null => {
+                let [_, hashes, text] = heading
+                html.insert("<h${hashes.length}>${inline(text)}</h${hashes.length}>")
+            }
+            _ if bullet != null || numbered != null => {
+                let kind = if bullet != null { "ul" } else { "ol" }
+                if list != kind {
+                    closeList()
+                    html.insert("<${kind}>")
+                    list = kind
+                }
+                html.insert("<li>${inline((bullet ?? numbered)[1])}</li>")
+            }
+            _ if line.startsWith("> ") => html.insert("<blockquote>${inline(line.slice(2))}</blockquote>")
+            _ if line.trim() == "---" => html.insert("<hr>")
+            _ if line.trim() == "" => null
+            _ => paragraph.insert(inline(line))
+        }
+    }
+    closeParagraph()
+    closeList()
+    if code != null { html.insert("<pre><code>${escapeHTML(code.join("\n"))}</code></pre>") }
+    html.join("\n")
+}
+
+fn update() {
+    let source = editor.value
+    preview.innerHTML = render(source)
+    let words = source.splitPattern("\s+").filter(w => w != "").length
+    stats.textContent = "${words} words · ${source.lines().length} lines"
+    js.localStorage.setItem(STORAGE_KEY, source)
+}
+
+const WELCOME = `# Markdown in TargaScript
+
+This editor is written in **TargaScript**, a small language that runs in
+your browser. Type on the left and the *preview* updates as you go.
+
+## What it understands
+
+- **bold**, *italics* and \`code\`
+- [links](https://github.com/migueltarga/TargaScript)
+- lists, numbered too
+- quotes, rules and code blocks
+
+1. Edit this text
+2. Reload the page: it's saved in your browser
+
+> The converter is about 60 lines of TargaScript.
+
+---
+
+\`\`\`
+fn greet(name) { "Hello, \${name}!" }
+\`\`\``
+
+editor.value = js.localStorage.getItem(STORAGE_KEY) ?? WELCOME
+editor.addEventListener("input", fn(event) { update() })
+update()

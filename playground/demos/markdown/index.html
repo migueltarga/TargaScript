@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown editor in TargaScript</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #dddcd7; --text: #1f1f1d; --muted: #6b6a65;
+    --code: #f0efeb; --link: #266ca4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161614; --panel: #1e1e1c; --border: #33332f; --text: #ececea; --muted: #9a9993; --code: #2a2a27; --link: #7fb3e6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1.title { font-size: 22px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  .panes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .panes { grid-template-columns: 1fr; } }
+  textarea, #preview { min-height: 60vh; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 14px 16px; }
+  textarea { width: 100%; resize: vertical; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+  #preview { overflow-wrap: anywhere; }
+  #preview h1, #preview h2, #preview h3 { line-height: 1.25; margin: 0.8em 0 0.4em; }
+  #preview h1:first-child, #preview h2:first-child { margin-top: 0; }
+  #preview code { background: var(--code); border-radius: 4px; padding: 1px 4px; font-size: 0.9em; }
+  #preview pre { background: var(--code); border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
+  #preview pre code { padding: 0; background: none; }
+  #preview blockquote { margin: 0.8em 0; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); }
+  #preview hr { border: 0; border-top: 1px solid var(--border); }
+  footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--muted); }
+  a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1 class="title">Markdown editor</h1>
+  <p class="lead">A live Markdown preview written entirely in TargaScript, running on WebAssembly.</p>
+  <div class="panes">
+    <textarea id="editor" spellcheck="false" aria-label="Markdown"></textarea>
+    <div id="preview" aria-live="polite"></div>
+  </div>
+  <footer>
+    <span id="stats"></span>
+    &middot; <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/markdown/app.tg">See app.tg</a>
+    &middot; <a href="../../">Playground</a>
+  </footer>
+</main>
+<script src="../../targascript.js"></script>
+<script type="text/targascript" src="app.tg"></script>
+</body>
+</html>
