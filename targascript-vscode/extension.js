@@ -1,11 +1,50 @@
-// Shows the errors in TargaScript files while they are edited. The checks
-// run in the TargaScript runtime compiled to WebAssembly, in runtime/, so
-// nothing else needs to be installed.
+// Shows the errors in TargaScript files while they are edited, and the docs
+// of builtins on hover and in completions. The checks run in the
+// TargaScript runtime compiled to WebAssembly, in runtime/, so nothing else
+// needs to be installed.
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 
 const DELAY = 300; // milliseconds to wait after a change before checking
+
+// Signature and description of each builtin; a Go test keeps it complete
+const BUILTINS = require("./builtins.json");
+
+const KEYWORDS = ["let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
+  "continue", "load", "as", "await", "try", "catch", "throw", "match", "true", "false", "null"];
+
+const builtinDocs = (name) => {
+  const [signature, description] = BUILTINS[name];
+  return new vscode.MarkdownString().appendCodeblock(signature, "targascript").appendMarkdown(description);
+};
+
+const hover = {
+  provideHover(document, position) {
+    const range = document.getWordRangeAtPosition(position);
+    const word = range && document.getText(range);
+    if (!word || !Object.hasOwn(BUILTINS, word)) return null;
+    // A method or property with the same name isn't the builtin
+    if (range.start.character > 0 && document.lineAt(position.line).text[range.start.character - 1] === ".") return null;
+    return new vscode.Hover(builtinDocs(word), range);
+  },
+};
+
+const completions = {
+  provideCompletionItems() {
+    const items = Object.keys(BUILTINS).map((name) => {
+      const item = new vscode.CompletionItem(name, vscode.CompletionItemKind.Function);
+      item.detail = BUILTINS[name][0];
+      item.documentation = builtinDocs(name);
+      item.insertText = new vscode.SnippetString(`${name}($0)`);
+      return item;
+    });
+    for (const keyword of KEYWORDS) {
+      items.push(new vscode.CompletionItem(keyword, vscode.CompletionItemKind.Keyword));
+    }
+    return items;
+  },
+};
 
 async function activate(context) {
   const runtime = path.join(__dirname, "runtime");
@@ -34,6 +73,8 @@ async function activate(context) {
   };
 
   context.subscriptions.push(
+    vscode.languages.registerHoverProvider("targascript", hover),
+    vscode.languages.registerCompletionItemProvider("targascript", completions),
     vscode.workspace.onDidOpenTextDocument(check),
     vscode.workspace.onDidChangeTextDocument((event) => checkLater(event.document)),
     vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri)),
