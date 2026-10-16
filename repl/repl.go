@@ -139,6 +139,10 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 	}
 
 	evaluator.SetOutput(out)
+	if !isRepl {
+		// Nothing reads the globals of a script after it runs
+		sess.compiler.LocalizeTopLevel(program)
+	}
 
 	var evaluated object.Object
 	func() {

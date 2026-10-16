@@ -53,6 +53,12 @@ type Compiler struct {
 	// AllowLoad controls whether source can load files. Embedders disable it.
 	AllowLoad bool
 
+	// mainLocals are the top-level variables that are locals of the
+	// program instead of globals; see LocalizeTopLevel
+	mainLocals map[string]bool
+	// uses records how the program uses its globals, for LocalizeTopLevel
+	uses map[string]*globalUse
+
 	// Errors found while compiling, which the program raises if it gets
 	// to them
 	problems []Problem
@@ -129,6 +135,8 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 	// functions can use globals defined after them
 	for _, stmt := range program.Statements {
 		for _, name := range declaredNames(stmt) {
+			// The program's locals keep their name here too, for the
+			// names errors suggest
 			c.globals.define(name)
 		}
 		if load, ok := stmt.(*ast.LoadStatement); ok {
@@ -589,7 +597,7 @@ func (c *Compiler) setFunctionSource(params []*ast.Identifier, defaults []ast.Ex
 
 // lookupCurrentScope finds a variable declared in the innermost scope.
 func (c *Compiler) lookupCurrentScope(name string) (*Symbol, bool) {
-	if c.atTopLevel() {
+	if c.atTopLevel() && !c.mainLocals[name] {
 		if !c.initialized[name] {
 			return nil, false
 		}
@@ -608,7 +616,7 @@ func (c *Compiler) atTopLevel() bool {
 
 // define declares a variable in the innermost scope.
 func (c *Compiler) define(name string, isConst bool) *Symbol {
-	if c.atTopLevel() {
+	if c.atTopLevel() && !c.mainLocals[name] {
 		s := c.globals.define(name)
 		s.Const = isConst
 		c.initialized[name] = true
@@ -622,6 +630,7 @@ func (c *Compiler) define(name string, isConst bool) *Symbol {
 func (c *Compiler) emitDefine(s *Symbol) {
 	switch {
 	case s.Scope == GlobalScope:
+		c.noteGlobal(s.Name, useDefine)
 		c.emit(token.Token{}, code.OpSetGlobal, s.Index)
 	case s.Cell:
 		c.emit(token.Token{}, code.OpNewCell, s.Index)
@@ -732,7 +741,8 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 		return err
 	}
 	c.emit(token.Token{}, code.OpPop)
-	c.emit(token.Token{}, code.OpJump, next)
+	// The jump back counts a step, which errors point at the loop for
+	c.emit(stmt.Token, code.OpJump, next)
 
 	end := c.emit(token.Token{}, code.OpLoopExit)
 	c.changeOperands(enter, end, next)
@@ -872,7 +882,7 @@ func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 		return err
 	}
 	c.emit(token.Token{}, code.OpPop)
-	c.emit(token.Token{}, code.OpJump, start)
+	c.emit(stmt.Token, code.OpJump, start)
 
 	end := c.emit(token.Token{}, code.OpLoopExit)
 	c.changeOperands(enter, end, start)
@@ -1232,6 +1242,7 @@ func (c *Compiler) compileGet(tok token.Token, name string) {
 	}
 	switch s.Scope {
 	case GlobalScope:
+		c.noteGlobal(s.Name, useRead)
 		c.emit(tok, code.OpGetGlobal, s.Index)
 	case LocalScope:
 		c.emit(tok, code.OpGetLocal, s.Index)
@@ -1256,6 +1267,7 @@ func (c *Compiler) compileSet(tok token.Token, name string) {
 	}
 	switch s.Scope {
 	case GlobalScope:
+		c.noteGlobal(s.Name, useAssign)
 		c.emit(tok, code.OpSetGlobal, s.Index)
 	case LocalScope:
 		c.emit(tok, code.OpSetLocal, s.Index)
