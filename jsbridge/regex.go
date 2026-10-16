@@ -89,3 +89,32 @@ func (r jsRegex) Split(s string) []string {
 	re, _ := r.regexp("")
 	return strings(stringMethod("split", s, re))
 }
+
+func (r jsRegex) ReplaceAllFunc(s string, replace func([]string) string) string {
+	re, _ := r.regexp("g")
+	// JavaScript calls the function with the match, each group, then the
+	// position and the string; the number of groups comes from matching
+	// the pattern, made to match "", against ""
+	empty, _ := (jsRegex{&object.String{Value: r.pattern.Value + "|"}}).regexp("")
+	groups := len(strings(empty.CallMethod("exec", []object.Object{&object.String{Value: ""}})))
+	fn := &object.Builtin{Name: "replace", Fn: func(args ...object.Object) object.Object {
+		values := make([]string, groups)
+		for i := 0; i < groups && i < len(args); i++ {
+			if str, ok := args[i].(*object.String); ok {
+				values[i] = str.Value
+			}
+		}
+		return &object.String{Value: replace(values)}
+	}}
+	// The function is only needed during this call, so it's freed after
+	id := registerCallback(fn)
+	handle := hostMakeFunction(id)
+	result, _ := stringMethod("replace", s, re, &Value{handle: handle}).(*object.String)
+	callbacks[id] = nil
+	freeCallbacks = append(freeCallbacks, id)
+	hostRelease(handle)
+	if result == nil {
+		return s
+	}
+	return result.Value
+}
