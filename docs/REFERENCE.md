@@ -439,7 +439,7 @@ math_test.tg
 1 passed, 1 failed
 ```
 
-It exits with 1 when a test fails, when a file has an error outside a test, or when there are no tests, so it can run in CI.
+It exits with 1 when a test fails, when a file has an error outside a test, or when there are no tests, so it can run in CI. `targascript test -run slug` runs only the tests whose name contains `slug`, ignoring case, and counts the others as skipped.
 
 ## Command line
 

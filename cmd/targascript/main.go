@@ -175,7 +175,8 @@ Usage:
   targascript -                    run a program read from standard input
 
 Commands:
-  targascript test [paths]         run the tests in *_test.tg files
+  targascript test [-run text] [paths]
+                                   run the tests in *_test.tg files; -run only those named like text
   targascript check [paths]        find problems in .tg files without running them
   targascript fmt [--check] [paths]
                                    lay out .tg files; --check only lists the ones that need it

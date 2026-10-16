@@ -31,7 +31,7 @@ print("still running")
 	if out.String() != want {
 		t.Errorf("output:\n%s\nwant:\n%s", out.String(), want)
 	}
-	if passed, failed := evaluator.TestResults(); passed != 1 || failed != 2 {
+	if passed, failed, _ := evaluator.TestResults(); passed != 1 || failed != 2 {
 		t.Errorf("results: %d passed, %d failed, want 1 and 2", passed, failed)
 	}
 }
