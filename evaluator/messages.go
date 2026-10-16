@@ -44,6 +44,7 @@ var (
 		"JSON":       "use parseJSON(text) and toJSON(value)",
 	}
 	otherLanguageStringMethods = map[string]string{
+		"length":      "length is a property: write .length, without ()",
 		"toUpperCase": "use upper()",
 		"toUpper":     "use upper()",
 		"toLowerCase": "use lower()",
@@ -57,6 +58,7 @@ var (
 		"len":         "use .length",
 	}
 	otherLanguageArrayMethods = map[string]string{
+		"length":   "length is a property: write .length, without ()",
 		"push":     "use insert(value)",
 		"append":   "use insert(value)",
 		"add":      "use insert(value)",

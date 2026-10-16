@@ -253,10 +253,55 @@ func (p *Parser) parseStatement() ast.Statement {
 		if p.peekTokenIs(token.IDENT) {
 			return p.parseFunctionStatement()
 		}
-		return p.parseExpressionStatement()
+		if stmt := p.parseExpressionStatement(); stmt != nil {
+			return stmt
+		}
+		return nil
 	default:
-		return p.parseExpressionStatement()
+		if hint := p.otherLanguageStatement(); hint != "" {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "%s", hint)
+			return nil
+		}
+		if stmt := p.parseExpressionStatement(); stmt != nil {
+			return stmt
+		}
+		return nil
 	}
+}
+
+// otherLanguageStatements are the words other languages start statements
+// with, and how TargaScript says the same.
+var otherLanguageStatements = map[string]string{
+	"for":      "TargaScript loops with repeat: repeat item in list { ... } or repeat i in 1..10 { ... }",
+	"foreach":  "TargaScript loops with repeat: repeat item in list { ... }",
+	"while":    "TargaScript loops with repeat: repeat condition { ... }",
+	"function": "functions are declared with fn: fn name(a, b) { ... }",
+	"def":      "functions are declared with fn: fn name(a, b) { ... }",
+	"func":     "functions are declared with fn: fn name(a, b) { ... }",
+	"var":      "variables are declared with let, or const for ones that don't change",
+}
+
+// otherLanguageStatement returns a hint when the statement starts like one
+// in another language, such as `for i in ...` or `var x = 1`: a word that
+// isn't TargaScript followed, on the same line, by a name or a value.
+func (p *Parser) otherLanguageStatement() string {
+	if !p.curTokenIs(token.IDENT) || p.peekToken.Line != p.curToken.Line {
+		return ""
+	}
+	hint, ok := otherLanguageStatements[p.curToken.Literal]
+	if !ok {
+		return ""
+	}
+	switch p.peekToken.Type {
+	case token.IDENT, token.INT, token.FLOAT, token.STRING, token.TRUE, token.FALSE, token.BANG:
+		return hint
+	case token.LPAREN:
+		// while (x < 3) { ... } and for (...), but not a call like f(x)
+		if p.curToken.Literal == "while" || p.curToken.Literal == "for" {
+			return hint
+		}
+	}
+	return ""
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
@@ -498,6 +543,16 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
+	// print "hi": a name followed by a value on the same line is almost
+	// always a call without parentheses
+	if ident, ok := stmt.Expression.(*ast.Identifier); ok && p.peekToken.Line == p.curToken.Line {
+		switch p.peekToken.Type {
+		case token.STRING, token.TEMPLATE, token.INT, token.FLOAT:
+			p.errorAt(p.peekToken.Line, p.peekToken.Column, "calls need parentheses: %s(...)", ident.Value)
+			return nil
+		}
+	}
+
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -703,6 +758,13 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
 		Left:     left,
+	}
+
+	// === and !== from JavaScript
+	if (p.curTokenIs(token.EQ) || p.curTokenIs(token.NOT_EQ)) && p.peekTokenIs(token.ASSIGN) &&
+		p.peekToken.Line == p.curToken.Line && p.peekToken.Column == p.curToken.Column+2 {
+		p.errorAt(p.curToken.Line, p.curToken.Column, "TargaScript compares with %s, which already checks the type: 1 == \"1\" is false", p.curToken.Literal)
+		return nil
 	}
 
 	precedence := p.curPrecedence()
