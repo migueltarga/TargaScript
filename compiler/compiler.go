@@ -275,7 +275,6 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			NumParams:    len(params),
 			HasThis:      hasThis && fn.usesThis,
 			SimpleCall:   len(params),
-			Leaf:         leaf(words),
 			Name:         name,
 			LocalNames:   fn.localNames,
 		}
@@ -1688,15 +1687,4 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 	c.emit(node.Token, op)
 	set()
 	return nil
-}
-
-// leaf reports whether code calls nothing and doesn't await or load.
-func leaf(words []code.Word) bool {
-	for _, w := range words {
-		switch w.Op() {
-		case code.RCall, code.RCallGlobal, code.RCallMethod, code.RCallSpread, code.RCallMethodSpread, code.RAwait, code.RLoad:
-			return false
-		}
-	}
-	return true
 }

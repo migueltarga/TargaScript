@@ -75,3 +75,21 @@ func TestDrivenSortBy(t *testing.T) {
 		t.Errorf("keys that can't be compared should fail, got %s", result.Inspect())
 	}
 }
+
+func TestDrivenCallsThatPause(t *testing.T) {
+	tests := []struct{ input, expected string }{
+		// Functions that call others run in the VM too
+		{"fn twice(x) { x * 2 }\n[1, 2, 3].map(x => twice(x)).filter(x => twice(x) > 4)", "[4, 6]"},
+		{"let o = {n: 2, f: fn(x) { x * this.n }}\n[1, 2].map(x => o.f(x))", "[2, 4]"},
+		{"fn deep(n) { if n == 0 { 0 } else { [n].map(x => deep(x - 1))[0] + 1 } }\ndeep(50)", "50"},
+	}
+	for _, tt := range tests {
+		if got := testEval(tt.input).Inspect(); got != tt.expected {
+			t.Errorf("%s: got %s, want %s", tt.input, got, tt.expected)
+		}
+	}
+	// A call of the function of filter can't pause
+	if result := testEval("[1, 2].filter(x => { await sleep(1)\ntrue })"); !isError(result) {
+		t.Errorf("await in filter should fail, got %s", result.Inspect())
+	}
+}
