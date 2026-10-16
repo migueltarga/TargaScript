@@ -29,6 +29,11 @@ func SetOutput(w io.Writer) {
 	output = w
 }
 
+// Output returns the writer print statements use.
+func Output() io.Writer {
+	return output
+}
+
 // increment returns current + 1 for "++" or current - 1 for "--".
 func increment(current object.Object, operator string, line, column int) object.Object {
 	delta := int64(1)

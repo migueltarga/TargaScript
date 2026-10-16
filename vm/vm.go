@@ -2,6 +2,8 @@
 package vm
 
 import (
+	"io"
+
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/evaluator"
@@ -49,6 +51,10 @@ type VM struct {
 	// pendingError stops a resumed run right away, when the promise it
 	// awaited was rejected
 	pendingError *object.Error
+
+	// Output is where print writes while this VM runs, including when a
+	// paused run resumes later. When nil, print uses evaluator.SetOutput.
+	Output io.Writer
 }
 
 func New(globals *compiler.GlobalTable) *VM {
@@ -131,6 +137,12 @@ func (vm *VM) run(base int) object.Object {
 // runFiber is run for a fiber being resumed, or for a new run when fb is nil.
 // When the run pauses at an await it returns the promise of its fiber.
 func (vm *VM) runFiber(base int, fb *fiber) object.Object {
+	if vm.Output != nil {
+		previous := evaluator.Output()
+		evaluator.SetOutput(vm.Output)
+		defer evaluator.SetOutput(previous)
+	}
+
 	result := vm.loop(base)
 	if s, ok := result.(*suspension); ok {
 		if fb == nil {

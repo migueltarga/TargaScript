@@ -28,6 +28,9 @@ var (
 	// handle of the JavaScript function made for each.
 	callbacks       []object.Object
 	callbackHandles = map[object.Object]uint32{}
+
+	// Callback ids freed by one-shot functions, to reuse
+	freeCallbacks []uint32
 )
 
 // Global returns globalThis, which scripts see as `js`.
@@ -204,10 +207,11 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 		if h, ok := callbackHandles[obj]; ok {
 			return h, false
 		}
-		callbacks = append(callbacks, obj)
-		h := hostMakeFunction(uint32(len(callbacks) - 1))
+		h := hostMakeFunction(registerCallback(obj))
 		callbackHandles[obj] = h
 		return h, false
+	case *object.Promise:
+		return toJSPromise(obj), true
 	default:
 		return handleUndefined, false
 	}
@@ -235,7 +239,7 @@ func toHostArgs(args []object.Object) ([]uint32, func()) {
 // of the result, which JavaScript releases.
 func Callback(id uint32, args uint32) uint32 {
 	converted, ok := fromHost(args).(*object.Array)
-	if !ok || int(id) >= len(callbacks) {
+	if !ok || int(id) >= len(callbacks) || callbacks[id] == nil {
 		return handleUndefined
 	}
 
@@ -245,7 +249,20 @@ func Callback(id uint32, args uint32) uint32 {
 		return handleUndefined
 	}
 
-	h, temporary := toHost(result)
+	return Return(result)
+}
+
+// Keep wraps a JavaScript value passed to Go as a handle, keeping it after
+// JavaScript releases the handle.
+func Keep(handle uint32) *Value {
+	hostRetain(handle)
+	return wrap(handle)
+}
+
+// Return converts a value returned to JavaScript to a handle that
+// JavaScript releases.
+func Return(obj object.Object) uint32 {
+	h, temporary := toHost(obj)
 	if !temporary {
 		hostRetain(h)
 	}
@@ -255,25 +272,6 @@ func Callback(id uint32, args uint32) uint32 {
 // ReadString returns the JavaScript string with the given handle.
 func ReadString(handle uint32) string {
 	return readString(handle)
-}
-
-// Invoke calls the JavaScript function with the given handle with one
-// string argument.
-func Invoke(fn uint32, text string) {
-	ptr, n := stringPtr(text)
-	arg := hostMakeString(ptr, n)
-	result := hostInvoke(fn, &arg, 1)
-	hostRelease(arg)
-	if result&failed != 0 {
-		result &^= failed
-	}
-	hostRelease(result)
-}
-
-// MakeString returns a new handle for text, for JavaScript to release.
-func MakeString(text string) uint32 {
-	ptr, n := stringPtr(text)
-	return hostMakeString(ptr, n)
 }
 
 // ConsoleError writes message with console.error.
@@ -302,4 +300,130 @@ func ErrorMessage(err *object.Error) string {
 
 func itoa(n int) string {
 	return (&object.Integer{Value: int64(n)}).Inspect()
+}
+
+// registerCallback gives a function an id JavaScript can call it by.
+func registerCallback(fn object.Object) uint32 {
+	if n := len(freeCallbacks); n > 0 {
+		id := freeCallbacks[n-1]
+		freeCallbacks = freeCallbacks[:n-1]
+		callbacks[id] = fn
+		return id
+	}
+	callbacks = append(callbacks, fn)
+	return uint32(len(callbacks) - 1)
+}
+
+// oneShotPair makes two JavaScript functions of which only the first call
+// counts, like the resolve and reject functions of a promise. Once one is
+// called, both are freed.
+func oneShotPair(first, second func(object.Object)) (uint32, uint32) {
+	var ids [2]uint32
+	var handles [2]uint32
+	called := false
+	release := func() {
+		for i := range ids {
+			callbacks[ids[i]] = nil
+			freeCallbacks = append(freeCallbacks, ids[i])
+			hostRelease(handles[i])
+		}
+	}
+	wrap := func(fn func(object.Object)) *object.Builtin {
+		return &object.Builtin{Fn: func(args ...object.Object) object.Object {
+			if called {
+				return evaluator.NULL
+			}
+			called = true
+			release()
+			var arg object.Object = evaluator.NULL
+			if len(args) > 0 {
+				arg = args[0]
+			}
+			fn(arg)
+			return evaluator.NULL
+		}}
+	}
+	ids[0] = registerCallback(wrap(first))
+	ids[1] = registerCallback(wrap(second))
+	handles[0] = hostMakeFunction(ids[0])
+	handles[1] = hostMakeFunction(ids[1])
+	return handles[0], handles[1]
+}
+
+// IsAwaitable reports whether the value is a promise or another thenable.
+func (v *Value) IsAwaitable() bool {
+	ptr, n := stringPtr("then")
+	then := hostGet(v.handle, ptr, n)
+	if then&failed != 0 {
+		hostRelease(then &^ failed)
+		return false
+	}
+	isFunction := hostKind(then) == kindFunction
+	hostRelease(then)
+	return isFunction
+}
+
+// Then waits for the promise, as await does.
+func (v *Value) Then(resolve func(object.Object), reject func(object.Object)) {
+	onResolve, onReject := oneShotPair(resolve, func(reason object.Object) {
+		reject(&object.Error{Message: reasonMessage(reason)})
+	})
+	args := []uint32{onResolve, onReject}
+	ptr, n := stringPtr("then")
+	result := hostCall(v.handle, ptr, n, &args[0], 2)
+	if err := failure(result); err != nil {
+		reject(err)
+		return
+	}
+	hostRelease(result)
+}
+
+// reasonMessage describes why a JavaScript promise was rejected: the
+// message of an Error, or the reason as text.
+func reasonMessage(reason object.Object) string {
+	if v, ok := reason.(*Value); ok {
+		if message, ok := v.Get("message").(*object.String); ok {
+			return message.Value
+		}
+	}
+	return evaluator.ToDisplayString(reason)
+}
+
+// toJSPromise returns a JavaScript promise that settles with p.
+func toJSPromise(p *object.Promise) uint32 {
+	executor := &object.Builtin{Fn: func(args ...object.Object) object.Object {
+		if len(args) < 2 {
+			return evaluator.NULL
+		}
+		resolve, reject := args[0], args[1]
+		p.Then(
+			func(value object.Object) { evaluator.CallFunction(resolve, []object.Object{value}) },
+			func(reason object.Object) {
+				message := reasonMessage(reason)
+				if err, ok := reason.(*object.Error); ok {
+					message = ErrorMessage(err)
+				}
+				errorType, _ := Global().Get("Error").(*Value)
+				evaluator.CallFunction(reject, []object.Object{errorType.New([]object.Object{&object.String{Value: message}})})
+			},
+		)
+		return evaluator.NULL
+	}}
+
+	// The Promise constructor calls the executor right away, so it can be
+	// freed as soon as the promise exists
+	id := registerCallback(executor)
+	executorHandle := hostMakeFunction(id)
+	ptr, n := stringPtr("Promise")
+	promiseType := hostGet(handleGlobal, ptr, n)
+	result := hostConstruct(promiseType, &executorHandle, 1)
+	hostRelease(promiseType)
+	hostRelease(executorHandle)
+	callbacks[id] = nil
+	freeCallbacks = append(freeCallbacks, id)
+	if result&failed != 0 {
+		hostRelease(result &^ failed)
+		return handleUndefined
+	}
+	return result
 }

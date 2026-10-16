@@ -174,33 +174,31 @@ fn toBase64Url(bytes) {
 
 fn compress(text) {
     let stream = js.Blob.new([text]).stream().pipeThrough(js.CompressionStream.new("deflate-raw"))
-    js.Response.new(stream).arrayBuffer().then(fn(buffer) {
-        toBase64Url(js.Uint8Array.new(buffer))
-    })
+    let buffer = await js.Response.new(stream).arrayBuffer()
+    toBase64Url(js.Uint8Array.new(buffer))
 }
 
 // Fetching a data: URL turns the base64 back into bytes
 fn decompress(text) {
     let base64 = text.replace("-", "+").replace("_", "/")
-    js.fetch("data:application/octet-stream;base64," + base64).then(fn(response) {
-        let stream = response.body.pipeThrough(js.DecompressionStream.new("deflate-raw"))
-        js.Response.new(stream).text()
-    })
+    let response = await js.fetch("data:application/octet-stream;base64," + base64)
+    let stream = response.body.pipeThrough(js.DecompressionStream.new("deflate-raw"))
+    await js.Response.new(stream).text()
 }
 
 shareButton.addEventListener("click", fn(event) {
-    compress(code.value).then(fn(encoded) {
-        js.history.replaceState(null, "", "#code=" + encoded)
-        let showLabel = fn(label) {
-            shareButton.textContent = label
-            js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
-        }
-        // Without clipboard access the link is still in the address bar
-        js.navigator.clipboard.writeText(js.location.href).then(
-            fn(result) { showLabel("Link copied") },
-            fn(error) { showLabel("Link in address bar") }
-        )
-    })
+    let encoded = compress(code.value)
+    js.history.replaceState(null, "", "#code=" + encoded)
+
+    let showLabel = fn(label) {
+        shareButton.textContent = label
+        js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
+    }
+    // Without clipboard access the link is still in the address bar
+    js.navigator.clipboard.writeText(js.location.href).then(
+        fn(result) { showLabel("Link copied") },
+        fn(error) { showLabel("Link in address bar") }
+    )
 })
 
 // SECTION 4: Examples
@@ -208,27 +206,18 @@ shareButton.addEventListener("click", fn(event) {
 // examples/index.txt lists the files from the repository's examples.
 
 fn fetchText(path) {
-    js.fetch(path).then(fn(response) { response.text() })
+    let response = await js.fetch(path)
+    await response.text()
 }
-
-fetchText("examples/index.txt").then(fn(list) {
-    repeat name in list.trim().split("\n") {
-        let option = doc.createElement("option")
-        option.value = name
-        option.textContent = name.replace(".tg", "").replace("_", " ")
-        examples.appendChild(option)
-    }
-})
 
 examples.addEventListener("change", fn(event) {
     let name = examples.value
     if name == "" { return null }
-    fetchText("examples/" + name).then(fn(source) {
-        js.history.replaceState(null, "", js.location.pathname)
-        setCode(source)
-        output.textContent = ""
-        status.textContent = ""
-    })
+    let source = fetchText("examples/" + name)
+    js.history.replaceState(null, "", js.location.pathname)
+    setCode(source)
+    output.textContent = ""
+    status.textContent = ""
 })
 
 // SECTION 5: Start
@@ -236,10 +225,16 @@ examples.addEventListener("change", fn(event) {
 
 let hash = js.location.hash
 if hash.startsWith("#code=") {
-    decompress(hash.replace("#code=", "")).then(fn(source) { setCode(source) })
+    setCode(decompress(hash.replace("#code=", "")))
 } else {
-    fetchText("welcome.tg").then(fn(source) { setCode(source) })
+    setCode(fetchText("welcome.tg"))
 }
-
 runButton.disabled = false
 status.textContent = "Ready"
+
+repeat name in fetchText("examples/index.txt").trim().split("\n") {
+    let option = doc.createElement("option")
+    option.value = name
+    option.textContent = name.replace(".tg", "").replace("_", " ")
+    examples.appendChild(option)
+}
