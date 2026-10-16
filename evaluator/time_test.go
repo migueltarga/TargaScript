@@ -46,7 +46,13 @@ func TestParseTime(t *testing.T) {
 		{"1970-01-02", "YYYY-MM-DD", 86400},
 		{"02/01/1970 01:00", "DD/MM/YYYY HH:mm", 86400 + 3600},
 		{"Jan 2 1970", "MMM D YYYY", -1},
-		{"1970-01-01T00:00:10Z", "2006-01-02T15:04:05Z07:00", 10},
+		{"01/01/70 12:00:10 AM", "DD/MM/YY hh:mm:ss A", 10},
+		{"Jan 01 1970 01:00 pm", "MMM DD YYYY hh:mm A", 13 * 3600},
+		{"Friday, January 02 1970", "dddd, MMMM DD YYYY", 86400},
+		{"1970-02-31", "YYYY-MM-DD", -1},
+		{"1970-01-01 extra", "YYYY-MM-DD", -1},
+		{"1970-1-01", "YYYY-MM-DD", -1},
+		{"13:00 PM", "hh:mm A", -1},
 	}
 	for _, tt := range tests {
 		result := parseTimeBuiltin(&object.String{Value: tt.text}, &object.String{Value: tt.layout})
