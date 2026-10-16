@@ -30,36 +30,38 @@ const (
 	ASSIGN      // =
 )
 
-var precedences = map[token.TokenType]int{
-	token.EQ:        EQUALS,
-	token.NOT_EQ:    EQUALS,
-	token.LT:        LESSGREATER,
-	token.GT:        LESSGREATER,
-	token.LT_EQ:     LESSGREATER,
-	token.IN:        LESSGREATER,
-	token.GT_EQ:     LESSGREATER,
-	token.RANGE:     RANGE,
-	token.PLUS:      SUM,
-	token.MINUS:     SUM,
-	token.SLASH:     PRODUCT,
-	token.ASTERISK:  PRODUCT,
-	token.POWER:     POWER,
-	token.MODULO:    PRODUCT,
-	token.XOR:       SUM,
-	token.LPAREN:    CALL,
-	token.LBRACKET:  INDEX,
-	token.DOT:       INDEX,
-	token.ASSIGN:    ASSIGN,
-	token.OP_ASSIGN: ASSIGN,
-	token.AND:       AND,
-	token.OR:        OR,
-	token.NULLISH:   NULLISH,
-	token.PIPE:      PIPE,
-	token.OPTIONAL:  INDEX,
-
-	// Postfix x++ and x-- bind to their operand like indexing
-	token.INCREMENT: INDEX,
-	token.DECREMENT: INDEX,
+// precedence is how tightly an operator binds, for the tokens that are
+// operators.
+func precedence(k token.TokenType) (int, bool) {
+	switch k {
+	case token.EQ, token.NOT_EQ:
+		return EQUALS, true
+	case token.LT, token.GT, token.LT_EQ, token.IN, token.GT_EQ:
+		return LESSGREATER, true
+	case token.RANGE:
+		return RANGE, true
+	case token.PLUS, token.MINUS, token.XOR:
+		return SUM, true
+	case token.SLASH, token.ASTERISK, token.MODULO:
+		return PRODUCT, true
+	case token.POWER:
+		return POWER, true
+	case token.LPAREN:
+		return CALL, true
+	case token.LBRACKET, token.DOT, token.OPTIONAL, token.INCREMENT, token.DECREMENT:
+		return INDEX, true
+	case token.ASSIGN, token.OP_ASSIGN:
+		return ASSIGN, true
+	case token.AND:
+		return AND, true
+	case token.OR:
+		return OR, true
+	case token.NULLISH:
+		return NULLISH, true
+	case token.PIPE:
+		return PIPE, true
+	}
+	return 0, false
 }
 
 type (
@@ -745,7 +747,7 @@ func isStatementEnd(tokenType token.TokenType) bool {
 }
 
 func (p *Parser) peekPrecedence() int {
-	if p, ok := precedences[p.peekToken.Type]; ok {
+	if p, ok := precedence(p.peekToken.Type); ok {
 		return p
 	}
 
@@ -753,7 +755,7 @@ func (p *Parser) peekPrecedence() int {
 }
 
 func (p *Parser) curPrecedence() int {
-	if p, ok := precedences[p.curToken.Type]; ok {
+	if p, ok := precedence(p.curToken.Type); ok {
 		return p
 	}
 

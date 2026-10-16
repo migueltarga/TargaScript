@@ -11,27 +11,43 @@ func init() {
 	builtins["staticFile"] = &object.Builtin{Name: "staticFile", Fn: staticFileBuiltin}
 }
 
-// contentTypes are the types of the files a site usually has, by extension.
-var contentTypes = map[string]string{
-	".html":  "text/html; charset=utf-8",
-	".css":   "text/css; charset=utf-8",
-	".js":    "text/javascript; charset=utf-8",
-	".mjs":   "text/javascript; charset=utf-8",
-	".json":  "application/json",
-	".txt":   "text/plain; charset=utf-8",
-	".md":    "text/markdown; charset=utf-8",
-	".tg":    "text/plain; charset=utf-8",
-	".svg":   "image/svg+xml",
-	".png":   "image/png",
-	".jpg":   "image/jpeg",
-	".jpeg":  "image/jpeg",
-	".gif":   "image/gif",
-	".webp":  "image/webp",
-	".ico":   "image/x-icon",
-	".wasm":  "application/wasm",
-	".pdf":   "application/pdf",
-	".woff":  "font/woff",
-	".woff2": "font/woff2",
+// contentType is the type of the files a site usually has, by extension.
+func contentType(k string) (string, bool) {
+	switch k {
+	case ".html":
+		return "text/html; charset=utf-8", true
+	case ".css":
+		return "text/css; charset=utf-8", true
+	case ".js", ".mjs":
+		return "text/javascript; charset=utf-8", true
+	case ".json":
+		return "application/json", true
+	case ".txt", ".tg":
+		return "text/plain; charset=utf-8", true
+	case ".md":
+		return "text/markdown; charset=utf-8", true
+	case ".svg":
+		return "image/svg+xml", true
+	case ".png":
+		return "image/png", true
+	case ".jpg", ".jpeg":
+		return "image/jpeg", true
+	case ".gif":
+		return "image/gif", true
+	case ".webp":
+		return "image/webp", true
+	case ".ico":
+		return "image/x-icon", true
+	case ".wasm":
+		return "application/wasm", true
+	case ".pdf":
+		return "application/pdf", true
+	case ".woff":
+		return "font/woff", true
+	case ".woff2":
+		return "font/woff2", true
+	}
+	return "", false
 }
 
 // staticFileBuiltin is staticFile(dir, urlPath): a response with the file
@@ -68,7 +84,7 @@ func staticFileBuiltin(args ...object.Object) object.Object {
 	if readErr != nil {
 		return notFound()
 	}
-	contentType, ok := contentTypes[strings.ToLower(path.Ext(file))]
+	contentType, ok := contentType(strings.ToLower(path.Ext(file)))
 	if !ok {
 		contentType = "application/octet-stream"
 	}

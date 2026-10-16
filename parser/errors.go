@@ -135,16 +135,9 @@ func describeType(t token.TokenType) string {
 	case token.FUNCTION:
 		return `"fn"`
 	}
-	if literal, ok := keywordLiterals[t]; ok {
-		return strfmt.Sprintf("%q", literal)
+	// Keywords are written in lowercase
+	if token.LookupIdent(strings.ToLower(string(t))) == t {
+		return strfmt.Sprintf("%q", strings.ToLower(string(t)))
 	}
 	return strfmt.Sprintf("%q", string(t))
-}
-
-var keywordLiterals = map[token.TokenType]string{
-	token.LET: "let", token.CONST: "const", token.TRUE: "true", token.FALSE: "false",
-	token.IF: "if", token.ELSE: "else", token.RETURN: "return", token.LOAD: "load",
-	token.AS: "as", token.REPEAT: "repeat", token.IN: "in",
-	token.NULL: "null", token.BREAK: "break", token.CONTINUE: "continue", token.AWAIT: "await",
-	token.TRY: "try", token.CATCH: "catch", token.FINALLY: "finally", token.THROW: "throw", token.MATCH: "match",
 }
