@@ -18,7 +18,7 @@ func init() {
 // them first.
 func escapeHTMLBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for escapeHTML. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "escapeHTML", len(args), "1")
 	}
 	text := objectToString(args[0])
 	var out strings.Builder

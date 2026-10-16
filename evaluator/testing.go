@@ -37,14 +37,14 @@ func init() {
 // tests for -run.
 func describeBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for describe. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "describe", len(args), "2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `describe` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `describe`", "a string", args[0])
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `describe` must be a function, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "second argument to `describe`", "a function", args[1])
 	}
 
 	testGroups = append(testGroups, name.Value)
@@ -81,14 +81,14 @@ func testIndent() string {
 // passed. A failing test doesn't stop the program, so the rest still run.
 func testBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for test. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "test", len(args), "2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `test` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `test`", "a string", args[0])
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "second argument to `test`", "a function", args[1])
 	}
 
 	fullName := strings.Join(append(append([]string{}, testGroups...), name.Value), " ")

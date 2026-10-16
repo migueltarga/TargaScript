@@ -31,7 +31,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "count":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.count(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.count()", len(args), "1"), true
 		}
 		count := int64(0)
 		cb := newCallback(args[0])
@@ -52,14 +52,14 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "sum":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.sum(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.sum()", len(args), "0"), true
 		}
 		var total object.Object = &object.Integer{Value: 0}
 		for _, element := range arr.Elements {
 			switch element.(type) {
 			case *object.Integer, *object.Float:
 			default:
-				return newError(line, column, "array.sum() can only add numbers, got %s", typeName(element)), true
+				return errorText(line, column, "array.sum() can only add numbers, got "+typeName(element)), true
 			}
 			total = evalInfixExpression("+", total, element, line, column)
 			if isError(total) {
@@ -70,7 +70,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "min", "max":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want 0", method, len(args)), true
+			return wrongArgs(line, column, "array."+method+"()", len(args), "0"), true
 		}
 		if len(arr.Elements) == 0 {
 			return NULL, true
@@ -83,7 +83,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 		for _, element := range arr.Elements[1:] {
 			better := evalInfixExpression(operator, element, best, line, column)
 			if errObj, isErr := better.(*object.Error); isErr {
-				return newError(line, column, "cannot find the %s: %s", method, errObj.Message), true
+				return errorText(line, column, "cannot find the "+method+": "+errObj.Message), true
 			}
 			if better == TRUE {
 				best = element
@@ -93,7 +93,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "unique":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.unique(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.unique()", len(args), "0"), true
 		}
 		unique := []object.Object{}
 		seen := map[object.HashKey]bool{}
@@ -122,12 +122,12 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 	case "flatten":
 		depth := int64(1)
 		if len(args) > 1 {
-			return newError(line, column, "wrong number of arguments for array.flatten(): got %d, want 0 or 1", len(args)), true
+			return wrongArgs(line, column, "array.flatten()", len(args), "0 or 1"), true
 		}
 		if len(args) == 1 {
 			n, ok := args[0].(*object.Integer)
 			if !ok {
-				return newError(line, column, "depth for array.flatten() must be an integer, got %s", typeName(args[0])), true
+				return wrongType(line, column, "depth for array.flatten()", "an integer", args[0]), true
 			}
 			depth = n.Value
 		}
@@ -147,7 +147,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			}
 			hashable, ok := key.(object.Hashable)
 			if !ok {
-				return newError(line, column, "array.groupBy() function must return a string, number or boolean, got %s", typeName(key)), true
+				return errorText(line, column, "array.groupBy() function must return a string, number or boolean, got "+typeName(key)), true
 			}
 			var group object.Object = NULL
 			if pair, ok := groups.Get(hashable.HashKey()); ok {
@@ -187,7 +187,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 func callbackArg(method string, args []object.Object, line, column int) (object.Object, *object.Error) {
 	if len(args) != 1 || !isCallable(args[0]) {
-		return nil, newError(line, column, "array.%s() takes a function", method)
+		return nil, errorText(line, column, "array."+method+"() takes a function")
 	}
 	return args[0], nil
 }

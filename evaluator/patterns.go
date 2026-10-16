@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"strconv"
+
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -98,7 +100,7 @@ func init() {
 		}
 		replacement, ok := args[1].(*object.String)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("replacement for string.replacePattern() must be a string or a function, got %s", typeName(args[1]))}
+			return wrongType(0, 0, "replacement for string.replacePattern()", "a string or a function", args[1])
 		}
 		return &object.String{Value: re.ReplaceAllString(s, replacement.Value)}
 	}
@@ -115,11 +117,11 @@ func init() {
 // regexArg compiles the pattern in the first argument, caching it.
 func regexArg(name string, args []object.Object, count int) (Regex, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want %d", name, len(args), count)}
+		return nil, wrongArgs(0, 0, "string."+name+"()", len(args), strconv.Itoa(count))
 	}
 	pattern, ok := args[0].(*object.String)
 	if !ok {
-		return nil, &object.Error{Message: strfmt.Sprintf("pattern for string.%s() must be a string, got %s", name, typeName(args[0]))}
+		return nil, wrongType(0, 0, "pattern for string."+name+"()", "a string", args[0])
 	}
 	if regexEngine == nil {
 		return nil, &object.Error{Message: "patterns are not available here"}

@@ -3,6 +3,7 @@ package evaluator
 import (
 	"math"
 	"math/rand/v2"
+	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
@@ -38,7 +39,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 	if len(args) == 1 {
 		array, ok := args[0].(*object.Array)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("%s takes an array or two or more numbers, got %s", name, typeName(args[0]))}
+			return &object.Error{Message: name + " takes an array or two or more numbers, got " + typeName(args[0])}
 		}
 		// Like list.max(), an empty array has none
 		if len(array.Elements) == 0 {
@@ -46,7 +47,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 		}
 		values = array.Elements
 	} else if len(args) == 0 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=0, want an array or two or more numbers", name)}
+		return wrongArgs(0, 0, name, 0, "an array or two or more numbers")
 	}
 
 	var best object.Object
@@ -54,7 +55,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 	for _, value := range values {
 		n, ok := number(value)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to `%s` must be numbers, got %s", name, typeName(value))}
+			return wrongType(0, 0, "arguments to `"+name+"`", "numbers", value)
 		}
 		if best == nil || better(n, bestValue) {
 			best, bestValue = value, n
@@ -67,11 +68,11 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 // places, giving a float, when there's a second argument.
 func roundBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for round. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "round", len(args), "1 or 2")
 	}
 	value, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `round` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `round`", "a number", args[0])
 	}
 
 	if len(args) == 2 {
@@ -102,7 +103,7 @@ func randomBuiltin(args ...object.Object) object.Object {
 	case 1:
 		array, ok := args[0].(*object.Array)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("random takes nothing, an array or two integers, got %s", typeName(args[0]))}
+			return &object.Error{Message: "random takes nothing, an array or two integers, got " + typeName(args[0])}
 		}
 		if len(array.Elements) == 0 {
 			return NULL
@@ -112,7 +113,7 @@ func randomBuiltin(args ...object.Object) object.Object {
 		low, lowOk := args[0].(*object.Integer)
 		high, highOk := args[1].(*object.Integer)
 		if !lowOk || !highOk {
-			return &object.Error{Message: strfmt.Sprintf("random(a, b) takes two integers, got %s and %s", typeName(args[0]), typeName(args[1]))}
+			return &object.Error{Message: "random(a, b) takes two integers, got " + typeName(args[0]) + " and " + typeName(args[1])}
 		}
 		if low.Value > high.Value {
 			return &object.Error{Message: strfmt.Sprintf("random(a, b) needs a <= b, got %d and %d", low.Value, high.Value)}
@@ -123,20 +124,20 @@ func randomBuiltin(args ...object.Object) object.Object {
 		}
 		return &object.Integer{Value: low.Value + int64(rand.Uint64N(span+1))}
 	}
-	return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for random. got=%d, want 0, 1 or 2", len(args))}
+	return wrongArgs(0, 0, "random", len(args), "0, 1 or 2")
 }
 
 // rangeBuiltin returns the integers from start to end, both included,
 // counting by step, which can be negative.
 func rangeBuiltin(args ...object.Object) object.Object {
 	if len(args) < 2 || len(args) > 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for range. got=%d, want=2 or 3", len(args))}
+		return wrongArgs(0, 0, "range", len(args), "2 or 3")
 	}
 	values := make([]int64, len(args))
 	for i, arg := range args {
 		integer, ok := arg.(*object.Integer)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to range must be integers, got %s", typeName(arg))}
+			return wrongType(0, 0, "arguments to range", "integers", arg)
 		}
 		values[i] = integer.Value
 	}
@@ -215,13 +216,13 @@ func init() {
 func mathBuiltin(name string) func(args ...object.Object) object.Object {
 	return func(args ...object.Object) object.Object {
 		if len(args) != mathArity(name) {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), mathArity(name))}
+			return wrongArgs(0, 0, name, len(args), strconv.Itoa(mathArity(name)))
 		}
 		values := make([]float64, len(args))
 		for i, arg := range args {
 			n, ok := number(arg)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("arguments to `%s` must be numbers, got %s", name, typeName(arg))}
+				return wrongType(0, 0, "arguments to `"+name+"`", "numbers", arg)
 			}
 			values[i] = n
 		}
@@ -235,11 +236,11 @@ func mathBuiltin(name string) func(args ...object.Object) object.Object {
 // truncBuiltin is a number without its decimals, toward zero.
 func truncBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for trunc. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "trunc", len(args), "1")
 	}
 	x, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `trunc` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `trunc`", "a number", args[0])
 	}
 	return &object.Float{Value: math.Trunc(x)}
 }
@@ -248,11 +249,11 @@ func truncBuiltin(args ...object.Object) object.Object {
 // positive.
 func signBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for sign. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "sign", len(args), "1")
 	}
 	x, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `sign` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `sign`", "a number", args[0])
 	}
 	switch {
 	case x < 0:
@@ -266,12 +267,12 @@ func signBuiltin(args ...object.Object) object.Object {
 // clampBuiltin keeps a number between a minimum and a maximum.
 func clampBuiltin(args ...object.Object) object.Object {
 	if len(args) != 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for clamp. got=%d, want=3 (value, min, max)", len(args))}
+		return wrongArgs(0, 0, "clamp", len(args), "3 (value, min, max)")
 	}
 	value, low, high := args[0], args[1], args[2]
 	for _, arg := range args {
 		if _, ok := number(arg); !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to `clamp` must be numbers, got %s", typeName(arg))}
+			return wrongType(0, 0, "arguments to `clamp`", "numbers", arg)
 		}
 	}
 	if result := extreme("max", []object.Object{value, low}, func(a, b float64) bool { return a > b }); result != nil {

@@ -68,16 +68,12 @@ func init() {
 			Name: "printf",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) < 1 {
-					return &object.Error{
-						Message: "wrong number of arguments for printf. got=0, want at least 1",
-					}
+					return wrongArgs(0, 0, "printf", 0, "at least 1")
 				}
 
 				format, ok := args[0].(*object.String)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to printf must be a string, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to printf", "a string", args[0])
 				}
 
 				text, err := formatPrintf(format.Value, args[1:])
@@ -99,9 +95,7 @@ func init() {
 			Name: "type",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for type. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "type", len(args), "1")
 				}
 
 				return &object.String{Value: kindName(args[0])}
@@ -113,9 +107,7 @@ func init() {
 			Name: "toString",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toString. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toString", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -140,9 +132,7 @@ func init() {
 			Name: "toInt",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toInt. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toInt", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -168,9 +158,7 @@ func init() {
 					}
 					return &object.Integer{Value: 0}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("cannot convert %s to an integer", typeName(args[0])),
-					}
+					return &object.Error{Message: "cannot convert " + typeName(args[0]) + " to an integer"}
 				}
 			},
 		},
@@ -180,9 +168,7 @@ func init() {
 			Name: "toFloat",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toFloat. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toFloat", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -204,9 +190,7 @@ func init() {
 					}
 					return &object.Float{Value: 0.0}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("cannot convert %s to a float", typeName(args[0])),
-					}
+					return &object.Error{Message: "cannot convert " + typeName(args[0]) + " to a float"}
 				}
 			},
 		},
@@ -216,9 +200,7 @@ func init() {
 			Name: "abs",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for abs. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "abs", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -234,9 +216,7 @@ func init() {
 				case *object.Float:
 					return &object.Float{Value: math.Abs(arg.Value)}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `abs` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `abs`", "a number", args[0])
 				}
 			},
 		},
@@ -246,9 +226,7 @@ func init() {
 			Name: "sqrt",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for sqrt. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "sqrt", len(args), "1")
 				}
 
 				var value float64
@@ -258,9 +236,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `sqrt` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `sqrt`", "a number", args[0])
 				}
 
 				if value < 0 {
@@ -278,9 +254,7 @@ func init() {
 			Name: "pow",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 2 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for pow. got=%d, want=2", len(args)),
-					}
+					return wrongArgs(0, 0, "pow", len(args), "2")
 				}
 
 				var base, exponent float64
@@ -291,9 +265,7 @@ func init() {
 				case *object.Float:
 					base = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to `pow` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to `pow`", "a number", args[0])
 				}
 
 				switch arg := args[1].(type) {
@@ -302,9 +274,7 @@ func init() {
 				case *object.Float:
 					exponent = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("second argument to `pow` must be a number, got %s", typeName(args[1])),
-					}
+					return wrongType(0, 0, "second argument to `pow`", "a number", args[1])
 				}
 
 				return &object.Float{Value: math.Pow(base, exponent)}
@@ -316,9 +286,7 @@ func init() {
 			Name: "floor",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for floor. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "floor", len(args), "1")
 				}
 
 				var value float64
@@ -328,9 +296,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `floor` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `floor`", "a number", args[0])
 				}
 
 				result, ok := floatToInt(math.Floor(value))
@@ -346,9 +312,7 @@ func init() {
 			Name: "ceil",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for ceil. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "ceil", len(args), "1")
 				}
 
 				var value float64
@@ -358,9 +322,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `ceil` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `ceil`", "a number", args[0])
 				}
 
 				result, ok := floatToInt(math.Ceil(value))
@@ -376,9 +338,7 @@ func init() {
 			Name: "now",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 0 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for now. got=%d, want=0", len(args)),
-					}
+					return wrongArgs(0, 0, "now", len(args), "0")
 				}
 
 				return &object.Integer{Value: int64(timeHost.Now())}
@@ -390,23 +350,17 @@ func init() {
 			Name: "timeFormat",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 2 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for timeFormat. got=%d, want=2", len(args)),
-					}
+					return wrongArgs(0, 0, "timeFormat", len(args), "2")
 				}
 
 				timestamp, ok := args[0].(*object.Integer)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to `timeFormat` must be an integer, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to `timeFormat`", "an integer", args[0])
 				}
 
 				format, ok := args[1].(*object.String)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("second argument to `timeFormat` must be a string, got %s", typeName(args[1])),
-					}
+					return wrongType(0, 0, "second argument to `timeFormat`", "a string", args[1])
 				}
 
 				return &object.String{Value: formatTime(timestamp.Value, format.Value)}

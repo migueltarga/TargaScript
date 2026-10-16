@@ -128,20 +128,20 @@ func init() {
 // width characters long.
 func pad(name, s string, args []object.Object, atStart bool) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want 1 or 2", name, len(args))}
+		return wrongArgs(0, 0, "string."+name+"()", len(args), "1 or 2")
 	}
 	width, ok := args[0].(*object.Integer)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("width for string.%s() must be an integer, got %s", name, typeName(args[0]))}
+		return wrongType(0, 0, "width for string."+name+"()", "an integer", args[0])
 	}
 	if width.Value > maxStringLength {
-		return &object.Error{Message: strfmt.Sprintf("string.%s() would make a string too long", name)}
+		return &object.Error{Message: "string." + name + "() would make a string too long"}
 	}
 	fill := " "
 	if len(args) == 2 {
 		f, ok := args[1].(*object.String)
 		if !ok || f.Value == "" {
-			return &object.Error{Message: strfmt.Sprintf("fill for string.%s() must be a non-empty string", name)}
+			return &object.Error{Message: "fill for string." + name + "() must be a non-empty string"}
 		}
 		fill = f.Value
 	}
@@ -159,18 +159,18 @@ func pad(name, s string, args []object.Object, atStart bool) object.Object {
 
 func noArgs(name string, args []object.Object) *object.Error {
 	if len(args) != 0 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want 0", name, len(args))}
+		return wrongArgs(0, 0, "string."+name+"()", len(args), "0")
 	}
 	return nil
 }
 
 func stringArg(name string, args []object.Object) (string, *object.Error) {
 	if len(args) != 1 {
-		return "", &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want 1", name, len(args))}
+		return "", wrongArgs(0, 0, "string."+name+"()", len(args), "1")
 	}
 	s, ok := args[0].(*object.String)
 	if !ok {
-		return "", &object.Error{Message: strfmt.Sprintf("argument to string.%s() must be a string, got %s", name, typeName(args[0]))}
+		return "", wrongType(0, 0, "argument to string."+name+"()", "a string", args[0])
 	}
 	return s.Value, nil
 }
@@ -181,13 +181,13 @@ func intArgs(name string, args []object.Object, minCount, maxCount int) ([]int64
 		if maxCount != minCount {
 			want = strfmt.Sprintf("%d or %d", minCount, maxCount)
 		}
-		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want %s", name, len(args), want)}
+		return nil, wrongArgs(0, 0, "string."+name+"()", len(args), want)
 	}
 	values := make([]int64, len(args))
 	for i, arg := range args {
 		n, ok := arg.(*object.Integer)
 		if !ok {
-			return nil, &object.Error{Message: strfmt.Sprintf("arguments to string.%s() must be integers, got %s", name, typeName(arg))}
+			return nil, wrongType(0, 0, "arguments to string."+name+"()", "integers", arg)
 		}
 		values[i] = n.Value
 	}

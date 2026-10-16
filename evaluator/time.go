@@ -222,7 +222,7 @@ var (
 // timing code.
 func clockBuiltin(args ...object.Object) object.Object {
 	if len(args) != 0 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for clock. got=%d, want=0", len(args))}
+		return wrongArgs(0, 0, "clock", len(args), "0")
 	}
 	return &object.Float{Value: float64(int64((timeHost.Now()-started)*1e6)) / 1000}
 }

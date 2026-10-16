@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"io"
+	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
@@ -117,11 +118,11 @@ func fileChange(name, verb string, change func(FileManager, string) error, args 
 // program that fails gives its code; only one that can't start is an error.
 func execBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 to 3", len(args))}
+		return wrongArgs(0, 0, "exec", len(args), "1 to 3")
 	}
 	program, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `exec`", "a string", args[0])
 	}
 	command := Command{Program: program.Value, Shell: true}
 	rest := args[1:]
@@ -138,7 +139,7 @@ func execBuiltin(args ...object.Object) object.Object {
 	if len(rest) > 0 {
 		options, ok := rest[0].(*object.Hash)
 		if !ok || len(rest) > 1 {
-			return &object.Error{Message: strfmt.Sprintf("exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got %s", typeName(rest[0]))}
+			return &object.Error{Message: "exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got " + typeName(rest[0])}
 		}
 		if err := execOptions(options, &command); err != nil {
 			return err
@@ -169,7 +170,7 @@ func execOptions(options *object.Hash, command *Command) *object.Error {
 		case "dir", "input":
 			text, ok := pair.Value.(*object.String)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("the %s option of exec must be a string, got %s", name, typeName(pair.Value))}
+				return wrongType(0, 0, "the "+name+" option of exec", "a string", pair.Value)
 			}
 			if name == "dir" {
 				command.Dir = text.Value
@@ -191,13 +192,13 @@ func noSystem(name string) *object.Error {
 
 func stringArgs(name string, args []object.Object, count int) ([]string, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), count)}
+		return nil, wrongArgs(0, 0, name, len(args), strconv.Itoa(count))
 	}
 	values := make([]string, count)
 	for i, arg := range args {
 		s, ok := arg.(*object.String)
 		if !ok {
-			return nil, &object.Error{Message: strfmt.Sprintf("arguments to %s must be strings, got %s", name, typeName(arg))}
+			return nil, wrongType(0, 0, "arguments to "+name, "strings", arg)
 		}
 		values[i] = s.Value
 	}
@@ -261,11 +262,11 @@ func listDirBuiltin(args ...object.Object) object.Object {
 // when it isn't set.
 func envBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for env. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "env", len(args), "1 or 2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("name for env must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "name for env", "a string", args[0])
 	}
 	if system == nil {
 		return noSystem("env")
@@ -283,12 +284,12 @@ func envBuiltin(args ...object.Object) object.Object {
 func exitBuiltin(args ...object.Object) object.Object {
 	code := int64(0)
 	if len(args) > 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exit. got=%d, want=0 or 1", len(args))}
+		return wrongArgs(0, 0, "exit", len(args), "0 or 1")
 	}
 	if len(args) == 1 {
 		n, ok := args[0].(*object.Integer)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("exit code must be an integer, got %s", typeName(args[0]))}
+			return wrongType(0, 0, "exit code", "an integer", args[0])
 		}
 		code = n.Value
 	}
@@ -303,7 +304,7 @@ func exitBuiltin(args ...object.Object) object.Object {
 // types, or null when the input has ended.
 func inputBuiltin(args ...object.Object) object.Object {
 	if len(args) > 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for input. got=%d, want=0 or 1", len(args))}
+		return wrongArgs(0, 0, "input", len(args), "0 or 1")
 	}
 	reader, ok := system.(LineReader)
 	if !ok {

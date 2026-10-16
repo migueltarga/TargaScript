@@ -14,11 +14,11 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 	switch method {
 	case "chunk":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.chunk(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.chunk()", len(args), "1"), true
 		}
 		size, isInt := args[0].(*object.Integer)
 		if !isInt || size.Value < 1 {
-			return newError(line, column, "the size for chunk must be a positive integer, got %s", args[0].Inspect()), true
+			return errorText(line, column, "the size for chunk must be a positive integer, got "+args[0].Inspect()), true
 		}
 		chunks := []object.Object{}
 		for start := 0; start < len(arr.Elements); {
@@ -30,11 +30,11 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 
 	case "zip":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.zip(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.zip()", len(args), "1"), true
 		}
 		other, isArray := args[0].(*object.Array)
 		if !isArray {
-			return newError(line, column, "zip needs an array, got %s", typeName(args[0])), true
+			return errorText(line, column, "zip needs an array, got "+typeName(args[0])), true
 		}
 		length := min(len(arr.Elements), len(other.Elements))
 		pairs := make([]object.Object, length)
@@ -47,17 +47,17 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 
 	case "toObject":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.toObject(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.toObject()", len(args), "0"), true
 		}
 		hash := object.NewHash()
 		for _, element := range arr.Elements {
 			pair, isArray := element.(*object.Array)
 			if !isArray || len(pair.Elements) != 2 {
-				return newError(line, column, "toObject needs [key, value] pairs, got %s", element.Inspect()), true
+				return errorText(line, column, "toObject needs [key, value] pairs, got "+element.Inspect()), true
 			}
 			key, hashable := pair.Elements[0].(object.Hashable)
 			if !hashable {
-				return newError(line, column, "%s can't be an object key", typeName(pair.Elements[0])), true
+				return errorText(line, column, typeName(pair.Elements[0])+" can't be an object key"), true
 			}
 			hash.Set(key, pair.Elements[1])
 		}

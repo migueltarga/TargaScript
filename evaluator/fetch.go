@@ -25,18 +25,18 @@ func fetch(args ...object.Object) object.Object {
 
 func fetchWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for fetch. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "fetch", len(args), "1 or 2")
 	}
 	url, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to fetch must be a URL string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to fetch", "a URL string", args[0])
 	}
 
 	request := FetchRequest{URL: url.Value, Method: "GET", Headers: map[string]string{}}
 	if len(args) == 2 {
 		options, ok := args[1].(*object.Hash)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("options for fetch must be an object, got %s", typeName(args[1]))}
+			return wrongType(0, 0, "options for fetch", "an object", args[1])
 		}
 		if err := readFetchOptions(options, &request); err != nil {
 			return err
@@ -50,7 +50,7 @@ func fetchWithHost(h Host, args ...object.Object) object.Object {
 	promise := object.NewPromise()
 	h.Fetch(request, func(response FetchResponse, err error) {
 		if err != nil {
-			promise.Reject(&object.Error{Message: strfmt.Sprintf("fetch %s failed: %s", request.URL, err)})
+			promise.Reject(&object.Error{Message: "fetch " + request.URL + " failed: " + err.Error()})
 			return
 		}
 		promise.Resolve(responseObject(response))

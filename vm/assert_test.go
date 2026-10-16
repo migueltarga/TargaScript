@@ -25,7 +25,7 @@ func TestAssert(t *testing.T) {
 		{`assert(0, "no items")`, "assertion failed: no items"},
 		{`assertEqual(1 + 1, 3)`, "assertion failed: expected 3, got 2"},
 		{`assertEqual("a", "b", "names")`, `assertion failed: names: expected "b", got "a"`},
-		{`assert()`, "wrong number of arguments for assert. got=0, want=1 or 2"},
+		{`assert()`, "wrong number of arguments for assert: got 0, want 1 or 2"},
 	}
 	for _, tt := range failing {
 		got := testEval(tt.input)

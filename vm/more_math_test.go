@@ -39,7 +39,7 @@ func TestMoreMath(t *testing.T) {
 	for input, expected := range map[string]string{
 		`sin("a")`:    "arguments to `sin` must be numbers, got a string",
 		"hypot(1)":    "wrong number of arguments for hypot",
-		"clamp(1, 2)": "want=3 (value, min, max)",
+		"clamp(1, 2)": "want 3 (value, min, max)",
 	} {
 		err, ok := testEval(input).(*object.Error)
 		if !ok || !strings.Contains(err.Message, expected) {

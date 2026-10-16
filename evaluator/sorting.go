@@ -27,7 +27,7 @@ func sortedOrder(keys []object.Object, line, column int) ([]int, *object.Error) 
 		for result, pair := range [2][2]object.Object{{keys[a], keys[b]}, {keys[b], keys[a]}} {
 			lt := evalInfixExpression("<", pair[0], pair[1], line, column)
 			if err, ok := lt.(*object.Error); ok {
-				sortErr = newError(line, column, "cannot sort: %s", err.Message)
+				sortErr = errorText(line, column, "cannot sort: "+err.Message)
 				return 0
 			}
 			if lt == TRUE {

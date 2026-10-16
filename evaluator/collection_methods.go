@@ -1,8 +1,9 @@
 package evaluator
 
 import (
+	"strconv"
+
 	"github.com/migueltarga/TargaScript/object"
-	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -17,7 +18,7 @@ func init() {
 var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) object.Object{
 	"entries": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 0 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.entries(): got %d, want 0", len(args))}
+			return wrongArgs(0, 0, "object.entries()", len(args), "0")
 		}
 		entries := []object.Object{}
 		for _, pair := range h.OrderedPairs() {
@@ -29,11 +30,11 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 	},
 	"get": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 && len(args) != 2 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.get(): got %d, want 1 or 2", len(args))}
+			return wrongArgs(0, 0, "object.get()", len(args), "1 or 2")
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: "unusable as object key: " + typeName(args[0])}
 		}
 		if pair, ok := h.Get(key.HashKey()); ok {
 			return pair.Value
@@ -45,11 +46,11 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 	},
 	"remove": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.remove(): got %d, want 1", len(args))}
+			return wrongArgs(0, 0, "object.remove()", len(args), "1")
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: "unusable as object key: " + typeName(args[0])}
 		}
 		var value object.Object = NULL
 		if pair, ok := h.Get(key.HashKey()); ok {
@@ -65,7 +66,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 func evalArrayChangeMethod(arr *object.Array, method string, args []object.Object, line, column int) (object.Object, bool) {
 	wantArgs := func(n int) *object.Error {
 		if len(args) != n {
-			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want %d", method, len(args), n)
+			return wrongArgs(line, column, "array."+method+"()", len(args), strconv.Itoa(n))
 		}
 		return nil
 	}
@@ -100,7 +101,7 @@ func evalArrayChangeMethod(arr *object.Array, method string, args []object.Objec
 		}
 		index, ok := args[0].(*object.Integer)
 		if !ok {
-			return newError(line, column, "position for array.removeAt() must be an integer, got %s", typeName(args[0])), true
+			return wrongType(line, column, "position for array.removeAt()", "an integer", args[0]), true
 		}
 		i := index.Value
 		if i < 0 {
@@ -120,11 +121,11 @@ func evalArrayChangeMethod(arr *object.Array, method string, args []object.Objec
 // printing it.
 func format(args ...object.Object) object.Object {
 	if len(args) < 1 {
-		return &object.Error{Message: "wrong number of arguments for format. got=0, want at least 1"}
+		return wrongArgs(0, 0, "format", 0, "at least 1")
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to format must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to format", "a string", args[0])
 	}
 	formatted, err := formatPrintf(text.Value, args[1:])
 	if err != nil {

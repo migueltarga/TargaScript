@@ -74,7 +74,7 @@ func setProperty(obj object.Object, propertyName string, val object.Object, line
 		return withPosition(external.Set(propertyName, val), line, column)
 	}
 
-	return newError(line, column, "cannot set a property of %s", typeName(obj))
+	return errorText(line, column, "cannot set a property of "+typeName(obj))
 }
 
 // setIndex stores val in container[index].
@@ -91,13 +91,13 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 			array.Elements[arrayIdx] = val
 			return val
 		}
-		return newError(line, column, "array index must be an integer, got %s", typeName(index))
+		return wrongType(line, column, "array index", "an integer", index)
 	}
 
 	if hash, ok := container.(*object.Hash); ok {
 		hashable, ok := index.(object.Hashable)
 		if !ok {
-			return newError(line, column, "%s can't be an object key", typeName(index))
+			return errorText(line, column, typeName(index)+" can't be an object key")
 		}
 
 		hash.Set(hashable, val)
@@ -107,12 +107,12 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 	if external, ok := container.(object.External); ok {
 		name, ok := externalKey(index)
 		if !ok {
-			return newError(line, column, "index must be a string or an integer, got %s", typeName(index))
+			return wrongType(line, column, "index", "a string or an integer", index)
 		}
 		return withPosition(external.Set(name, val), line, column)
 	}
 
-	return newError(line, column, "cannot use [] on %s", typeName(container))
+	return errorText(line, column, "cannot use [] on "+typeName(container))
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
@@ -146,7 +146,7 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		start, startOk := left.(*object.Integer)
 		end, endOk := right.(*object.Integer)
 		if !startOk || !endOk {
-			return newError(line, column, "range bounds must be integers, got %s and %s", typeName(left), typeName(right))
+			return errorText(line, column, "range bounds must be integers, got "+typeName(left)+" and "+typeName(right))
 		}
 		return integerRange(start.Value, end.Value, line, column)
 	}
@@ -241,11 +241,11 @@ func evalInExpression(value, collection object.Object, line, column int) object.
 	case *object.String:
 		part, ok := value.(*object.String)
 		if !ok {
-			return newError(line, column, "cannot look for %s in a string, only for a string", typeName(value))
+			return errorText(line, column, "cannot look for "+typeName(value)+" in a string, only for a string")
 		}
 		return nativeBoolToBooleanObject(strings.Contains(collection.Value, part.Value))
 	}
-	return newError(line, column, "cannot use \"in\" with %s, only with an array, an object or a string", typeName(collection))
+	return errorText(line, column, "cannot use \"in\" with "+typeName(collection)+", only with an array, an object or a string")
 }
 
 // maxRepeatLength keeps "x" * n from asking for more memory than any
@@ -291,7 +291,7 @@ func evalMinusPrefixOperatorExpression(right object.Object, line, column int) ob
 		value := right.(*object.Float).Value
 		return &object.Float{Value: -value}
 	default:
-		return newError(line, column, "cannot use \"-\" on %s", typeName(right))
+		return errorText(line, column, "cannot use \"-\" on "+typeName(right))
 	}
 }
 
@@ -406,6 +406,28 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
+// wrongArgs is the error of a call with a number of arguments the
+// function doesn't take: "wrong number of arguments for name: got 3, want
+// 1 or 2".
+func wrongArgs(line, column int, name string, got int, want string) *object.Error {
+	return &object.Error{
+		Message: "wrong number of arguments for " + name + ": got " + strconv.Itoa(got) + ", want " + want,
+		Line:    line,
+		Column:  column,
+	}
+}
+
+// wrongType is the error of a value of a type a function doesn't take:
+// "argument to sleep must be a number, got a string".
+func wrongType(line, column int, what, want string, got object.Object) *object.Error {
+	return &object.Error{Message: what + " must be " + want + ", got " + typeName(got), Line: line, Column: column}
+}
+
+// errorText is an error with a message made already.
+func errorText(line, column int, message string) *object.Error {
+	return &object.Error{Message: message, Line: line, Column: column}
+}
+
 func newError(line, column int, format string, a ...interface{}) *object.Error {
 	return &object.Error{
 		Message: strfmt.Sprintf(format, a...),
@@ -463,7 +485,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 	if external, ok := left.(object.External); ok {
 		name, ok := externalKey(index)
 		if !ok {
-			return newError(line, column, "index must be a string or an integer, got %s", typeName(index))
+			return wrongType(line, column, "index", "a string or an integer", index)
 		}
 		return withPosition(external.Get(name), line, column)
 	}
@@ -481,7 +503,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		}
 		return &object.String{Value: string(chars[idx])}
 	default:
-		return newError(line, column, "cannot use [] on %s", typeName(left))
+		return errorText(line, column, "cannot use [] on "+typeName(left))
 	}
 }
 
@@ -511,7 +533,7 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return newError(line, column, "%s can't be an object key", typeName(index))
+		return errorText(line, column, typeName(index)+" can't be an object key")
 	}
 
 	pair, ok := hashObject.Get(key.HashKey())
@@ -554,7 +576,7 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = strfmt.Sprintf(". To read it only when there's a value, write ?.%s", propertyName)
+			hint = ". To read it only when there's a value, write ?." + propertyName
 		}
 		return newError(line, column, "cannot read property %q of %s%s", propertyName, typeName(obj), hint)
 	}
@@ -571,47 +593,47 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "trim":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.trim(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.trim()", len(args), "0")
 			}
 			return &object.String{Value: strings.TrimSpace(obj.Value)}
 
 		case "lower":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.lower(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.lower()", len(args), "0")
 			}
 			return &object.String{Value: strings.ToLower(obj.Value)}
 
 		case "upper":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.upper(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.upper()", len(args), "0")
 			}
 			return &object.String{Value: strings.ToUpper(obj.Value)}
 
 		case "replace":
 			if len(args) != 2 {
-				return newError(line, column, "wrong number of arguments for string.replace(): got %d, want 2", len(args))
+				return wrongArgs(line, column, "string.replace()", len(args), "2")
 			}
 
 			oldStr, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "first argument to string.replace() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "first argument to string.replace()", "a string", args[0])
 			}
 
 			newStr, ok := args[1].(*object.String)
 			if !ok {
-				return newError(line, column, "second argument to string.replace() must be a string, got %s", typeName(args[1]))
+				return wrongType(line, column, "second argument to string.replace()", "a string", args[1])
 			}
 
 			return &object.String{Value: strings.Replace(obj.Value, oldStr.Value, newStr.Value, -1)}
 
 		case "split":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for string.split(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "string.split()", len(args), "1")
 			}
 
 			delimiter, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to string.split() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to string.split()", "a string", args[0])
 			}
 
 			parts := strings.Split(obj.Value, delimiter.Value)
@@ -624,11 +646,11 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "contains", "indexOf", "startsWith", "endsWith":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for string.%s(): got %d, want 1", method, len(args))
+				return wrongArgs(line, column, "string."+method+"()", len(args), "1")
 			}
 			sub, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to string.%s() must be a string, got %s", method, typeName(args[0]))
+				return wrongType(line, column, "argument to string."+method+"()", "a string", args[0])
 			}
 
 			switch method {
@@ -657,7 +679,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "first":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.first(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.first()", len(args), "0")
 			}
 			if len(obj.Elements) > 0 {
 				return obj.Elements[0]
@@ -665,7 +687,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return NULL
 		case "last":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.last(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.last()", len(args), "0")
 			}
 			length := len(obj.Elements)
 			if length > 0 {
@@ -674,7 +696,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return NULL
 		case "insert":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.insert(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.insert()", len(args), "1")
 			}
 
 			// Appends in place, like index assignment, and returns the same array
@@ -682,7 +704,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return obj
 		case "rest":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.rest(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.rest()", len(args), "0")
 			}
 
 			if len(obj.Elements) == 0 {
@@ -693,12 +715,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: newElements}
 		case "join":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.join(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.join()", len(args), "1")
 			}
 
 			separator, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to array.join() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to array.join()", "a string", args[0])
 			}
 
 			strs := make([]string, len(obj.Elements))
@@ -709,12 +731,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.String{Value: strings.Join(strs, separator.Value)}
 		case "map":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.map(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.map()", len(args), "1")
 			}
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "argument to array.map() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "argument to array.map()", "a function", fn)
 			}
 
 			result := make([]object.Object, 0, len(obj.Elements))
@@ -731,12 +753,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: result}
 		case "filter":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.filter(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.filter()", len(args), "1")
 			}
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "argument to array.filter() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "argument to array.filter()", "a function", fn)
 			}
 
 			result := make([]object.Object, 0)
@@ -755,12 +777,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: result}
 		case "reduce":
 			if len(args) != 2 {
-				return newError(line, column, "wrong number of arguments for array.reduce(): got %d, want 2", len(args))
+				return wrongArgs(line, column, "array.reduce()", len(args), "2")
 			}
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "first argument to array.reduce() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "first argument to array.reduce()", "a function", fn)
 			}
 
 			initialValue := args[1]
@@ -802,7 +824,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "keys":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.keys(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.keys()", len(args), "0")
 			}
 
 			keys := []object.Object{}
@@ -814,7 +836,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "values":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.values(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.values()", len(args), "0")
 			}
 
 			values := []object.Object{}
@@ -826,12 +848,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "has":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for object.has(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "object.has()", len(args), "1")
 			}
 
 			hashable, ok := args[0].(object.Hashable)
 			if !ok {
-				return newError(line, column, "argument to `has` must be hashable, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to `has`", "hashable", args[0])
 			}
 
 			exists := obj.Has(hashable.HashKey())
@@ -839,7 +861,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "length":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.length(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.length()", len(args), "0")
 			}
 
 			return &object.Integer{Value: int64(obj.Len())}
@@ -877,7 +899,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = strfmt.Sprintf(". To call it only when there's a value, write ?.%s()", method)
+			hint = ". To call it only when there's a value, write ?." + method + "()"
 		}
 		return newError(line, column, "cannot call method %q on %s%s", method, typeName(obj), hint)
 	}

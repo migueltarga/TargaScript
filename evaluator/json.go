@@ -24,11 +24,11 @@ func init() {
 // keys, and numbers without a fraction or exponent become integers.
 func parseJSON(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for parseJSON. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "parseJSON", len(args), "1")
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to parseJSON must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to parseJSON", "a string", args[0])
 	}
 
 	p := &jsonParser{text: text.Value}
@@ -298,7 +298,7 @@ func (p *jsonParser) number() (object.Object, string) {
 	}
 	f, err := strconv.ParseFloat(literal, 64)
 	if err != nil {
-		return nil, strfmt.Sprintf("number %s is out of range", literal)
+		return nil, "number " + literal + " is out of range"
 	}
 	return &object.Float{Value: f}, ""
 }
@@ -316,7 +316,7 @@ func jsonPosition(text string, offset int) string {
 // the string given as second argument.
 func toJSON(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for toJSON. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "toJSON", len(args), "1 or 2")
 	}
 
 	indent := ""
@@ -327,7 +327,7 @@ func toJSON(args ...object.Object) object.Object {
 		case *object.String:
 			indent = arg.Value
 		default:
-			return &object.Error{Message: strfmt.Sprintf("indent for toJSON must be an integer or a string, got %s", typeName(args[1]))}
+			return wrongType(0, 0, "indent for toJSON", "an integer or a string", args[1])
 		}
 	}
 
@@ -355,7 +355,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		out.WriteString(strconv.FormatInt(obj.Value, 10))
 	case *object.Float:
 		if math.IsInf(obj.Value, 0) || math.IsNaN(obj.Value) {
-			return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", obj.Inspect())}
+			return &object.Error{Message: "cannot convert " + obj.Inspect() + " to JSON"}
 		}
 		out.WriteString(strconv.FormatFloat(obj.Value, 'g', -1, 64))
 	case *object.String:
@@ -407,7 +407,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		newline(depth)
 		out.WriteByte('}')
 	default:
-		return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", typeName(obj))}
+		return &object.Error{Message: "cannot convert " + typeName(obj) + " to JSON"}
 	}
 	return nil
 }

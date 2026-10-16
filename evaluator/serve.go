@@ -78,15 +78,15 @@ func init() {
 
 func serveBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for serve. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "serve", len(args), "2")
 	}
 	port, ok := args[0].(*object.Integer)
 	if !ok || port.Value < 0 || port.Value > 65535 {
-		return &object.Error{Message: strfmt.Sprintf("the port for serve must be an integer from 0 to 65535, got %s", args[0].Inspect())}
+		return &object.Error{Message: "the port for serve must be an integer from 0 to 65535, got " + args[0].Inspect()}
 	}
 	handler := args[1]
 	if !isCallable(handler) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `serve` must be a function, got %s", typeName(handler))}
+		return wrongType(0, 0, "second argument to `serve`", "a function", handler)
 	}
 	if server == nil {
 		return noSystem("serve")
@@ -104,7 +104,7 @@ func serveBuiltin(args ...object.Object) object.Object {
 // responseBuiltin is response(body) or response(body, {status, headers}).
 func responseBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for response. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "response", len(args), "1 or 2")
 	}
 	r := &Response{Status: 200, Headers: map[string]string{}, Body: args[0]}
 	if len(args) == 1 {
@@ -113,7 +113,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 
 	options, ok := args[1].(*object.Hash)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("the options of response must be an object, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "the options of response", "an object", args[1])
 	}
 	for _, pair := range options.OrderedPairs() {
 		name := objectToString(pair.Key)
@@ -121,13 +121,13 @@ func responseBuiltin(args ...object.Object) object.Object {
 		case "status":
 			status, ok := pair.Value.(*object.Integer)
 			if !ok || status.Value < 100 || status.Value > 999 {
-				return &object.Error{Message: strfmt.Sprintf("the status of a response must be an integer from 100 to 999, got %s", pair.Value.Inspect())}
+				return &object.Error{Message: "the status of a response must be an integer from 100 to 999, got " + pair.Value.Inspect()}
 			}
 			r.Status = int(status.Value)
 		case "headers":
 			headers, ok := pair.Value.(*object.Hash)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("the headers of a response must be an object, got %s", typeName(pair.Value))}
+				return wrongType(0, 0, "the headers of a response", "an object", pair.Value)
 			}
 			for _, header := range headers.OrderedPairs() {
 				r.Headers[objectToString(header.Key)] = objectToString(header.Value)
