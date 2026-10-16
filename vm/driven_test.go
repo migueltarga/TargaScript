@@ -55,3 +55,23 @@ func TestDrivenSearches(t *testing.T) {
 		}
 	}
 }
+
+func TestDrivenSortBy(t *testing.T) {
+	tests := []struct{ input, expected string }{
+		{"[3, 1, 2].sortBy(x => x)", "[1, 2, 3]"},
+		{"[3, 1, 2].sortBy(x => -x)", "[3, 2, 1]"},
+		{"[\"bb\", \"a\", \"ccc\"].sortBy(s => s.length)", `["a", "bb", "ccc"]`},
+		{"[3, 1, 2].sortBy((x, i) => -i)", "[2, 1, 3]"},
+		{"[{k: 1, i: 0}, {k: 0, i: 1}, {k: 1, i: 2}].sortBy(it.k).map(it.i)", "[1, 0, 2]"},
+		{"let xs = [2, 1]\nxs.sortBy(x => x)\nxs", "[1, 2]"},
+		{"[].sortBy(x => x)", "[]"},
+	}
+	for _, tt := range tests {
+		if got := testEval(tt.input).Inspect(); got != tt.expected {
+			t.Errorf("%s: got %s, want %s", tt.input, got, tt.expected)
+		}
+	}
+	if result := testEval("[1, \"a\"].sortBy(x => x)"); !isError(result) {
+		t.Errorf("keys that can't be compared should fail, got %s", result.Inspect())
+	}
+}

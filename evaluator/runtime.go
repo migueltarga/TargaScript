@@ -119,3 +119,14 @@ func TypeName(obj object.Object) string {
 func NewError(line, column int, format string, a ...interface{}) *object.Error {
 	return newError(line, column, format, a...)
 }
+
+// SortByKeys sorts arr in place by keys, one for each element, as sortBy
+// does, and returns it, or the error of keys that can't be compared.
+func SortByKeys(arr *object.Array, keys []object.Object) object.Object {
+	order, err := sortedOrder(keys, 0, 0)
+	if err != nil {
+		return err
+	}
+	arr.Elements = inOrder(arr.Elements, order)
+	return arr
+}
