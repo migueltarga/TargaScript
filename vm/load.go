@@ -65,6 +65,11 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 	return exports
 }
 
+// Global returns the value of a global by name, or nil if it isn't set.
+func (vm *VM) Global(name string) object.Object {
+	return vm.global(name)
+}
+
 // global returns the value of a global by name, or nil if it isn't set.
 func (vm *VM) global(name string) object.Object {
 	for i, n := range vm.names.Names() {
