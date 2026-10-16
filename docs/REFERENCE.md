@@ -329,7 +329,7 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)` | promises for `await` |
-| `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit` | [command line](#command-line) only |
+| `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response` | [command line](#command-line) only |
 
 ## Testing
 
@@ -368,6 +368,37 @@ cat script.tg | targascript -     # run code from standard input
 ```
 
 Scripts see their arguments in `args`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
+
+### Web servers
+
+`serve(port, handler)` starts an HTTP server and calls `handler` for each request, one at a time. The request is an object with `method`, `path`, `query` (an object), `headers` (with lowercase names) and `body` (a string). What the handler returns is the reply:
+
+| Handler returns | Reply |
+|---|---|
+| a string | `200`, as text or HTML depending on what it looks like |
+| an object, an array, a number... | `200`, as JSON |
+| `null` | `204`, empty |
+| `response(body, {status, headers})` | that body with that status and headers |
+| an error | `500` with the message, which is also printed |
+
+```text
+let todos = []
+
+serve(8080, fn(req) {
+    match req.path {
+        "/" => "<h1>Hello from TargaScript</h1>"
+        "/todos" => if req.method == "POST" {
+            todos.insert(parseJSON(req.body))
+            response(todos.last(), {status: 201})
+        } else {
+            todos
+        }
+        _ => response("Not found", {status: 404})
+    }
+})
+```
+
+Handlers can't use `await` yet.
 
 ## Web pages
 
