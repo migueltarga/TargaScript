@@ -16,10 +16,11 @@ TargaScript is a small, modern scripting language that runs in your terminal, in
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code with the calls that led there, a typo gets a "Did you mean...?", and habits from other languages get the TargaScript way: `list.push(x)` suggests `insert`, `for` suggests `repeat`, `a.b` on null suggests `?.`.
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match` with guards, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **A better shell script.** `exec("git status --short")` runs other programs and gives their output and exit code, `#!/usr/bin/env targascript` makes a file a command, and files, directories and environment variables are a function call away, with real data structures instead of string juggling.
 - **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
 - **Embed it in Go.** `targascript.New().Run(rule)` gives your Go program a safe scripting language for user rules, formulas and plugins; see [embedding](docs/EMBEDDING.md).
 - **Ship one file.** `targascript build app.tg` makes an executable with the program and everything it loads; whoever gets it doesn't need TargaScript.
-- **The tools are included.** `targascript fmt`, `check`, `test` and `build`, a REPL with history and Tab completion, a VS Code extension, and a language server for Neovim, Helix and other editors.
+- **The tools are included.** `targascript fmt`, `check`, `test` and `build`, `--watch` to run again on every save, a REPL with history and Tab completion, a VS Code extension, and a language server for Neovim, Helix and other editors.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **As fast as Python.** Programs compile to bytecode for a VM that runs about as fast as CPython on [these benchmarks](bench/), and allows 10,000 nested calls, in the browser too.
@@ -33,6 +34,8 @@ TargaScript is a small, modern scripting language that runs in your terminal, in
 | Turn a script into an executable to share | ✅ `targascript build` | ⚠️ with PyInstaller | ⚠️ single executable apps, experimental |
 | HTTP server in a few lines, no library | ✅ `serve(8080, fn(req) {...})` | ⚠️ `http.server`, low level | ⚠️ `http.createServer`, low level |
 | Test runner, no library | ✅ `targascript test` | ✅ `unittest` | ✅ `node --test` |
+| Run a command and get its output | ✅ `exec("git log -1").output` | ⚠️ `subprocess.run(..., capture_output=True, text=True)` | ⚠️ `execSync(...).toString()` |
+| Rerun on save, built in | ✅ `--watch` | ❌ | ✅ `node --watch` |
 | `await` at the top of a script | ✅ | ❌ needs `asyncio.run` | ✅ in modules |
 | Pipe operator | ✅ `x \|> f` | ❌ | ❌ (a proposal) |
 | Pattern matching | ✅ `match` | ✅ `match` | ❌ |
