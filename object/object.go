@@ -3,7 +3,6 @@ package object
 import (
 	"bytes"
 	"fmt"
-	"hash/fnv"
 	"math"
 	"strconv"
 	"strings"
@@ -125,15 +124,26 @@ func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.E
 
 type String struct {
 	Value string
+
+	// The hash of Value, computed the first time it's needed. Strings are
+	// never changed in place, so it stays valid.
+	hash   uint64
+	hashed bool
 }
 
 func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) HashKey() HashKey {
-	h := fnv.New64a()
-	h.Write([]byte(s.Value))
-
-	return HashKey{Type: s.Type(), Value: h.Sum64()}
+	if !s.hashed {
+		// FNV-1a, inline to avoid allocating a hasher and a byte slice
+		h := uint64(14695981039346656037)
+		for i := 0; i < len(s.Value); i++ {
+			h ^= uint64(s.Value[i])
+			h *= 1099511628211
+		}
+		s.hash, s.hashed = h, true
+	}
+	return HashKey{Type: STRING_OBJ, Value: s.hash}
 }
 
 type Builtin struct {
