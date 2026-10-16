@@ -36,6 +36,10 @@ type Compiler struct {
 	// Captured locals of each function, kept across recompilations
 	captured map[ast.Node]map[int]bool
 
+	// hoisted are the functions declared before their block runs, so the
+	// functions in it can call each other in any order
+	hoisted map[*Symbol]bool
+
 	builtinIndex map[string]int
 
 	// Jumps out of the property chain being compiled, made by ?. when its
@@ -92,6 +96,7 @@ func New() *Compiler {
 		globals:      NewGlobalTable(),
 		initialized:  map[string]bool{},
 		captured:     map[ast.Node]map[int]bool{},
+		hoisted:      map[*Symbol]bool{},
 		builtinIndex: map[string]int{},
 	}
 	for i, name := range evaluator.BuiltinNames() {
@@ -276,6 +281,7 @@ func (c *Compiler) emitClosure(fn *object.CompiledFunction, free []*Symbol) {
 // compileStatements compiles statements so that they leave the value of the
 // last one on the stack, or null when there are none.
 func (c *Compiler) compileStatements(statements []ast.Statement) error {
+	c.hoistFunctions(statements)
 	compiled := 0
 	for _, stmt := range statements {
 		if stmt == nil {
@@ -293,6 +299,27 @@ func (c *Compiler) compileStatements(statements []ast.Statement) error {
 		c.emit(token.Token{}, code.OpNull)
 	}
 	return nil
+}
+
+// hoistFunctions declares the functions of a block inside a function before
+// its code, as globals already are, so one can call another declared after
+// it. Their cells exist from the start, for the closures that capture them.
+func (c *Compiler) hoistFunctions(statements []ast.Statement) {
+	if c.atTopLevel() {
+		return
+	}
+	for _, stmt := range statements {
+		fn, ok := stmt.(*ast.FunctionStatement)
+		if !ok {
+			continue
+		}
+		if _, exists := c.fn.currentBlock()[fn.Name.Value]; exists {
+			continue
+		}
+		s := c.define(fn.Name.Value, false)
+		c.emitCellBeforeClosure(s)
+		c.hoisted[s] = true
+	}
 }
 
 // compileBlock compiles a block in its own scope.
@@ -476,10 +503,11 @@ func (c *Compiler) compileFunctionStatement(stmt *ast.FunctionStatement) error {
 		c.emitError(stmt.Token, "cannot reassign constant: %s", name)
 		return nil
 	}
-	if inScope {
+	if inScope && !c.hoisted[target] {
 		c.emitDefine(target)
 		return nil
 	}
+	delete(c.hoisted, target)
 	c.emitAssignDefined(target)
 	return nil
 }
