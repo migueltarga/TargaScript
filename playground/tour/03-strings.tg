@@ -1,14 +1,15 @@
 // Lesson 3: Strings
 //
 // Strings have methods for the usual work. Positions count characters,
-// starting at 0.
+// starting at 0, and negative ones count from the end.
 
 let text = "  TargaScript is fun  "
 let clean = text.trim()
 
 print(clean.upper())
 print(clean.length, "characters")
-print(clean[0], clean.slice(-3))
+print(clean[0], clean[-1], clean.slice(-3))
+print("fun" in clean, "-" * 10)
 print(clean.split(" "))
 print(clean.replace("fun", "simple"))
 print("ha".repeat(3), "7".padStart(3, "0"))
