@@ -315,14 +315,14 @@ func oneTypoApart(a, b string) bool {
 
 // otherLanguageStatements are the words other languages start statements
 // with, and how TargaScript says the same.
-var otherLanguageStatements = map[string]string{
-	"for":      "TargaScript loops with repeat: repeat item in list { ... } or repeat i in 1..10 { ... }",
-	"foreach":  "TargaScript loops with repeat: repeat item in list { ... }",
-	"while":    "TargaScript loops with repeat: repeat condition { ... }",
-	"function": "functions are declared with fn: fn name(a, b) { ... }",
-	"def":      "functions are declared with fn: fn name(a, b) { ... }",
-	"func":     "functions are declared with fn: fn name(a, b) { ... }",
-	"var":      "variables are declared with let, or const for ones that don't change",
+var otherLanguageStatements = [][2]string{
+	{"for", "TargaScript loops with repeat: repeat item in list { ... } or repeat i in 1..10 { ... }"},
+	{"foreach", "TargaScript loops with repeat: repeat item in list { ... }"},
+	{"while", "TargaScript loops with repeat: repeat condition { ... }"},
+	{"function", "functions are declared with fn: fn name(a, b) { ... }"},
+	{"def", "functions are declared with fn: fn name(a, b) { ... }"},
+	{"func", "functions are declared with fn: fn name(a, b) { ... }"},
+	{"var", "variables are declared with let, or const for ones that don't change"},
 }
 
 // otherLanguageStatement returns a hint when the statement starts like one
@@ -332,7 +332,12 @@ func (p *Parser) otherLanguageStatement() string {
 	if !p.curTokenIs(token.IDENT) || p.peekToken.Line != p.curToken.Line {
 		return ""
 	}
-	hint, ok := otherLanguageStatements[p.curToken.Literal]
+	hint, ok := "", false
+	for _, pair := range otherLanguageStatements {
+		if pair[0] == p.curToken.Literal {
+			hint, ok = pair[1], true
+		}
+	}
 	if !ok {
 		return ""
 	}

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/migueltarga/TargaScript/compiler"
@@ -43,6 +44,9 @@ func FuzzRun(f *testing.F) {
 		c := compiler.New()
 		bytecode, err := c.Compile(program)
 		if err != nil {
+			if strings.Contains(err.Error(), "internal error") {
+				t.Fatal(err)
+			}
 			return
 		}
 		machine := New(c.Globals())

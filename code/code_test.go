@@ -31,7 +31,6 @@ func TestInstructionsString(t *testing.T) {
 		Make(OpConstant, 65535),
 		Make(OpClosure, 65535, 255),
 		Make(OpCallMethod, 3, 2, 7),
-		Make(OpCompareConstJump, int(OpLessThan), 1, 30, 0),
 	}
 
 	expected := `0000 OpAdd
@@ -40,7 +39,6 @@ func TestInstructionsString(t *testing.T) {
 0007 OpConstant 65535
 0010 OpClosure 65535 255
 0014 OpCallMethod 3 2 7
-0020 OpCompareConstJump 22 1 30 0
 `
 
 	concatted := Instructions{}

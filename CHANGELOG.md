@@ -6,8 +6,8 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 
 ### Runs everywhere
 
-- A bytecode compiler and VM, faster than CPython on all of [these benchmarks](bench/)
-- The same language in the browser: a WebAssembly runtime of under 500 KB, `<script type="text/targascript">` in any page, and a [playground](https://script.targa.me/) that is itself written in TargaScript
+- A bytecode compiler and VM, with [benchmarks](bench/) against Python, Node and Lua
+- The same language in the browser: a WebAssembly runtime of about 200 KB compressed, `<script type="text/targascript">` in any page, and a [playground](https://script.targa.me/) that is itself written in TargaScript
 - `targascript build app.tg` makes a single executable with the program and everything it loads
 - A Go package to [embed](docs/EMBEDDING.md) TargaScript in Go programs, for rules, formulas and plugins
 
