@@ -15,7 +15,7 @@ func TestJSON(t *testing.T) {
 		{`parseJSON("{\"b\": 1, \"a\": 2}").keys()`, `["b", "a"]`},
 		{`parseJSON("12345678901234567890")`, "1.2345678901234567e+19"},
 		{`parseJSON("1e2")`, "100"},
-		{`type(parseJSON("1e2"))`, "FLOAT"},
+		{`type(parseJSON("1e2"))`, "float"},
 		{`parseJSON("  \"héllo\\n\"  ")`, "héllo\n"},
 		{`parseJSON("[1, 2")`, "ERROR: invalid JSON at line 1, column 6: the text ended too early"},
 		{`parseJSON("{\n  \"a\": x\n}")`, "ERROR: invalid JSON at line 2, column 8: unexpected 'x'"},

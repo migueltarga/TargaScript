@@ -3,29 +3,29 @@ TargaScript Built-in Functions Demo
 
 1. Type Conversion Functions:
   Original values:
-    num = 42 (type: INTEGER)
-    float_val = 3.14 (type: FLOAT)
-    bool_val = true (type: BOOLEAN)
+    num = 42 (type: integer)
+    float_val = 3.14 (type: float)
+    bool_val = true (type: boolean)
   toString() conversions:
-    toString(num): 42 (type: STRING)
-    toString(float_val): 3.14 (type: STRING)
-    toString(bool_val): true (type: STRING)
+    toString(num): 42 (type: string)
+    toString(float_val): 3.14 (type: string)
+    toString(bool_val): true (type: string)
   toInt() conversions:
-    toInt("42"): 42 (type: INTEGER)
-    toInt(float_val): 3 (type: INTEGER)
-    toInt(bool_val): 1 (type: INTEGER)
+    toInt("42"): 42 (type: integer)
+    toInt(float_val): 3 (type: integer)
+    toInt(bool_val): 1 (type: integer)
   toFloat() conversions:
-    toFloat(num): 42 (type: FLOAT)
-    toFloat("3.14"): 3.14 (type: FLOAT)
-    toFloat(bool_val): 1 (type: FLOAT)
+    toFloat(num): 42 (type: float)
+    toFloat("3.14"): 3.14 (type: float)
+    toFloat(bool_val): 1 (type: float)
 
 2. Type Function:
-  type(42): INTEGER
-  type(3.14): FLOAT
-  type("hello"): STRING
-  type(true): BOOLEAN
-  type([1, 2, 3]): ARRAY
-  type({"name": "Alice"}): HASH
+  type(42): integer
+  type(3.14): float
+  type("hello"): string
+  type(true): boolean
+  type([1, 2, 3]): array
+  type({"name": "Alice"}): object
 
 3. Length Property:
   "hello".length: 5

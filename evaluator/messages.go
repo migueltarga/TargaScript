@@ -42,6 +42,18 @@ func typeName(obj object.Object) string {
 	return strings.ToLower(string(obj.Type()))
 }
 
+// kindName is the name of the type of a value, as type() returns it:
+// "integer", "string", "object", "function"...
+func kindName(obj object.Object) string {
+	switch obj.Type() {
+	case object.HASH_OBJ:
+		return "object"
+	case object.FUNCTION_OBJ, object.BUILTIN_OBJ:
+		return "function"
+	}
+	return strings.ToLower(string(obj.Type()))
+}
+
 // operatorError reports an operator that can't be used with its operands.
 func operatorError(line, column int, operator string, left, right object.Object) *object.Error {
 	return newError(line, column, "cannot use %q with %s and %s", operator, typeName(left), typeName(right))
