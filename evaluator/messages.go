@@ -136,6 +136,10 @@ func typeName(obj object.Object) string {
 		return "an object"
 	case object.STRUCT_OBJ:
 		return "a struct"
+	case object.ENUM_OBJ:
+		return "an enum"
+	case object.ENUM_VALUE_OBJ:
+		return article(obj.(*object.EnumValue).Enum.Name)
 	case object.FUNCTION_OBJ, object.BUILTIN_OBJ:
 		return "a function"
 	}
@@ -154,6 +158,8 @@ func kindName(obj object.Object) string {
 			return typ.Name
 		}
 		return "object"
+	case object.ENUM_VALUE_OBJ:
+		return obj.(*object.EnumValue).Enum.Name
 	case object.FUNCTION_OBJ, object.BUILTIN_OBJ:
 		return "function"
 	}

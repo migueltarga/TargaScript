@@ -2,6 +2,8 @@
 package compiler
 
 import (
+	"strings"
+
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/evaluator"
@@ -38,6 +40,10 @@ type Compiler struct {
 	// hoisted are the functions declared before their block runs, so the
 	// functions in it can call each other in any order
 	hoisted map[*Symbol]bool
+
+	// enums are the enums declared, by the constant that names them, so
+	// Status.Active is compiled as that value
+	enums map[*Symbol]*object.Enum
 
 	builtinIndex map[string]int
 
@@ -113,6 +119,7 @@ func New() *Compiler {
 		initialized:  map[string]bool{},
 		captured:     map[ast.Node]map[int]bool{},
 		hoisted:      map[*Symbol]bool{},
+		enums:        map[*Symbol]*object.Enum{},
 		builtinIndex: map[string]int{},
 		AllowLoad:    true,
 	}
@@ -169,6 +176,8 @@ func declaredNames(stmt ast.Statement) []string {
 	case *ast.FunctionStatement:
 		return []string{stmt.Name.Value}
 	case *ast.StructStatement:
+		return []string{stmt.Name.Value}
+	case *ast.EnumStatement:
 		return []string{stmt.Name.Value}
 	}
 	return nil
@@ -402,6 +411,9 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 
 	case *ast.StructStatement:
 		return c.compileStruct(stmt)
+
+	case *ast.EnumStatement:
+		return c.compileEnum(stmt)
 
 	case *ast.ReturnStatement:
 		if stmt.ReturnValue == nil {
@@ -994,6 +1006,14 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 		c.emit(node.Token, code.OpIndex)
 
 	case *ast.DotExpression:
+		if e := c.enumOf(node.Left); e != nil {
+			if value := e.Value(node.Property.Value); value != nil {
+				c.emit(node.Token, code.OpConstant, c.addConstant(value))
+			} else {
+				c.emitError(node.Property.Token, "enum %s has no %s; its values are %s", e.Name, node.Property.Value, e.Names())
+			}
+			return nil
+		}
 		if err := c.compileExpression(node.Left); err != nil {
 			return err
 		}
@@ -1623,6 +1643,9 @@ func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
 
 	// No arm matched
 	c.emit(token.Token{}, code.OpPop)
+	if e, missing := c.missingEnumArms(node); missing != "" {
+		c.emitError(node.Token, "match has no arm for %s of enum %s; add them, or _ => for the rest", missing, e.Name)
+	}
 	c.emit(token.Token{}, code.OpNull)
 	for _, jump := range ends {
 		c.changeOperands(jump, len(c.scope.instructions))
@@ -1738,4 +1761,74 @@ func (c *Compiler) compileStruct(stmt *ast.StructStatement) error {
 	delete(c.hoisted, target)
 	c.emitAssignDefined(target)
 	return nil
+}
+
+func (c *Compiler) compileEnum(stmt *ast.EnumStatement) error {
+	name := stmt.Name.Value
+	existing, inScope := c.lookupCurrentScope(name)
+	if inScope && !c.hoisted[existing] {
+		c.emitError(stmt.Token, "identifier already declared: %s", name)
+		return nil
+	}
+	target := existing
+	if !inScope {
+		target = c.define(name, true)
+	}
+	names := make([]string, len(stmt.Values))
+	for i, v := range stmt.Values {
+		names[i] = v.Value
+	}
+	e := object.NewEnum(name, names)
+	c.enums[target] = e
+	c.emit(stmt.Token, code.OpConstant, c.addConstant(e))
+	delete(c.hoisted, target)
+	c.emitAssignDefined(target)
+	return nil
+}
+
+// enumOf returns the enum that node names, or nil.
+func (c *Compiler) enumOf(node ast.Expression) *object.Enum {
+	if ident, ok := node.(*ast.Identifier); ok {
+		if s, ok := c.resolve(ident.Value); ok {
+			return c.enums[s]
+		}
+	}
+	return nil
+}
+
+// missingEnumArms returns the enum a match is on and the names of its values
+// that no arm matches, when every pattern is a value of that enum and there
+// is no _ arm. Arms with a guard may not match, so they don't count.
+func (c *Compiler) missingEnumArms(node *ast.MatchExpression) (*object.Enum, string) {
+	var e *object.Enum
+	covered := map[string]bool{}
+	for _, arm := range node.Arms {
+		if arm.Patterns == nil {
+			return nil, ""
+		}
+		for _, pattern := range arm.Patterns {
+			dot, ok := pattern.(*ast.DotExpression)
+			if !ok {
+				return nil, ""
+			}
+			pe := c.enumOf(dot.Left)
+			if pe == nil || (e != nil && pe != e) {
+				return nil, ""
+			}
+			e = pe
+			if arm.Guard == nil {
+				covered[dot.Property.Value] = true
+			}
+		}
+	}
+	if e == nil {
+		return nil, ""
+	}
+	missing := []string{}
+	for _, v := range e.Values {
+		if !covered[v.Name] {
+			missing = append(missing, v.Name)
+		}
+	}
+	return e, strings.Join(missing, ", ")
 }

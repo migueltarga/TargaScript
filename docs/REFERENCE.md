@@ -220,6 +220,26 @@ print(p == Point(3, 4), p == {x: 3, y: 4})       // → true false
 
 A struct's values are objects, so `p.x = 10`, `p.keys()` and the other object methods work on them; their own properties come before the struct's methods. Two values are equal when they are of the same struct and have the same fields. Calling a struct with more values than it has fields is an error. `struct` is only a keyword before a name, so it can still name a variable.
 
+## Enums
+
+An enum is a set of named values. Each value is equal only to itself, prints with the enum's name, and becomes its name in JSON.
+
+```targascript
+enum Status { Active, Blocked, Pending }
+
+fn label(s) {
+    match s {
+        Status.Active => "on"
+        Status.Blocked, Status.Pending => "off"
+    }
+}
+print(Status.Active, label(Status.Pending))      // → Status.Active off
+print(Status.values(), Status.Blocked.name)      // → [Status.Active, Status.Blocked, Status.Pending] Blocked
+print(type(Status.Active), toJSON({s: Status.Active}))  // → Status {"s":"Active"}
+```
+
+A `match` whose arms are all values of one enum, with no `_` arm, must have an arm for each value: one that leaves some out is an error, which `targascript check` and editors show before the program runs, and which the program raises if a value with no arm gets there. Arms with a guard don't count, since they may not match. A misspelled value, as in `Status.Actve`, is an error found the same way.
+
 ## Control flow
 
 ```targascript

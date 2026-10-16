@@ -210,6 +210,9 @@ func (p *Parser) parseStatement() ast.Statement {
 		if p.curToken.Literal == "struct" && p.peekTokenIs(token.IDENT) {
 			return p.parseStructStatement()
 		}
+		if p.curToken.Literal == "enum" && p.peekTokenIs(token.IDENT) {
+			return p.parseEnumStatement()
+		}
 		if hint := p.otherLanguageStatement(); hint != "" {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "%s", hint)
 			return nil
@@ -1979,11 +1982,68 @@ func unescape(ch rune) string {
 }
 
 // parseStructStatement parses a struct: its name, then in braces its
-// fields, with defaults, and its methods, separated by commas or lines.
+// fields, with defaults, and its methods.
 func (p *Parser) parseStructStatement() ast.Statement {
 	stmt := &ast.StructStatement{Token: p.curToken}
+	stmt.Name = p.parseMembers(func() *ast.Identifier {
+		if p.curTokenIs(token.FUNCTION) && p.peekTokenIs(token.IDENT) {
+			method := p.parseFunctionStatement()
+			if method == nil {
+				return nil
+			}
+			stmt.Methods = append(stmt.Methods, method)
+			return method.Name
+		}
+		if !p.curTokenIs(token.IDENT) {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a field or a method, found %s", describe(p.curToken))
+			return nil
+		}
+		field := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		var value ast.Expression
+		if p.peekTokenIs(token.ASSIGN) {
+			p.nextToken()
+			p.nextToken()
+			if value = p.parseExpression(LOWEST); value == nil {
+				return nil
+			}
+		}
+		stmt.Fields = append(stmt.Fields, field)
+		stmt.Defaults = append(stmt.Defaults, value)
+		return field
+	})
+	if stmt.Name == nil {
+		return nil
+	}
+	return stmt
+}
+
+// parseEnumStatement parses an enum: its name, then in braces the names of
+// its values.
+func (p *Parser) parseEnumStatement() ast.Statement {
+	stmt := &ast.EnumStatement{Token: p.curToken}
+	stmt.Name = p.parseMembers(func() *ast.Identifier {
+		if !p.curTokenIs(token.IDENT) || p.curToken.Literal == "values" {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected the name of a value, found %s; values is the method that lists them", describe(p.curToken))
+			return nil
+		}
+		name := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		stmt.Values = append(stmt.Values, name)
+		return name
+	})
+	if stmt.Name == nil {
+		return nil
+	}
+	return stmt
+}
+
+// parseMembers parses the name of a struct or an enum, then the members in
+// its braces, separated by commas or lines, calling member at the start of
+// each. member returns the member's name, or nil when it failed. It returns
+// the name, or nil when parsing failed.
+func (p *Parser) parseMembers(member func() *ast.Identifier) *ast.Identifier {
+	keyword := p.curToken
 	p.nextToken()
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	name := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
@@ -1995,41 +2055,19 @@ func (p *Parser) parseStructStatement() ast.Statement {
 		}
 		switch {
 		case p.curTokenIs(token.RBRACE):
-			return stmt
+			return name
 		case p.curTokenIs(token.EOF):
-			p.errorAt(stmt.Token.Line, stmt.Token.Column, "struct %s is missing its closing }", stmt.Name.Value)
-			return nil
-		case p.curTokenIs(token.FUNCTION) && p.peekTokenIs(token.IDENT):
-			method := p.parseFunctionStatement()
-			if method == nil {
-				return nil
-			}
-			if seen[method.Name.Value] {
-				p.errorAt(method.Name.Token.Line, method.Name.Token.Column, "struct %s has %s twice", stmt.Name.Value, method.Name.Value)
-				return nil
-			}
-			seen[method.Name.Value] = true
-			stmt.Methods = append(stmt.Methods, method)
-		case p.curTokenIs(token.IDENT):
-			field := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
-			if seen[field.Value] {
-				p.errorAt(field.Token.Line, field.Token.Column, "struct %s has %s twice", stmt.Name.Value, field.Value)
-				return nil
-			}
-			seen[field.Value] = true
-			var value ast.Expression
-			if p.peekTokenIs(token.ASSIGN) {
-				p.nextToken()
-				p.nextToken()
-				if value = p.parseExpression(LOWEST); value == nil {
-					return nil
-				}
-			}
-			stmt.Fields = append(stmt.Fields, field)
-			stmt.Defaults = append(stmt.Defaults, value)
-		default:
-			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a field or a method of struct %s, found %s", stmt.Name.Value, describe(p.curToken))
+			p.errorAt(keyword.Line, keyword.Column, "%s %s is missing its closing }", keyword.Literal, name.Value)
 			return nil
 		}
+		m := member()
+		if m == nil {
+			return nil
+		}
+		if seen[m.Value] {
+			p.errorAt(m.Token.Line, m.Token.Column, "%s %s has %s twice", keyword.Literal, name.Value, m.Value)
+			return nil
+		}
+		seen[m.Value] = true
 	}
 }

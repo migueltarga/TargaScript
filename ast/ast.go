@@ -906,3 +906,16 @@ func (ss *StructStatement) String() string {
 	}
 	return "struct " + ss.Name.String() + " { " + strings.Join(parts, ", ") + " }"
 }
+
+// EnumStatement declares an enum: `enum Status { Active, Blocked }`.
+type EnumStatement struct {
+	Token  token.Token
+	Name   *Identifier
+	Values []*Identifier
+}
+
+func (es *EnumStatement) statementNode()       {}
+func (es *EnumStatement) TokenLiteral() string { return es.Token.Literal }
+func (es *EnumStatement) String() string {
+	return "enum " + es.Name.Value + " { " + strings.Join(ParameterStrings(es.Values, nil, false), ", ") + " }"
+}

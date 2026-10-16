@@ -580,6 +580,16 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 			return &object.Integer{Value: int64(obj.Len())}
 		}
 		return NULL
+	case *object.Enum:
+		if value := obj.Value(propertyName); value != nil {
+			return value
+		}
+		return newError(line, column, "enum %s has no %s; its values are %s", obj.Name, propertyName, obj.Names())
+	case *object.EnumValue:
+		if propertyName == "name" {
+			return &object.String{Value: obj.Name}
+		}
+		return newError(line, column, "%s has no property %q; it has name", obj.Inspect(), propertyName)
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
@@ -591,6 +601,15 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 
 func evalMethodCallExpression(obj object.Object, method string, args []object.Object, line, column int) object.Object {
 	switch obj := obj.(type) {
+	case *object.Enum:
+		if method == "values" && len(args) == 0 {
+			values := make([]object.Object, len(obj.Values))
+			for i, v := range obj.Values {
+				values[i] = v
+			}
+			return &object.Array{Elements: values}
+		}
+		return newError(line, column, "enum %s has one method, values()", obj.Name)
 	case object.External:
 		if method == "new" {
 			return withPosition(obj.New(args), line, column)
