@@ -522,6 +522,40 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 			r = vm.stack[f.base:]
 
+		case code.RIndex, code.RSetIndex:
+			// Arrays by position and objects by string keys run here; the
+			// rest, with its errors, falls to wordRare
+			container, index := r[w.B()], r[w.C()]
+			if op == code.RSetIndex {
+				container, index = r[w.A()], r[w.B()]
+			}
+			switch c := container.(type) {
+			case *object.Array:
+				if i, ok := index.(*object.Integer); ok && i.Value >= 0 && i.Value < int64(len(c.Elements)) {
+					if op == code.RIndex {
+						r[w.A()] = c.Elements[i.Value]
+					} else {
+						c.Elements[i.Value] = r[w.C()]
+					}
+					continue
+				}
+			case *object.Hash:
+				// The keys change, so there's no cache of their places
+				if key, ok := index.(*object.String); ok {
+					if op == code.RSetIndex {
+						c.Set(key, r[w.C()])
+						continue
+					}
+					if pair, ok := c.Get(key.HashKey()); ok {
+						r[w.A()] = pair.Value
+					} else {
+						r[w.A()] = NULL
+					}
+					continue
+				}
+			}
+			fallthrough
+
 		default:
 			f.ip = pc
 			if err := vm.wordRare(f, pc-1, w, base); err != nil {
