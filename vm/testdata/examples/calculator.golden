@@ -1,0 +1,26 @@
+TargaScript Simple Calculator
+==========================
+
+Basic Arithmetic:
+a = 10, b = 5
+Addition:       15
+Subtraction:    5
+Multiplication: 50
+Division:       2
+
+Scientific Operations:
+Square of a:    100
+Square root of a: 3.1622776601683795
+Power (a^b):    100000
+
+Rounding Operations:
+Original value: 3.14159
+Rounded:        3
+Floor:          3
+Ceiling:        4
+
+Formula Calculation:
+a × b + (a² ÷ b) = 70
+
+Calculator demonstration completed!
+--- NULL null

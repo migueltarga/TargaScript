@@ -67,14 +67,7 @@ func init() {
 					}
 				}
 
-				result := integerRange(start.Value, end.Value, 0, 0)
-
-				if traceMode {
-					fmt.Printf("TRACE: Built-in range(%d, %d) returned %s\n",
-						start.Value, end.Value, result.Type())
-				}
-
-				return result
+				return integerRange(start.Value, end.Value, 0, 0)
 			},
 		},
 

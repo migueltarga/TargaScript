@@ -1,0 +1,25 @@
+=== Map Method Examples ===
+Original numbers: [1, 2, 3, 4, 5]
+Squared numbers: [1, 4, 9, 16, 25]
+Original names: ["alice", "bob", "charlie", "david"]
+Uppercase names: ["ALICE", "BOB", "CHARLIE", "DAVID"]
+Names with prefix: ["user_alice", "user_bob", "user_charlie", "user_david"]
+=== Filter Method Examples ===
+Original numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Even numbers only: [2, 4, 6, 8, 10]
+Original names: ["alice", "bob", "charlie", "david"]
+Names longer than 4 characters: ["alice", "charlie", "david"]
+Numbers between 3 and 8: [4, 5, 6, 7]
+=== Reduce Method Examples ===
+Numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Sum of all numbers: 55
+Maximum value: 10
+Names: ["alice", "bob", "charlie", "david"]
+Joined names: alice, bob, charlie, david
+=== Chained Transformations ===
+Original numbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+Final result from chained operations: 355
+After map (squares): [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+After filter (> 20): [25, 36, 49, 64, 81, 100]
+After reduce (sum): 355
+--- NULL null

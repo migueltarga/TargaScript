@@ -1,0 +1,42 @@
+Original array:
+64
+34
+25
+12
+22
+11
+90
+
+Sorted array:
+11
+12
+22
+25
+34
+64
+90
+
+Unsorted random array:
+42
+8
+16
+4
+23
+15
+35
+9
+26
+1
+
+Sorted random array:
+1
+4
+8
+9
+15
+16
+23
+26
+35
+42
+--- NULL null

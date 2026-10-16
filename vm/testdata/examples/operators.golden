@@ -1,0 +1,35 @@
+TargaScript Basic Operators
+=========================
+
+Arithmetic Operators:
+5 + 3 = 8
+10 - 4 = 6
+6 * 7 = 42
+20 / 4 = 5
+10 % 3 = 1
+
+Comparison Operators:
+5 == 5: true
+5 != 10: true
+10 > 5: true
+5 < 10: true
+5 >= 5: true
+5 <= 10: true
+
+Logical Operators:
+true && true: true
+true && false: false
+true || false: true
+false || false: false
+!true: false
+!false: true
+
+String Concatenation:
+"Hello " + "World" = Hello World
+
+Increment and Decrement:
+counter++ -> 6
+counter-- twice -> 4
+
+Basic operators demonstration completed!
+--- NULL null

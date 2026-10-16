@@ -1,0 +1,53 @@
+TargaScript Data Processing with Method Chaining
+==============================================
+1. Simple Data Transformation:
+Result of filtering, mapping and reducing: 220
+
+2. Text Processing:
+Original: "   This is an   EXAMPLE   text with   inconsistent   spacing and CAPITALIZATION.  "
+Formatted: "this is an example text with inconsistent spacing and capitalization."
+
+3. Simple Array Filter:
+Fruits with more than 5 letters: ["banana", "cherry", "elderberry"]
+
+4. Simple Function Chain with Strings:
+Original messages: ["Hello world", "   Extra spaces   ", "UPPERCASE MESSAGE", "mixed CASE text", ""]
+Processed messages: ["hello world", "extra spaces", "uppercase message", "mixed case text"]
+Combined: hello world | extra spaces | uppercase message | mixed case text
+
+5. Method Chaining with Object Arrays:
+People from New York:
+- Alice, age 32
+- Charlie, age 27
+
+People over 30: Alice (New York), Bob (Boston), Diana (Chicago)
+
+6. Statistical Analysis with Method Chaining:
+All scores: [85, 92, 78, 65, 90, 76, 88, 95]
+Passing scores: [85, 92, 78, 90, 76, 88, 95]
+Average passing score: 86
+High scorers: Score: 92, Score: 90, Score: 95
+7. Working With String Data:
+Fiction books:
+- The Great Gatsby by F. Scott Fitzgerald
+- To Kill a Mockingbird by Harper Lee
+- Pride and Prejudice by Jane Austen
+
+Book list:
+- The Great Gatsby (fiction, 180 pages)
+- To Kill a Mockingbird (fiction, 281 pages)
+- A Brief History of Time (non-fiction, 212 pages)
+- Pride and Prejudice (fiction, 279 pages)
+- The Art of War (non-fiction, 92 pages)
+8. Structured Data Processing:
+Active developers:
+- John Smith (34 years old)
+
+Active technical staff: John Smith, Robert Wilson
+
+9. Employee Data Processing:
+Engineering team emails: Alice Smith <alice@example.com>, Carol Williams <carol@example.com>, Eve Davis <eve@example.com>
+Number of engineering employees: 3
+Total engineering salary: $265000
+Average engineering salary: $88333
+--- NULL null

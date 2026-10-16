@@ -1,0 +1,634 @@
+{
+ "!0": {
+  "output": "",
+  "value": "BOOLEAN false"
+ },
+ "!true": {
+  "output": "",
+  "value": "BOOLEAN false"
+ },
+ "\"Hello\".upper().lower()": {
+  "output": "",
+  "value": "STRING hello"
+ },
+ "\"a\" + 1": {
+  "output": "",
+  "value": "STRING a1"
+ },
+ "\"a\" - 1": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 5: cannot use \"-\" with a string and an integer"
+ },
+ "\"a\" == \"a\"": {
+  "output": "",
+  "value": "BOOLEAN true"
+ },
+ "\"a\"..1": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 4: range bounds must be integers, got STRING..INTEGER"
+ },
+ "\"a\"[\"x\"]": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 4: cannot use [] on a string"
+ },
+ "\"a,b\".split(\",\")": {
+  "output": "",
+  "value": "ARRAY [\"a\", \"b\"]"
+ },
+ "\"abc\".nope()": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 6: strings have no method \"nope\""
+ },
+ "\"abc\"[1]": {
+  "output": "",
+  "value": "STRING b"
+ },
+ "\"hi\"": {
+  "output": "",
+  "value": "STRING hi"
+ },
+ "\"x${1 + 1}y${[1]}\"": {
+  "output": "",
+  "value": "STRING x2y[1]"
+ },
+ "(1 + 2) * 3": {
+  "output": "",
+  "value": "INTEGER 9"
+ },
+ "-\"a\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: cannot use \"-\" on a string"
+ },
+ "-5": {
+  "output": "",
+  "value": "INTEGER -5"
+ },
+ "0 || 5": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "1": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "1 && 2 && 3": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "1 + 2 * 3": {
+  "output": "",
+  "value": "INTEGER 7"
+ },
+ "1 + true": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 3: cannot use \"+\" with an integer and a boolean"
+ },
+ "1 / 0": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 3: division by zero"
+ },
+ "1 == 1.0": {
+  "output": "",
+  "value": "BOOLEAN true"
+ },
+ "1..5": {
+  "output": "",
+  "value": "ARRAY [1, 2, 3, 4, 5]"
+ },
+ "1.0 / 0": {
+  "output": "",
+  "value": "FLOAT Inf"
+ },
+ "1.5": {
+  "output": "",
+  "value": "FLOAT 1.5"
+ },
+ "10 % 3": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "10 / 3": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "2 < 3": {
+  "output": "",
+  "value": "BOOLEAN true"
+ },
+ "2 >= 3": {
+  "output": "",
+  "value": "BOOLEAN false"
+ },
+ "5 ^ 3": {
+  "output": "",
+  "value": "INTEGER 6"
+ },
+ "5..1": {
+  "output": "",
+  "value": "ARRAY []"
+ },
+ "5[0]": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 2: cannot use [] on an integer"
+ },
+ "7.5 / 2": {
+  "output": "",
+  "value": "FLOAT 3.75"
+ },
+ "9223372036854775807 + 1": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 21: integer overflow"
+ },
+ "[1, 2, 3].find(fn(x) { x > 1 })": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "[1, 2, 3].map(fn(x) { x * 2 }).filter(fn(x) { x > 2 })": {
+  "output": "",
+  "value": "ARRAY [4, 6]"
+ },
+ "[1, 2, 3].reduce(fn(a, b) { a + b }, 10)": {
+  "output": "",
+  "value": "INTEGER 16"
+ },
+ "[1, 2, 3][1]": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "[1, 2, [3]]": {
+  "output": "",
+  "value": "ARRAY [1, 2, [3]]"
+ },
+ "[1, 2].join(\"-\")": {
+  "output": "",
+  "value": "STRING 1-2"
+ },
+ "[1, 2].map(fn(x) {\n  x + \"a\" - 1\n})": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 5: cannot use \"+\" with an integer and a string"
+ },
+ "[1].nope": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 4: arrays have no property \"nope\""
+ },
+ "[1][5]": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "[3, 1, 2].sort(fn(a, b) { b - a })": {
+  "output": "",
+  "value": "ARRAY [3, 2, 1]"
+ },
+ "abs(\"x\")": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 4: argument to `abs` must be a number, got STRING"
+ },
+ "abs(-3)": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "break": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: break outside of a loop"
+ },
+ "const c = 1\nc = 2": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 3: cannot reassign constant: c"
+ },
+ "const c = 1\nconst c = 2": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: identifier already declared: c"
+ },
+ "const c = 1\nlet c = 2": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: cannot reassign constant: c"
+ },
+ "false": {
+  "output": "",
+  "value": "BOOLEAN false"
+ },
+ "fn a() { b() }\nfn b() { 42 }\na()": {
+  "output": "",
+  "value": "INTEGER 42"
+ },
+ "fn add(a, b) { a + b }\nadd(1, 2)": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "fn adder(x) { fn(y) { x + y } }\nadder(2)(3)": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "fn counter() { let n = 0\nreturn { \"inc\": fn() { n++ }, \"get\": fn() { n } } }\nlet c = counter()\nc.inc()\nc.inc()\nc.get()": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "fn f() {\n  missing\n}\nf()": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 3: \"missing\" is not defined"
+ },
+ "fn f() { 1 }\nf": {
+  "output": "",
+  "value": "FUNCTION fn f() {\n{ 1 }\n}"
+ },
+ "fn f() { break }\nf()": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 10: break outside of a loop"
+ },
+ "fn f() { let f2 = fn(n) { if n == 0 { 0 } else { f2(n - 1) + 1 } }\nf2(5) }\nf()": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "fn f() { let x = 5 }\nf()": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "fn f() { repeat i in 1..10 { if i == 4 { return i } } }\nf()": {
+  "output": "",
+  "value": "INTEGER 4"
+ },
+ "fn f() { return }\nf()": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "fn f() { }\nf()": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "fn f(a) { a }\nf(1, 2, 3)": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "fn f(a, b) { b }\nf(1)": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "fn f(n) {\n  return n / 0\n}\nf(1)": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 12: division by zero"
+ },
+ "fn f(n) { f(n + 1) }\nf(0)": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 12: maximum call depth exceeded (10000)"
+ },
+ "fn f(n) { if n < 2 { return n }\nf(n - 1) + f(n - 2) }\nf(15)": {
+  "output": "",
+  "value": "INTEGER 610"
+ },
+ "fn f(x) { fn() { x++ } }\nlet g = f(1)\ng()\ng()": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "fn make() { let c = 0\nfn() { c++\nc } }\nlet next = make()\nnext()\nnext()\nnext()": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "fn outer() { let a = 1\nlet inc = fn() { a = a + 10 }\ninc()\na }\nouter()": {
+  "output": "",
+  "value": "INTEGER 11"
+ },
+ "fn outer() { let v = 1\nfn mid() { fn inner() { v = v + 1 }\ninner() }\nmid()\nv }\nouter()": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "if 1 > 2 { 1 } else { 2 }": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "if false { 1 }": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "if true { let inner = 1 }\ninner": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: \"inner\" is not defined"
+ },
+ "if true { }": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "len": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined"
+ },
+ "len(\"abc\")": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined"
+ },
+ "let a = 1\na": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "let a = 1\na = 5\na": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "let a = 1\nif true { a = 2 }\na": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "let a = 1\nif true { let a = 2\na } ": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "let a = 1\nlet a = 2\na": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "let a = 1\nlet b = a + true": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 11: cannot use \"+\" with an integer and a boolean"
+ },
+ "let a = [1, 2]\na[0] = 5\na": {
+  "output": "",
+  "value": "ARRAY [5, 2]"
+ },
+ "let a = [1, 2]\nrepeat x in a { a.insert(x) }\na": {
+  "output": "",
+  "value": "ARRAY [1, 2, 1, 2]"
+ },
+ "let a = [1]\na.insert(2)\na": {
+  "output": "",
+  "value": "ARRAY [1, 2]"
+ },
+ "let a = [1]\na[0]++\na": {
+  "output": "",
+  "value": "ARRAY [2]"
+ },
+ "let a = [1]\na[3] = 1": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 6: index out of bounds: 3"
+ },
+ "let f = fn(x) { x * 2 }\nf(4)": {
+  "output": "",
+  "value": "INTEGER 8"
+ },
+ "let fact = fn(n) { if n == 0 { 1 } else { n * fact(n - 1) } }\nfact(10)": {
+  "output": "",
+  "value": "INTEGER 3628800"
+ },
+ "let fs = []\nrepeat i in 1..3 { fs.insert(fn() { i }) }\nfs.map(fn(f) { f() })": {
+  "output": "",
+  "value": "ARRAY [1, 2, 3]"
+ },
+ "let h = {\"double\": fn(x) { x * 2 }}\nh.double(4)": {
+  "output": "",
+  "value": "INTEGER 8"
+ },
+ "let h = {\"n\": 1}\nh[\"n\"]++\nh": {
+  "output": "",
+  "value": "HASH {\"n\": 2}"
+ },
+ "let h = {}\nh.a.b": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 4: dot operator not supported for NULL"
+ },
+ "let h = {}\nh.x = 1\nh.x++\nh": {
+  "output": "",
+  "value": "HASH {\"x\": 2}"
+ },
+ "let k = 0\nrepeat k < 3 { let inner = k\nk++ }\ninner": {
+  "output": "",
+  "value": "ERROR ERROR at line 4, column 1: \"inner\" is not defined"
+ },
+ "let ks = []\nrepeat k in {\"b\": 1, \"a\": 2} { ks.insert(k) }\nks": {
+  "output": "",
+  "value": "ARRAY [\"b\", \"a\"]"
+ },
+ "let max = 3\nmax": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "let n = 0\nrepeat i in 1..10 { if i % 2 == 0 { continue }\nn = n + i }\nn": {
+  "output": "",
+  "value": "INTEGER 25"
+ },
+ "let n = 0\nrepeat i in 1..10 { n = n + i }\nn": {
+  "output": "",
+  "value": "INTEGER 55"
+ },
+ "let n = 0\nrepeat i in 1..100 { if i > 5 { break }\nn = i }\nn": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "let n = 0\nrepeat i in 1..5 { let sq = i * i\nn = n + sq }\nn": {
+  "output": "",
+  "value": "INTEGER 55"
+ },
+ "let n = 0\nrepeat i in 5 { n = n + i }\nn": {
+  "output": "",
+  "value": "INTEGER 15"
+ },
+ "let n = 0\nrepeat n < 5 { n++ }\nn": {
+  "output": "",
+  "value": "INTEGER 5"
+ },
+ "let n = 0\nrepeat true { n++\nif n == 3 { break } }\nn": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "let out = []\nrepeat i in 1..3 { repeat j in 1..3 { if j > i { break }\nout.insert([i, j]) } }\nout": {
+  "output": "",
+  "value": "ARRAY [[1, 1], [2, 1], [2, 2], [3, 1], [3, 2], [3, 3]]"
+ },
+ "let r = []\nrepeat i in 1..3 { print(i, [i]) }": {
+  "output": "1 [1]\n2 [2]\n3 [3]\n",
+  "value": "NULL null"
+ },
+ "let s = \"\"\nrepeat c in \"héllo\" { s = c + s }\ns": {
+  "output": "",
+  "value": "STRING olléh"
+ },
+ "let s = \"a\"\ns++": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 2: operator ++ not supported for STRING"
+ },
+ "let total = 0\nfn bump() { total++ }\nbump()\nbump()\ntotal": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "let total = 0\nrepeat i in 1..3 { total = total + [i, i].map(fn(x) { if x > 1 { return x } else { 0 } }).reduce(fn(a, b) { a + b }, 0) }\ntotal": {
+  "output": "",
+  "value": "INTEGER 10"
+ },
+ "let total = 1\ntotl": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: \"totl\" is not defined. Did you mean \"total\"?"
+ },
+ "let x = 1\nx++\nx": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "let x = 1.5\nx--": {
+  "output": "",
+  "value": "FLOAT 0.5"
+ },
+ "let x = 5\nx()": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 2: cannot call an integer, it is not a function"
+ },
+ "let x = [1]\nx.foo()": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 2: arrays have no method \"foo\""
+ },
+ "load:const PI = 1\nload \"math.tg\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: cannot load \"math.tg\": it defines PI, which is a constant here"
+ },
+ "load:const m = 1\nload \"math.tg\" as m": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 1: cannot reassign constant: m"
+ },
+ "load:fn f() { load \"lib/math.tg\"\nsquare(6) }\nf()": {
+  "output": "",
+  "value": "INTEGER 36"
+ },
+ "load:load \"a.tg\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: a.tg:1:1: b.tg:1:1: circular load of \"a.tg\""
+ },
+ "load:load \"apply.tg\"\ntwice(fn(n) { n * 10 }, 2)": {
+  "output": "",
+  "value": "INTEGER 200"
+ },
+ "load:load \"broken.tg\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: broken.tg:2:7: \"missing\" is not defined"
+ },
+ "load:load \"counter.tg\" as a\nload \"counter.tg\" as b\na.inc()\nb.inc()": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "load:load \"lib/geo.tg\" as geo\ngeo.area(2)": {
+  "output": "",
+  "value": "INTEGER 12"
+ },
+ "load:load \"lib/geo.tg\" as geo\ngeo.later()": {
+  "output": "",
+  "value": "INTEGER 16"
+ },
+ "load:load \"lib/math.tg\"\nPI": {
+  "output": "",
+  "value": "INTEGER 3"
+ },
+ "load:load \"lib/math.tg\"\nsquare(3)": {
+  "output": "",
+  "value": "INTEGER 9"
+ },
+ "load:load \"lib/math.tg\" as m\nm.keys()": {
+  "output": "",
+  "value": "ARRAY [\"PI\", \"loads\", \"square\"]"
+ },
+ "load:load \"lib/math.tg\" as m\nm.square(5) + m.PI": {
+  "output": "",
+  "value": "INTEGER 28"
+ },
+ "load:load \"lib/math.tg\";\nsquare(2)": {
+  "output": "",
+  "value": "INTEGER 4"
+ },
+ "load:load \"math.tg\"\nPI = 4": {
+  "output": "",
+  "value": "ERROR ERROR at line 2, column 4: cannot reassign constant: PI"
+ },
+ "load:load \"nope.tg\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: cannot load \"nope.tg\": file not found"
+ },
+ "load:load \"syntax.tg\"": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: cannot load \"syntax.tg\": line 1:5: expected a name, found \"=\""
+ },
+ "max(1, 2)": {
+  "output": "",
+  "value": "INTEGER 2"
+ },
+ "max(1, 9)": {
+  "output": "",
+  "value": "INTEGER 9"
+ },
+ "null": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "null || false": {
+  "output": "",
+  "value": "BOOLEAN false"
+ },
+ "print(\"a\", 1, [2, \"b\"], {\"k\": null})": {
+  "output": "a 1 [2, \"b\"] {\"k\": null}\n",
+  "value": "NULL null"
+ },
+ "printf(\"%d-%s\", 1, \"x\")": {
+  "output": "1-x\n",
+  "value": "NULL null"
+ },
+ "range(1, 3)": {
+  "output": "",
+  "value": "ARRAY [1, 2, 3]"
+ },
+ "repeat i in 1..\"a\" { }": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 14: range bounds must be integers, got INTEGER..STRING"
+ },
+ "repeat i in 3 { continue }": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "repeat i in 3 { i }": {
+  "output": "",
+  "value": "NULL null"
+ },
+ "repeat x in true { }": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: cannot iterate over BOOLEAN"
+ },
+ "toString(1.5)": {
+  "output": "",
+  "value": "STRING 1.5"
+ },
+ "totl": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: \"totl\" is not defined"
+ },
+ "true": {
+  "output": "",
+  "value": "BOOLEAN true"
+ },
+ "true && 0": {
+  "output": "",
+  "value": "INTEGER 0"
+ },
+ "type([])": {
+  "output": "",
+  "value": "STRING ARRAY"
+ },
+ "x": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: \"x\" is not defined"
+ },
+ "x = 1": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 3: \"x\" is not defined"
+ },
+ "{\"a\": 1, b: [2]}": {
+  "output": "",
+  "value": "HASH {\"a\": 1, \"b\": [2]}"
+ },
+ "{\"a\": 1}.a": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "{\"a\": 1}.keys()": {
+  "output": "",
+  "value": "ARRAY [\"a\"]"
+ },
+ "{\"a\": 1}[\"a\"]": {
+  "output": "",
+  "value": "INTEGER 1"
+ },
+ "{[1]: 2}": {
+  "output": "",
+  "value": "ERROR ERROR at line 1, column 1: unusable as hash key: ARRAY"
+ }
+}

@@ -130,7 +130,7 @@ Build it with [TinyGo](https://tinygo.org) 0.39:
 ./web/build.sh build
 ```
 
-and serve `build/targascript.js` and `build/targascript.wasm` (about 260 KB, 120 KB compressed) next to your page. Recursion goes up to 10,000 calls in the browser too. Only functions called back by builtins or by JavaScript, like the function given to `map` or an event handler, can nest at most 100 deep there.
+and serve `build/targascript.js` and `build/targascript.wasm` (about 300 KB, 140 KB compressed) next to your page. Recursion goes up to 10,000 calls in the browser too. Only functions called back by builtins or by JavaScript, like the function given to `map` or an event handler, can nest at most 100 deep there.
 
 ## 🤔 Why TargaScript?
 

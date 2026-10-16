@@ -200,7 +200,7 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 			}
 		}
 		return hash, true
-	case *object.Function, *object.Builtin, *object.Closure:
+	case *object.Builtin, *object.Closure:
 		if h, ok := callbackHandles[obj]; ok {
 			return h, false
 		}

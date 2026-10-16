@@ -1,0 +1,34 @@
+Word Statistics
+===============
+
+1. Words:
+  15 words: ["the", "quick", "brown", "fox", "jumps"] ...
+
+2. Word counts (in order of appearance):
+  the      4
+  quick    1
+  brown    1
+  fox      2
+  jumps    1
+  over     1
+  lazy     1
+  dog      2
+  sleeps   1
+  runs     1
+
+3. Sorting and searching:
+  Alphabetical: ["brown", "dog", "fox", "jumps", "lazy", "over", "quick", "runs", "sleeps", "the"]
+  Most common:  ["the", "fox", "dog"]
+  First word with 5 letters: quick
+  Has "cat"? false   Position of "fox": 3
+
+4. The longest word is "sleeps":
+  0: s
+  1: l
+  2: e
+  3: e
+  4: p
+  5: s
+  Vowels: 2
+  Squares of 1..5: [1, 4, 9, 16, 25]
+--- NULL null

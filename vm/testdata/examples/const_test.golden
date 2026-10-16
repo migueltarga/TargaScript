@@ -1,0 +1,14 @@
+TargaScript Const Keyword Test
+============================
+
+PI = 3.14159
+Various constants:
+NAME = Alice
+AGE = 30
+IS_VALID = true
+ITEMS = [1, 2, 3]
+CONFIG = {"debug": true, "timeout": 30}
+
+Attempting to reassign PI from 3.14159 to 3.0:
+(This should generate an error)
+--- ERROR ERROR at line 32, column 4: cannot reassign constant: PI

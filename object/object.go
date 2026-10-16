@@ -24,15 +24,11 @@ const (
 	BOOLEAN_OBJ = "BOOLEAN"
 	STRING_OBJ  = "STRING"
 
-	RETURN_VALUE_OBJ = "RETURN_VALUE"
-
 	FUNCTION_OBJ = "FUNCTION"
 	BUILTIN_OBJ  = "BUILTIN"
 
-	ARRAY_OBJ    = "ARRAY"
-	HASH_OBJ     = "HASH"
-	BREAK_OBJ    = "BREAK"
-	CONTINUE_OBJ = "CONTINUE"
+	ARRAY_OBJ = "ARRAY"
+	HASH_OBJ  = "HASH"
 )
 
 type HashKey struct {
@@ -94,29 +90,6 @@ type Null struct{}
 func (n *Null) Type() ObjectType { return NULL_OBJ }
 func (n *Null) Inspect() string  { return "null" }
 
-type Break struct {
-	Line   int
-	Column int
-}
-
-func (b *Break) Type() ObjectType { return BREAK_OBJ }
-func (b *Break) Inspect() string  { return "break" }
-
-type Continue struct {
-	Line   int
-	Column int
-}
-
-func (c *Continue) Type() ObjectType { return CONTINUE_OBJ }
-func (c *Continue) Inspect() string  { return "continue" }
-
-type ReturnValue struct {
-	Value Object
-}
-
-func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
-func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
-
 type Error struct {
 	Message string
 	Line    int
@@ -129,18 +102,6 @@ func (e *Error) Inspect() string {
 		return fmt.Sprintf("ERROR at line %d, column %d: %s", e.Line, e.Column, e.Message)
 	}
 	return "ERROR: " + e.Message
-}
-
-type Function struct {
-	Parameters []*ast.Identifier
-	Body       *ast.BlockStatement
-	Env        *Environment
-	Name       string
-}
-
-func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
-func (f *Function) Inspect() string {
-	return inspectFunction(f.Name, f.Parameters, f.Body)
 }
 
 // inspectFunction prints a function as its source, the same way for

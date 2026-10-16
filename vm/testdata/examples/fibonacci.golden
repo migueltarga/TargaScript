@@ -1,0 +1,25 @@
+Fibonacci Number Examples:
+Recursive Fibonacci of 10: 55
+Iterative Fibonacci of 10: 55
+
+Fibonacci sequence (10 terms):
+0
+1
+1
+2
+3
+5
+8
+13
+21
+34
+
+Performance comparison for n = 20
+Recursive result: 6765
+Iterative result: 6765
+
+Verification of Fibonacci values:
+Fib(10) = 55
+Fib(15) = 610
+Fib(20) = 6765
+--- NULL null

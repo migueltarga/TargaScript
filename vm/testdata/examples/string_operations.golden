@@ -1,0 +1,82 @@
+TargaScript String Operations
+============================
+
+1. String Concatenation:
+  Base string: Hello
+  Concatenating different types with strings:
+    String + String: Hello World
+    String + Integer: Hello 42
+    String + Float: Hello 3.14
+    String + Boolean: Hello true
+    String + Array: Hello [1, 2, 3]
+    String + Object: Hello {"name": "TargaScript"}
+
+2. String Properties:
+  Original string: Hello, TargaScript!
+  Length: 19
+
+3. String Methods:
+  Transformation methods:
+    message.upper(): HELLO, TARGASCRIPT!
+    message.lower(): hello, targascript!
+  Trimming methods:
+    Original padded string: "  spaced content  "
+    padded.trim(): "spaced content"
+  Replacement:
+    message.replace("Hello", "Hi"): Hi, TargaScript!
+
+4. Working with Substrings:
+  Original CSV string: apple,banana,cherry,date,elderberry
+  Splitting string:
+    csv_data.split(","): ["apple", "banana", "cherry", "date", "elderberry"]
+  Joining array back to string:
+    fruits.join(" | "): apple | banana | cherry | date | elderberry
+
+5. String Formatting with printf:
+  Basic formatting:
+  Integer: 42, Float: 3.141590, String: Hello
+
+  Number formatting:
+  Default float: 3.141590
+
+  Rounded to 2 decimal places: 3.14
+
+  Padded integer:    42
+
+  Zero-padded integer: 00042
+
+  Width and alignment:
+  Right-aligned:      right
+
+  Left-aligned: left      
+
+  Multiple values:
+  Alice is 30 years old
+
+
+6. Complex String Operations:
+  Formatting data in columns:
+  Name       | Age | City
+  -----------|-----|------------
+  Alice      |  30 | New York  
+
+  Bob        |  25 | Boston    
+
+  Charlie    |  35 | Chicago   
+
+  Creating formatted strings with variables:
+  Product: Laptop, Price: $999.99, Status: In Stock
+
+
+7. Practical Examples:
+  Email validation (simple check):
+    Email: user@example.com
+    Contains @ and . in correct order? true
+  URL parsing:
+    URL: https://www.example.com/path?param=value
+    Protocol: https
+    Domain: www.example.com
+    Path: /path?param=value
+
+String operations demonstration completed!
+--- NULL null

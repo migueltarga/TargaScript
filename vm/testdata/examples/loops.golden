@@ -1,0 +1,97 @@
+TargaScript Loop Constructs
+===========================
+
+1. Collection-based Loops:
+  Basic loop over an array:
+  - Apple
+  - Banana
+  - Cherry
+  - Dragonfruit
+
+2. Range-based Loops:
+  Looping through a range of numbers:
+  - Number: 1
+  - Number: 2
+  - Number: 3
+  - Number: 4
+  - Number: 5
+
+3. Condition-based Loops:
+  Countdown with a condition loop:
+  - 5
+  - 4
+  - 3
+  - 2
+  - 1
+  - Blast off!
+
+4. Nested Loops:
+  Multiplication table (3x3):
+  1	2	3	4	
+  2	4	6	8	
+  3	6	9	12	
+  4	8	12	16	
+
+5. Loop Control:
+  Early termination with break:
+  - Number: 1
+  - Number: 2
+  - Number: 3
+  - Number: 4
+  - Number: 5
+  - Breaking at 6
+  Skipping iterations with continue:
+  - Odd number: 1
+  - Odd number: 3
+  - Odd number: 5
+  - Odd number: 7
+  - Odd number: 9
+
+6. Iterating Over Object Properties:
+  Object key-value pairs:
+  - name: Alice
+  - age: 30
+  - city: Wonderland
+  - occupation: Explorer
+
+7. Finding Elements:
+  Searching for 30 in [10, 20, 30, 40, 50]
+  - Found the target number!
+
+8. Transforming Arrays:
+  Original array: [1, 2, 3, 4, 5]
+  Doubling each element:
+  - Result: [2, 4, 6, 8, 10]
+
+9. Filtering Arrays:
+  Original array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Filtering even numbers:
+  - Result: [2, 4, 6, 8, 10]
+
+10. Breaking from Nested Loops:
+  Finding the first pair of numbers that sum to 10:
+  - Found pair: 1 + 9 = 10
+
+11. Combined Techniques:
+  Finding the first number greater than 10 that is divisible by 5:
+  - Found: 15
+
+12. Formatted Output in Loops:
+  Displaying a formatted table:
+  Index | Value | Squared
+  ------------------
+  1     | 10    | 100    
+
+  2     | 20    | 400    
+
+  3     | 30    | 900    
+
+  4     | 40    | 1600   
+
+  5     | 50    | 2500   
+
+  6     | 60    | 3600   
+
+
+Loop constructs demonstration completed!
+--- NULL null

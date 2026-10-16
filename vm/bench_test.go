@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/migueltarga/TargaScript/compiler"
-	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
@@ -31,16 +30,5 @@ func benchmarkVM(b *testing.B, source string) {
 	}
 }
 
-func benchmarkEvaluator(b *testing.B, source string) {
-	program := parser.New(lexer.New(source)).ParseProgram()
-	for i := 0; i < b.N; i++ {
-		if result := evaluator.Eval(program, object.NewEnvironment()); result.Type() == object.ERROR_OBJ {
-			b.Fatal(result.Inspect())
-		}
-	}
-}
-
-func BenchmarkFibVM(b *testing.B)         { benchmarkVM(b, benchFib) }
-func BenchmarkFibEvaluator(b *testing.B)  { benchmarkEvaluator(b, benchFib) }
-func BenchmarkLoopVM(b *testing.B)        { benchmarkVM(b, benchLoop) }
-func BenchmarkLoopEvaluator(b *testing.B) { benchmarkEvaluator(b, benchLoop) }
+func BenchmarkFibVM(b *testing.B)  { benchmarkVM(b, benchFib) }
+func BenchmarkLoopVM(b *testing.B) { benchmarkVM(b, benchLoop) }

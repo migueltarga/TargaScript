@@ -1,0 +1,27 @@
+Initial values:
+x = outer-x
+y = outer-y
+
+Inside first if block:
+x = if-block-x (should be 'if-block-x' - shadowing outer x)
+y = outer-y (should be 'outer-y' - using outer y)
+z = if-block-z (should be 'if-block-z' - new variable)
+
+Inside nested if block:
+x = nested-if-x (should be 'nested-if-x' - shadowing previous x)
+y = outer-y (should be 'outer-y' - still using outer y)
+z = if-block-z (should be 'if-block-z' - using z from outer block)
+
+After nested if block:
+x = if-block-x (should be 'if-block-x' - reverted to first shadow)
+z = if-block-z (should be 'if-block-z' - still accessible)
+
+After exiting if block:
+x = outer-x (should be 'outer-x' - reverted to original)
+y = outer-y (should be 'outer-y' - unchanged)
+
+Attempting to access 'z' outside its scope:
+This should generate an error if scope is working correctly:
+
+Test completed successfully!
+--- NULL null
