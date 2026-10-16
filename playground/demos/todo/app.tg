@@ -1,0 +1,96 @@
+// app.tg
+// A to-do list written in TargaScript, running in the browser.
+// Tasks are kept in localStorage, so they survive a reload.
+
+let doc = js.document
+let list = doc.getElementById("list")
+let input = doc.getElementById("new-task")
+let counter = doc.getElementById("counter")
+let filters = doc.querySelectorAll("[data-filter]")
+
+const STORAGE_KEY = "targascript-todos"
+
+let tasks = parseJSON(js.localStorage.getItem(STORAGE_KEY) ?? "[]")
+let filter = "all"
+
+fn save() {
+    js.localStorage.setItem(STORAGE_KEY, toJSON(tasks))
+}
+
+fn visible(task) {
+    match filter {
+        "active" => !task.done
+        "done" => task.done
+        _ => true
+    }
+}
+
+fn render() {
+    list.textContent = ""
+    repeat i, task in tasks {
+        if !visible(task) { continue }
+
+        let item = doc.createElement("li")
+        item.className = if task.done { "done" } else { "" }
+        list.appendChild(item)
+
+        let check = doc.createElement("input")
+        check.type = "checkbox"
+        check.checked = task.done
+        check.addEventListener("change", () => {
+            task.done = !task.done
+            save()
+            render()
+        })
+
+        let label = doc.createElement("span")
+        label.textContent = task.text
+
+        let remove = doc.createElement("button")
+        remove.textContent = "×"
+        remove.title = "Remove"
+        remove.addEventListener("click", () => {
+            tasks.removeAt(i)
+            save()
+            render()
+        })
+
+        item.append(check, label, remove)
+    }
+
+    let left = tasks.count(t => !t.done)
+    counter.textContent = match left {
+        0 => "All done!"
+        1 => "1 task left"
+        _ => "${left} tasks left"
+    }
+}
+
+doc.getElementById("add").addEventListener("submit", event => {
+    event.preventDefault()
+    let text = input.value.trim()
+    if text == "" { return null }
+    tasks.insert({"text": text, "done": false})
+    input.value = ""
+    save()
+    render()
+})
+
+repeat i in 0..filters.length - 1 {
+    let button = filters[i]
+    button.addEventListener("click", () => {
+        filter = button.dataset.filter
+        repeat j in 0..filters.length - 1 {
+            filters[j].classList.toggle("selected", filters[j] == button)
+        }
+        render()
+    })
+}
+
+doc.getElementById("clear").addEventListener("click", () => {
+    tasks = tasks.filter(t => !t.done)
+    save()
+    render()
+})
+
+render()

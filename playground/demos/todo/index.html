@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To-do list in TargaScript</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #dddcd7; --text: #1f1f1d; --muted: #6b6a65;
+    --brand: #266ca4; --brand-dark: #16405b; --brand-text: #ffffff; --link: #266ca4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161614; --panel: #1e1e1c; --border: #33332f; --text: #ececea; --muted: #9a9993; --link: #7fb3e6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); font-size: 14px; }
+  form { display: flex; gap: 8px; }
+  input[type=text] { flex: 1; font: inherit; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); }
+  button { font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 8px 12px; cursor: pointer; }
+  form button { background: var(--brand); border-color: var(--brand-dark); color: var(--brand-text); font-weight: 600; }
+  ul { list-style: none; padding: 0; margin: 16px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+  li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  li:last-child { border-bottom: 0; }
+  li span { flex: 1; overflow-wrap: anywhere; }
+  li.done span { color: var(--muted); text-decoration: line-through; }
+  li button { border: 0; background: none; color: var(--muted); font-size: 20px; padding: 0 4px; }
+  ul:empty { display: none; }
+  footer, .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .bar { justify-content: space-between; }
+  .bar button { padding: 4px 10px; font-size: 14px; }
+  .bar button.selected { border-color: var(--brand); color: var(--link); }
+  footer { margin-top: 24px; }
+  a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+  <h1>To-do list</h1>
+  <p class="lead">A web app written entirely in TargaScript, running on WebAssembly.</p>
+  <form id="add">
+    <input id="new-task" type="text" placeholder="What needs doing?" aria-label="New task" autocomplete="off">
+    <button>Add</button>
+  </form>
+  <ul id="list"></ul>
+  <div class="bar">
+    <span id="counter"></span>
+    <span>
+      <button data-filter="all" class="selected">All</button>
+      <button data-filter="active">Active</button>
+      <button data-filter="done">Done</button>
+      <button id="clear">Clear done</button>
+    </span>
+  </div>
+  <footer>
+    <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/todo/app.tg">See app.tg</a>
+    &middot; <a href="../../">Playground</a>
+  </footer>
+</main>
+<script src="../../targascript.js"></script>
+<script type="text/targascript" src="app.tg"></script>
+</body>
+</html>

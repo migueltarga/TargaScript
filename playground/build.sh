@@ -6,6 +6,10 @@ out=${1:-site}
 ./web/build.sh "$out"
 cp playground/index.html playground/playground.tg playground/runner.tg playground/welcome.tg "$out/"
 
+# Demos: web apps written in TargaScript
+mkdir -p "$out/demos"
+cp -R playground/demos/. "$out/demos/"
+
 # The tour, listed as file|title, the title coming from each lesson's first
 # line: "// Lesson 1: Hello" becomes "Hello"
 mkdir -p "$out/tour"
