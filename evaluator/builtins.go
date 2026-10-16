@@ -148,7 +148,11 @@ func init() {
 				case *object.Integer:
 					return arg
 				case *object.Float:
-					return &object.Integer{Value: int64(arg.Value)}
+					value, ok := floatToInt(arg.Value)
+					if !ok {
+						return &object.Error{Message: "integer overflow"}
+					}
+					return &object.Integer{Value: value}
 				case *object.String:
 					value, err := strconv.ParseInt(arg.Value, 10, 64)
 					if err != nil {
@@ -219,7 +223,11 @@ func init() {
 				switch arg := args[0].(type) {
 				case *object.Integer:
 					if arg.Value < 0 {
-						return &object.Integer{Value: -arg.Value}
+						value, ok := subInt(0, arg.Value)
+						if !ok {
+							return &object.Error{Message: "integer overflow"}
+						}
+						return &object.Integer{Value: value}
 					}
 					return arg
 				case *object.Float:
@@ -324,7 +332,11 @@ func init() {
 					}
 				}
 
-				return &object.Integer{Value: int64(math.Round(value))}
+				result, ok := floatToInt(math.Round(value))
+				if !ok {
+					return &object.Error{Message: "integer overflow"}
+				}
+				return &object.Integer{Value: result}
 			},
 		},
 
@@ -350,7 +362,11 @@ func init() {
 					}
 				}
 
-				return &object.Integer{Value: int64(math.Floor(value))}
+				result, ok := floatToInt(math.Floor(value))
+				if !ok {
+					return &object.Error{Message: "integer overflow"}
+				}
+				return &object.Integer{Value: result}
 			},
 		},
 
@@ -376,7 +392,11 @@ func init() {
 					}
 				}
 
-				return &object.Integer{Value: int64(math.Ceil(value))}
+				result, ok := floatToInt(math.Ceil(value))
+				if !ok {
+					return &object.Error{Message: "integer overflow"}
+				}
+				return &object.Integer{Value: result}
 			},
 		},
 
