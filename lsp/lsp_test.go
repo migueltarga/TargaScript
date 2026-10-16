@@ -106,3 +106,58 @@ func TestDiagnosticsCompletionAndHover(t *testing.T) {
 		t.Errorf("unknown requests and shutdown should answer null: %v %v", sent[5], sent[6])
 	}
 }
+
+func TestDefinitionsAndSymbols(t *testing.T) {
+	source := "fn add(a, b) { a + b }\nlet total = add(1, 2)\nfn outer() {\n  let total = 5\n  total + add(0, 0)\n}\nconst LIMIT = 10\nprint(total, LIMIT)\n"
+	uri := "file:///x/main.tg"
+	none := func(string, string) []diag.Diagnostic { return nil }
+	at := func(line, character int) map[string]any {
+		return map[string]any{"textDocument": map[string]any{"uri": uri}, "position": map[string]any{"line": line, "character": character}}
+	}
+	sent := replies(t, none,
+		map[string]any{"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri, "text": source}}},
+		// add in line 2 goes to its fn
+		map[string]any{"jsonrpc": "2.0", "id": 1, "method": "textDocument/definition", "params": at(1, 13)},
+		// total inside outer goes to the closer let, in line 4
+		map[string]any{"jsonrpc": "2.0", "id": 2, "method": "textDocument/definition", "params": at(4, 3)},
+		// total in the last line goes to the last let before it
+		map[string]any{"jsonrpc": "2.0", "id": 3, "method": "textDocument/definition", "params": at(7, 7)},
+		map[string]any{"jsonrpc": "2.0", "id": 4, "method": "textDocument/documentSymbol", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri}}},
+		map[string]any{"jsonrpc": "2.0", "id": 5, "method": "textDocument/completion", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri}}},
+		map[string]any{"jsonrpc": "2.0", "method": "exit"},
+	)
+
+	startOf := func(m map[string]any) [2]float64 {
+		start := m["result"].(map[string]any)["range"].(map[string]any)["start"].(map[string]any)
+		return [2]float64{start["line"].(float64), start["character"].(float64)}
+	}
+	if got := startOf(sent[1]); got != [2]float64{0, 3} {
+		t.Errorf("add goes to %v, want line 0, character 3", got)
+	}
+	if got := startOf(sent[2]); got != [2]float64{3, 6} {
+		t.Errorf("the inner total goes to %v, want line 3, character 6", got)
+	}
+	// outer's total is in a block that's closed there
+	if got := startOf(sent[3]); got != [2]float64{1, 4} {
+		t.Errorf("the last total goes to %v, want the top-level let, line 1", got)
+	}
+
+	names := []string{}
+	for _, symbol := range sent[4]["result"].([]any) {
+		names = append(names, symbol.(map[string]any)["name"].(string))
+	}
+	if strings.Join(names, " ") != "add total outer LIMIT" {
+		t.Errorf("outline: %v", names)
+	}
+
+	completed := map[string]bool{}
+	for _, item := range sent[5]["result"].([]any) {
+		completed[item.(map[string]any)["label"].(string)] = true
+	}
+	if !completed["outer"] || !completed["LIMIT"] || !completed["fetch"] || !completed["repeat"] {
+		t.Errorf("completion misses the file's names, builtins or keywords")
+	}
+}

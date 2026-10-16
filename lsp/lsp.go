@@ -110,9 +110,11 @@ func (s *Server) handle(m message) {
 		s.reply(m.ID, map[string]any{
 			"capabilities": map[string]any{
 				// The editor sends the whole text on every change
-				"textDocumentSync":   1,
-				"completionProvider": map[string]any{},
-				"hoverProvider":      true,
+				"textDocumentSync":       1,
+				"completionProvider":     map[string]any{},
+				"hoverProvider":          true,
+				"definitionProvider":     true,
+				"documentSymbolProvider": true,
 			},
 			"serverInfo": map[string]any{"name": "targascript"},
 		})
@@ -144,7 +146,30 @@ func (s *Server) handle(m message) {
 			s.notify("textDocument/publishDiagnostics", map[string]any{"uri": p.TextDocument.URI, "diagnostics": []any{}})
 		}
 	case "textDocument/completion":
-		s.reply(m.ID, completions())
+		var p struct {
+			TextDocument textDocument `json:"textDocument"`
+		}
+		json.Unmarshal(m.Params, &p)
+		s.reply(m.ID, s.completions(p.TextDocument.URI))
+	case "textDocument/definition":
+		var p struct {
+			TextDocument textDocument `json:"textDocument"`
+			Position     position     `json:"position"`
+		}
+		if json.Unmarshal(m.Params, &p) != nil {
+			s.reply(m.ID, nil)
+			return
+		}
+		s.reply(m.ID, s.definition(p.TextDocument.URI, p.Position))
+	case "textDocument/documentSymbol":
+		var p struct {
+			TextDocument textDocument `json:"textDocument"`
+		}
+		if json.Unmarshal(m.Params, &p) != nil {
+			s.reply(m.ID, nil)
+			return
+		}
+		s.reply(m.ID, s.symbols(p.TextDocument.URI))
 	case "textDocument/hover":
 		var p struct {
 			TextDocument textDocument `json:"textDocument"`
@@ -204,9 +229,21 @@ func uriPath(uri string) string {
 var keywords = []string{"let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
 	"continue", "load", "as", "await", "try", "catch", "throw", "match", "true", "false", "null", "this"}
 
-// completions lists the builtins and the keywords.
-func completions() []any {
+// completions lists the names the file declares, the builtins and the
+// keywords.
+func (s *Server) completions(uri string) []any {
 	items := []any{}
+	seen := map[string]bool{}
+	for _, d := range declarations(s.files[uri]) {
+		if !seen[d.name] {
+			seen[d.name] = true
+			kind := 6 // variable
+			if d.kind == 12 {
+				kind = 3 // function
+			}
+			items = append(items, map[string]any{"label": d.name, "kind": kind})
+		}
+	}
 	for _, name := range evaluator.BuiltinNames() {
 		item := map[string]any{"label": name, "kind": 3}
 		if doc, ok := builtinDocs[name]; ok {
@@ -221,23 +258,69 @@ func completions() []any {
 	return items
 }
 
-// hover shows the signature and description of the builtin under the
-// cursor.
-func (s *Server) hover(uri string, at position) any {
+// wordAt returns the name under a position, and whether a dot comes before
+// it, as in a property.
+func (s *Server) wordAt(uri string, at position) (string, bool) {
 	lines := strings.Split(s.files[uri], "\n")
 	if at.Line >= len(lines) {
-		return nil
+		return "", false
 	}
 	line := lines[at.Line]
-	start, end := at.Character, at.Character
+	start, end := min(at.Character, len(line)), min(at.Character, len(line))
 	for start > 0 && isNameByte(line[start-1]) {
 		start--
 	}
 	for end < len(line) && isNameByte(line[end]) {
 		end++
 	}
-	doc, ok := builtinDocs[line[start:end]]
-	if !ok || (start > 0 && line[start-1] == '.') {
+	return line[start:end], start > 0 && line[start-1] == '.'
+}
+
+// definition returns where the name under a position is declared in the
+// file.
+func (s *Server) definition(uri string, at position) any {
+	name, property := s.wordAt(uri, at)
+	if name == "" || property {
+		return nil
+	}
+	d, ok := definition(s.files[uri], name, at.Line, at.Character)
+	if !ok {
+		return nil
+	}
+	return map[string]any{"uri": uri, "range": nameRange(d)}
+}
+
+// symbols lists the functions, variables and constants declared at the top
+// level of the file, for an outline.
+func (s *Server) symbols(uri string) []any {
+	symbols := []any{}
+	for _, d := range declarations(s.files[uri]) {
+		if !d.topLevel() {
+			continue
+		}
+		symbols = append(symbols, map[string]any{
+			"name":           d.name,
+			"kind":           d.kind,
+			"range":          nameRange(d),
+			"selectionRange": nameRange(d),
+		})
+	}
+	return symbols
+}
+
+func nameRange(d declaration) map[string]any {
+	return map[string]any{
+		"start": position{d.line, d.column},
+		"end":   position{d.line, d.column + len(d.name)},
+	}
+}
+
+// hover shows the signature and description of the builtin under the
+// cursor.
+func (s *Server) hover(uri string, at position) any {
+	name, property := s.wordAt(uri, at)
+	doc, ok := builtinDocs[name]
+	if !ok || property {
 		return nil
 	}
 	return map[string]any{
