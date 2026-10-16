@@ -30,3 +30,7 @@ words              0.05         0.09
 ```
 
 TargaScript is faster than CPython on all of them, from 1.2 times on `strings` to 2 times on `loop` (and 28 times on `concat`, which CPython makes a new string for every time). That's plenty for scripts, servers and web pages, though not for heavy number crunching.
+
+## Profile-guided optimization
+
+`cmd/targascript/default.pgo` is a CPU profile of these benchmarks, which Go uses to optimize the `targascript` binary for them; every `go build` of it picks the file up. `./pgo.sh` writes it again, and is worth running after big changes to the VM. `TARGASCRIPT_CPUPROFILE=file targascript script.tg` writes a profile of any program, for `go tool pprof`.
