@@ -163,12 +163,14 @@
 
   // Runs source, in a fresh environment or the shared one, and returns the
   // error message or null, or a promise of them if the program awaits.
-  const evaluate = (source, onOutput, fresh) => {
+  const evaluate = (source, onOutput, fresh, dir = "") => {
     const s = handle(String(source));
     const o = handle(onOutput);
-    const result = wasm.evaluate(s, o, fresh ? 1 : 0);
+    const d = handle(dir);
+    const result = wasm.evaluate(s, o, fresh ? 1 : 0, d);
     release(s);
     release(o);
+    release(d);
     const error = result ? values[result] : null;
     release(result);
     return error;
@@ -219,13 +221,34 @@
   const scripts = () => {
     if (inWorker) {
       return new URL(self.location.href).searchParams.getAll("src")
-        .map((src) => ({ name: src, load: () => fetchText(url(src)) }));
+        .map((src) => ({ name: src, base: url(src), load: () => fetchText(url(src)) }));
     }
     return [...document.querySelectorAll('script[type="text/targascript"]')].map((tag, i) =>
       tag.src
-        ? { name: tag.getAttribute("src"), load: () => fetchText(tag.src) }
-        : { name: `inline script ${i + 1}`, load: () => Promise.resolve(tag.textContent) });
+        ? { name: tag.getAttribute("src"), base: tag.src, load: () => fetchText(tag.src) }
+        : { name: `inline script ${i + 1}`, base: location.href, load: () => Promise.resolve(tag.textContent) });
   };
+
+  // Files that scripts load, by path on the server. The browser can't read
+  // files while a program runs, so they are fetched before it starts: every
+  // load "path" in a script, and in the files it loads.
+  const files = new Map();
+  globalThis.targascriptReadFile = (path) => (files.has(path) ? files.get(path) : null);
+
+  const fetchLoads = async (source, base) => {
+    for (const [, path] of source.matchAll(/\bload\s+"((?:\\.|[^"\\])*)"/g)) {
+      const target = new URL(path, base);
+      if (target.origin !== new URL(base).origin || files.has(target.pathname)) continue;
+      const response = await fetch(target);
+      if (!response.ok) continue; // the load reports the file as not found
+      const text = await response.text();
+      files.set(target.pathname, text);
+      await fetchLoads(text, target.href);
+    }
+  };
+
+  // The directory of a URL's path, which load paths are relative to
+  const directory = (href) => new URL(".", href).pathname.replace(/\/$/, "") || "/";
 
   const domReady = inWorker || document.readyState !== "loading"
     ? Promise.resolve()
@@ -241,10 +264,11 @@
       globalThis.targascriptCheck = check;
       for (const script of scripts()) {
         const source = await script.load();
+        await fetchLoads(source, script.base);
         const report = (error) => {
           if (error) console.error(`TargaScript error in ${script.name}: ${error}`);
         };
-        const error = evaluate(source, toConsole, false);
+        const error = evaluate(source, toConsole, false, directory(script.base));
         if (error instanceof Promise) error.then(report);
         else report(error);
       }

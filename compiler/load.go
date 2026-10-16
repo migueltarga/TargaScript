@@ -29,10 +29,14 @@ func ResolveLoadPath(dir, path string) (string, error) {
 	return filepath.Abs(path)
 }
 
+// ReadFile reads the files programs load. The browser build replaces it, as
+// files there come from the page's server.
+var ReadFile = os.ReadFile
+
 // ReadModule reads and parses a loaded file, returning the error message the
 // load fails with when it can't.
 func ReadModule(path, shown string) (*ast.Program, string) {
-	source, err := os.ReadFile(path)
+	source, err := ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, "cannot load " + quote(shown) + ": file not found"

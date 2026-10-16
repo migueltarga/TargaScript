@@ -5,6 +5,7 @@
 package main
 
 import (
+	"io/fs"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/compiler"
@@ -125,15 +126,17 @@ func targascriptObject() *object.Hash {
 
 // evaluate runs the string with handle source, sending output to the
 // JavaScript function onOutput. With fresh set it uses a new environment,
-// otherwise the page's. It returns the handle of the error message, or 0
+// otherwise the page's. dir is the directory the script came from, for load. It returns the handle of the error message, or 0
 // (undefined).
 //
 //go:wasmexport evaluate
-func evaluate(source, onOutput, fresh uint32) uint32 {
+func evaluate(source, onOutput, fresh, dir uint32) uint32 {
 	s := page
 	if fresh != 0 {
 		s = newSession()
 	}
+	// Load paths are relative to the script's directory on the server
+	s.compiler.Dir = jsbridge.ReadString(dir)
 	// Output can arrive after this returns, when the program awaits
 	fn := jsbridge.Keep(onOutput)
 	out := writer(func(text string) {
@@ -188,9 +191,19 @@ func callback(id, args uint32) uint32 {
 
 func init() {
 	vm.MaxNestedRuns = maxNestedRuns
+	compiler.ReadFile = readFile
 	evaluator.SetHost(jsbridge.Host{})
 	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }
 
 func main() {}
+
+// readFile returns a file a program loads, which targascript.js fetched from
+// the server before running the program.
+func readFile(path string) ([]byte, error) {
+	if content, ok := jsbridge.Global().CallMethod("targascriptReadFile", []object.Object{&object.String{Value: path}}).(*object.String); ok {
+		return []byte(content.Value), nil
+	}
+	return nil, fs.ErrNotExist
+}
