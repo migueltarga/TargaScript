@@ -405,22 +405,30 @@ func (vm *VM) loop(base int) object.Object {
 			right := vm.stack[vm.sp-1]
 			left := vm.stack[vm.sp-2]
 			vm.sp -= 2
-			l, lok := left.(*object.Integer)
-			r, rok := right.(*object.Integer)
-			var truthy bool
-			if lok && rok {
-				truthy = compareInts(op, l.Value, r.Value)
-			} else {
-				result := vm.binary(f, ip, op, left, right)
-				if err, ok := result.(*object.Error); ok {
-					return err
-				}
-				truthy = evaluator.IsTruthy(result)
+			truthy, err := vm.compare(f, ip, op, left, right)
+			if err != nil {
+				return err
 			}
 			if truthy {
 				f.ip += 3
 			} else {
 				f.ip = int(code.ReadUint16(ins[ip+2:]))
+			}
+
+		case code.OpCompareConstJump:
+			// The comparison's position is that of the instruction it replaced
+			op := code.Opcode(ins[ip+1])
+			right := vm.constants[code.ReadUint16(ins[ip+2:])]
+			left := vm.stack[vm.sp-1]
+			vm.sp--
+			truthy, err := vm.compare(f, ip+3, op, left, right)
+			if err != nil {
+				return err
+			}
+			if truthy {
+				f.ip += 6
+			} else {
+				f.ip = int(code.ReadUint16(ins[ip+4:]))
 			}
 
 		case code.OpSetLocalPop:
@@ -1067,6 +1075,21 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// compare gives the result of a comparison as a bool, for the jumps that
+// do one; ip is where an error is reported.
+func (vm *VM) compare(f *frame, ip int, op code.Opcode, left, right object.Object) (bool, *object.Error) {
+	if l, ok := left.(*object.Integer); ok {
+		if r, ok := right.(*object.Integer); ok {
+			return compareInts(op, l.Value, r.Value), nil
+		}
+	}
+	result := vm.binary(f, ip, op, left, right)
+	if err, ok := result.(*object.Error); ok {
+		return false, err
+	}
+	return evaluator.IsTruthy(result), nil
 }
 
 // compareInts compares two integers with a comparison operator.

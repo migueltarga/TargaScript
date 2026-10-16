@@ -15,6 +15,15 @@ func fuse(ins code.Instructions) {
 		next := i + width
 		if next < len(ins) && !targets[next] {
 			second := code.Opcode(ins[next])
+			// A constant, a comparison and a jump, as in if n < 2
+			if third := next + 1; op == code.OpConstant && isComparison(second) && third < len(ins) && !targets[third] &&
+				code.Opcode(ins[third]) == code.OpJumpNotTruthy {
+				constant := code.ReadUint16(ins[i+1:])
+				target := code.ReadUint16(ins[third+1:])
+				copy(ins[i:], code.Make(code.OpCompareConstJump, int(second), int(constant), int(target), 0))
+				i += 7
+				continue
+			}
 			switch {
 			case op == code.OpConstant && isBinary(second):
 				constant := code.ReadUint16(ins[i+1:])

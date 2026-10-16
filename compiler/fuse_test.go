@@ -29,6 +29,11 @@ func TestFuse(t *testing.T) {
 			join(code.Make(code.OpSetLocalPop, 2, 0), code.Make(code.OpSetGlobalPop, 3, 0)),
 		},
 		{
+			"constant, comparison and jump",
+			join(code.Make(code.OpGetLocal, 0), code.Make(code.OpConstant, 1), code.Make(code.OpLessThan), code.Make(code.OpJumpNotTruthy, 9)),
+			join(code.Make(code.OpGetLocal, 0), code.Make(code.OpCompareConstJump, int(code.OpLessThan), 1, 9, 0)),
+		},
+		{
 			// x + (if c { 1 } else { 2 }): the jump to OpAdd keeps it
 			"jump to the second instruction",
 			join(code.Make(code.OpJump, 6), code.Make(code.OpConstant, 0), code.Make(code.OpAdd)),
