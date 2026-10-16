@@ -32,7 +32,7 @@ jobs:
 
       - name: Run examples
         run: |
-          go build -o targascript .
+          go build -o targascript ./cmd/targascript
           for f in examples/*.tg; do
             # const_test.tg ends with an intentional error
             [ "$f" = "examples/const_test.tg" ] && continue
@@ -60,7 +60,7 @@ jobs:
 
       - name: Compare examples with the CLI
         run: |
-          go build -o targascript .
+          go build -o targascript ./cmd/targascript
           for f in examples/*.tg; do
             # These use random numbers, the clock or load, which differ in the browser
             case "$f" in examples/math_string_time.tg|examples/word_stats.tg) continue ;; esac

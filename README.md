@@ -190,21 +190,31 @@ For more comprehensive examples showcasing TargaScript's capabilities, please ch
 
 Each example in the directory is extensively documented and designed to demonstrate specific language features.
 
+## 📥 Installing
+
+Download `targascript` for Linux, macOS or Windows from the [latest release](https://github.com/migueltarga/TargaScript/releases/latest), or install it with Go:
+
+```sh
+go install github.com/migueltarga/TargaScript/cmd/targascript@latest
+```
+
+Then run a script with `targascript script.tg`, or start the REPL with `targascript`. Each release also has `targascript.js` and `targascript.wasm` for running TargaScript in web pages.
+
 ## 🚀 Running TargaScript
 
 To run the TargaScript REPL:
 ```sh
-go run main.go
+go run ./cmd/targascript
 ```
 
 To run a TargaScript (`.tg`) file:
 ```sh
-go run main.go path/to/script.tg
+go run ./cmd/targascript path/to/script.tg
 ```
 
 Debug mode with AST visualization:
 ```sh
-go run main.go --debug path/to/script.tg
+go run ./cmd/targascript --debug path/to/script.tg
 ```
 
 ## 🌐 TargaScript in the Browser

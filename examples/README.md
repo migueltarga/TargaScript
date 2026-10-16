@@ -307,13 +307,13 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
 To run any example, use:
 
 ```
-go run main.go examples/filename.tg
+go run ./cmd/targascript examples/filename.tg
 ```
 
 For example:
 
 ```
-go run main.go examples/functions_demo.tg
+go run ./cmd/targascript examples/functions_demo.tg
 ```
 
 ## Creating Your Own Examples

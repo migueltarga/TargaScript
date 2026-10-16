@@ -1,0 +1,35 @@
+version: 2
+
+project_name: targascript
+
+builds:
+  - main: ./cmd/targascript
+    binary: targascript
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "targascript_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE.txt
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+release:
+  # The browser runtime, built by the workflow before GoReleaser runs
+  extra_files:
+    - glob: build/web/targascript.js
+    - glob: build/web/targascript.wasm
+
+changelog:
+  use: github-native
