@@ -1,8 +1,10 @@
 package repl
 
 import (
+	"bufio"
 	"os"
 	"sort"
+	"strings"
 )
 
 // osSystem gives programs run from the command line access to files, the
@@ -49,4 +51,15 @@ func (osSystem) Env(name string) (string, bool) {
 
 func (osSystem) Exit(code int) {
 	os.Exit(code)
+}
+
+// stdin reads the lines input returns.
+var stdin = bufio.NewReader(os.Stdin)
+
+func (osSystem) ReadLine() (string, bool) {
+	line, err := stdin.ReadString('\n')
+	if err != nil && line == "" {
+		return "", false
+	}
+	return strings.TrimRight(line, "\r\n"), true
 }

@@ -14,6 +14,7 @@
   "fetch": ["fetch(url, options?)", "A promise of an HTTP response with `status`, `ok`, `headers`, `text` and `json()`. Options: `method`, `headers`, `body`."],
   "floor": ["floor(x)", "The largest integer not greater than x."],
   "format": ["format(format, ...values)", "Formats values like printf and returns the text: `format(\"%.2f\", 3.14159)`."],
+  "input": ["input(prompt?)", "Prints the prompt and returns the line the user types, or null when the input has ended. Command line only."],
   "listDir": ["listDir(path)", "The names in a directory, sorted. Command line only."],
   "max": ["max(a, b, ...) / max(list)", "The largest number; integers stay integers. `null` for an empty array."],
   "min": ["min(a, b, ...) / min(list)", "The smallest number; integers stay integers. `null` for an empty array."],
