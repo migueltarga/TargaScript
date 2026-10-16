@@ -201,25 +201,47 @@ like a function whose body isn't closed, continues on the next line.
 The language reference: https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md
 `
 
+// lineSource gives the REPL the lines typed, after showing a prompt.
+type lineSource interface {
+	readLine(prompt string) (string, bool)
+}
+
+// plainLines reads lines from a reader, like a pipe.
+type plainLines struct {
+	scanner *bufio.Scanner
+	out     io.Writer
+}
+
+func (p plainLines) readLine(prompt string) (string, bool) {
+	fmt.Fprint(p.out, prompt)
+	if !p.scanner.Scan() {
+		return "", false
+	}
+	return p.scanner.Text(), true
+}
+
+// Start runs the REPL on lines read from in.
 func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
-	scanner := bufio.NewScanner(in)
+	run(plainLines{bufio.NewScanner(in), out}, out, noColor, debug)
+}
+
+func run(lines lineSource, out io.Writer, noColor bool, debug bool) {
 	sess := newSession()
 	var code strings.Builder
 
 	for {
-		if code.Len() == 0 {
-			fmt.Fprint(out, PROMPT)
-		} else {
-			fmt.Fprint(out, CONTINUE)
+		prompt := PROMPT
+		if code.Len() > 0 {
+			prompt = CONTINUE
 		}
-		if !scanner.Scan() {
+		line, ok := lines.readLine(prompt)
+		if !ok {
 			if code.Len() > 0 {
 				evalSource(code.String(), sess, out, noColor, debug, true)
 			}
 			return
 		}
 
-		line := scanner.Text()
 		if code.Len() == 0 {
 			switch strings.TrimSpace(line) {
 			case "exit", "quit":
