@@ -22,6 +22,10 @@ func TestCallbacksGetTheIndex(t *testing.T) {
 		// One parameter still gets only the element
 		{"[1, 2].map(x => x * 10)", "[10, 20]"},
 		{"[1, 2].map(fn(...xs) { xs })", "[[1, 0], [2, 1]]"},
+		// The arguments of one call don't change those of another
+		{"[[1, 2], [3]].map(a => a.map((x, i) => x + i))", "[[1, 3], [3]]"},
+		{"let seen = []\n[3, 1, 2].sort((a, b) => { seen.insert([a, b])\na - b })\nseen.every(p => p.length == 2)", "true"},
+		{"[1, 2, 3].reduce((acc, x) => acc + [1, 2].reduce((a, y) => a + x * y, 0), 0)", "18"},
 	}
 	for _, tt := range tests {
 		if got := testEval(tt.input).Inspect(); got != tt.expected {
