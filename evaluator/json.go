@@ -24,7 +24,7 @@ func init() {
 // keys, and numbers without a fraction or exponent become integers.
 func parseJSON(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for parseJSON. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "parseJSON", len(args), "1")
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
@@ -316,7 +316,7 @@ func jsonPosition(text string, offset int) string {
 // the string given as second argument.
 func toJSON(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for toJSON. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "toJSON", len(args), "1 or 2")
 	}
 
 	indent := ""

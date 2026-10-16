@@ -3,6 +3,7 @@ package evaluator
 import (
 	"math"
 	"math/rand/v2"
+	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
@@ -46,7 +47,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 		}
 		values = array.Elements
 	} else if len(args) == 0 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=0, want an array or two or more numbers", name)}
+		return wrongArgs(0, 0, name, 0, "an array or two or more numbers")
 	}
 
 	var best object.Object
@@ -67,7 +68,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 // places, giving a float, when there's a second argument.
 func roundBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for round. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "round", len(args), "1 or 2")
 	}
 	value, ok := number(args[0])
 	if !ok {
@@ -123,14 +124,14 @@ func randomBuiltin(args ...object.Object) object.Object {
 		}
 		return &object.Integer{Value: low.Value + int64(rand.Uint64N(span+1))}
 	}
-	return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for random. got=%d, want 0, 1 or 2", len(args))}
+	return wrongArgs(0, 0, "random", len(args), "0, 1 or 2")
 }
 
 // rangeBuiltin returns the integers from start to end, both included,
 // counting by step, which can be negative.
 func rangeBuiltin(args ...object.Object) object.Object {
 	if len(args) < 2 || len(args) > 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for range. got=%d, want=2 or 3", len(args))}
+		return wrongArgs(0, 0, "range", len(args), "2 or 3")
 	}
 	values := make([]int64, len(args))
 	for i, arg := range args {
@@ -215,7 +216,7 @@ func init() {
 func mathBuiltin(name string) func(args ...object.Object) object.Object {
 	return func(args ...object.Object) object.Object {
 		if len(args) != mathArity(name) {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), mathArity(name))}
+			return wrongArgs(0, 0, name, len(args), strconv.Itoa(mathArity(name)))
 		}
 		values := make([]float64, len(args))
 		for i, arg := range args {
@@ -235,7 +236,7 @@ func mathBuiltin(name string) func(args ...object.Object) object.Object {
 // truncBuiltin is a number without its decimals, toward zero.
 func truncBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for trunc. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "trunc", len(args), "1")
 	}
 	x, ok := number(args[0])
 	if !ok {
@@ -248,7 +249,7 @@ func truncBuiltin(args ...object.Object) object.Object {
 // positive.
 func signBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for sign. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "sign", len(args), "1")
 	}
 	x, ok := number(args[0])
 	if !ok {
@@ -266,7 +267,7 @@ func signBuiltin(args ...object.Object) object.Object {
 // clampBuiltin keeps a number between a minimum and a maximum.
 func clampBuiltin(args ...object.Object) object.Object {
 	if len(args) != 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for clamp. got=%d, want=3 (value, min, max)", len(args))}
+		return wrongArgs(0, 0, "clamp", len(args), "3 (value, min, max)")
 	}
 	value, low, high := args[0], args[1], args[2]
 	for _, arg := range args {

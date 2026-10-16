@@ -31,7 +31,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "count":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.count(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.count()", len(args), "1"), true
 		}
 		count := int64(0)
 		cb := newCallback(args[0])
@@ -52,7 +52,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "sum":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.sum(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.sum()", len(args), "0"), true
 		}
 		var total object.Object = &object.Integer{Value: 0}
 		for _, element := range arr.Elements {
@@ -70,7 +70,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "min", "max":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want 0", method, len(args)), true
+			return wrongArgs(line, column, "array."+method+"()", len(args), "0"), true
 		}
 		if len(arr.Elements) == 0 {
 			return NULL, true
@@ -93,7 +93,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 	case "unique":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.unique(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.unique()", len(args), "0"), true
 		}
 		unique := []object.Object{}
 		seen := map[object.HashKey]bool{}
@@ -122,7 +122,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 	case "flatten":
 		depth := int64(1)
 		if len(args) > 1 {
-			return newError(line, column, "wrong number of arguments for array.flatten(): got %d, want 0 or 1", len(args)), true
+			return wrongArgs(line, column, "array.flatten()", len(args), "0 or 1"), true
 		}
 		if len(args) == 1 {
 			n, ok := args[0].(*object.Integer)

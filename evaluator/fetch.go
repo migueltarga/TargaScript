@@ -25,7 +25,7 @@ func fetch(args ...object.Object) object.Object {
 
 func fetchWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for fetch. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "fetch", len(args), "1 or 2")
 	}
 	url, ok := args[0].(*object.String)
 	if !ok {

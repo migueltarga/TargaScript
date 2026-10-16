@@ -14,7 +14,7 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 	switch method {
 	case "chunk":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.chunk(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.chunk()", len(args), "1"), true
 		}
 		size, isInt := args[0].(*object.Integer)
 		if !isInt || size.Value < 1 {
@@ -30,7 +30,7 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 
 	case "zip":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.zip(): got %d, want 1", len(args)), true
+			return wrongArgs(line, column, "array.zip()", len(args), "1"), true
 		}
 		other, isArray := args[0].(*object.Array)
 		if !isArray {
@@ -47,7 +47,7 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 
 	case "toObject":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.toObject(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.toObject()", len(args), "0"), true
 		}
 		hash := object.NewHash()
 		for _, element := range arr.Elements {

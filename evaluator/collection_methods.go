@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"strconv"
+
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -17,7 +19,7 @@ func init() {
 var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) object.Object{
 	"entries": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 0 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.entries(): got %d, want 0", len(args))}
+			return wrongArgs(0, 0, "object.entries()", len(args), "0")
 		}
 		entries := []object.Object{}
 		for _, pair := range h.OrderedPairs() {
@@ -29,7 +31,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 	},
 	"get": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 && len(args) != 2 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.get(): got %d, want 1 or 2", len(args))}
+			return wrongArgs(0, 0, "object.get()", len(args), "1 or 2")
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
@@ -45,7 +47,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 	},
 	"remove": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 {
-			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.remove(): got %d, want 1", len(args))}
+			return wrongArgs(0, 0, "object.remove()", len(args), "1")
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
@@ -65,7 +67,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 func evalArrayChangeMethod(arr *object.Array, method string, args []object.Object, line, column int) (object.Object, bool) {
 	wantArgs := func(n int) *object.Error {
 		if len(args) != n {
-			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want %d", method, len(args), n)
+			return wrongArgs(line, column, "array."+method+"()", len(args), strconv.Itoa(n))
 		}
 		return nil
 	}
@@ -120,7 +122,7 @@ func evalArrayChangeMethod(arr *object.Array, method string, args []object.Objec
 // printing it.
 func format(args ...object.Object) object.Object {
 	if len(args) < 1 {
-		return &object.Error{Message: "wrong number of arguments for format. got=0, want at least 1"}
+		return wrongArgs(0, 0, "format", 0, "at least 1")
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {

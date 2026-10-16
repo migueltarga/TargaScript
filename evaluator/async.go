@@ -18,7 +18,7 @@ func sleep(args ...object.Object) object.Object {
 
 func sleepWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for sleep. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "sleep", len(args), "1")
 	}
 
 	var milliseconds int64
@@ -47,7 +47,7 @@ func sleepWithHost(h Host, args ...object.Object) object.Object {
 // promises are results already. It's rejected as soon as one is.
 func all(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for all. got=%d, want=1", len(args))}
+		return wrongArgs(0, 0, "all", len(args), "1")
 	}
 	list, ok := args[0].(*object.Array)
 	if !ok {

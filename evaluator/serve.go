@@ -78,7 +78,7 @@ func init() {
 
 func serveBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for serve. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "serve", len(args), "2")
 	}
 	port, ok := args[0].(*object.Integer)
 	if !ok || port.Value < 0 || port.Value > 65535 {
@@ -104,7 +104,7 @@ func serveBuiltin(args ...object.Object) object.Object {
 // responseBuiltin is response(body) or response(body, {status, headers}).
 func responseBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for response. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "response", len(args), "1 or 2")
 	}
 	r := &Response{Status: 200, Headers: map[string]string{}, Body: args[0]}
 	if len(args) == 1 {

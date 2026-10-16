@@ -71,7 +71,7 @@ describe("parser", fn() {
 
 func TestTestBuiltinErrors(t *testing.T) {
 	tests := []struct{ input, expected string }{
-		{`test("x")`, "wrong number of arguments for test. got=1, want=2"},
+		{`test("x")`, "wrong number of arguments for test: got 1, want 2"},
 		{`test(1, fn() {})`, "first argument to `test` must be a string, got an integer"},
 		{`test("x", 1)`, "second argument to `test` must be a function, got an integer"},
 	}

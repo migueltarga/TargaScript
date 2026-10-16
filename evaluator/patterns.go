@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"strconv"
+
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -115,7 +117,7 @@ func init() {
 // regexArg compiles the pattern in the first argument, caching it.
 func regexArg(name string, args []object.Object, count int) (Regex, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want %d", name, len(args), count)}
+		return nil, wrongArgs(0, 0, "string."+name+"()", len(args), strconv.Itoa(count))
 	}
 	pattern, ok := args[0].(*object.String)
 	if !ok {

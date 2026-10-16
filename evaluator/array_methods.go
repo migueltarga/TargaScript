@@ -13,7 +13,7 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 	switch method {
 	case "contains", "indexOf":
 		if len(args) != 1 {
-			return newError(line, column, "wrong number of arguments for array.%s(): got %d, want 1", method, len(args)), true
+			return wrongArgs(line, column, "array."+method+"()", len(args), "1"), true
 		}
 		index := int64(-1)
 		for i, element := range arr.Elements {
@@ -45,7 +45,7 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 
 	case "slice":
 		if len(args) < 1 || len(args) > 2 {
-			return newError(line, column, "wrong number of arguments for array.slice(): got %d, want 1 or 2", len(args)), true
+			return wrongArgs(line, column, "array.slice()", len(args), "1 or 2"), true
 		}
 		length := int64(len(arr.Elements))
 		bounds := []int64{0, length}
@@ -66,7 +66,7 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 
 	case "reverse":
 		if len(args) != 0 {
-			return newError(line, column, "wrong number of arguments for array.reverse(): got %d, want 0", len(args)), true
+			return wrongArgs(line, column, "array.reverse()", len(args), "0"), true
 		}
 		for i, j := 0, len(arr.Elements)-1; i < j; i, j = i+1, j-1 {
 			arr.Elements[i], arr.Elements[j] = arr.Elements[j], arr.Elements[i]

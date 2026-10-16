@@ -68,9 +68,7 @@ func init() {
 			Name: "printf",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) < 1 {
-					return &object.Error{
-						Message: "wrong number of arguments for printf. got=0, want at least 1",
-					}
+					return wrongArgs(0, 0, "printf", 0, "at least 1")
 				}
 
 				format, ok := args[0].(*object.String)
@@ -99,9 +97,7 @@ func init() {
 			Name: "type",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for type. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "type", len(args), "1")
 				}
 
 				return &object.String{Value: kindName(args[0])}
@@ -113,9 +109,7 @@ func init() {
 			Name: "toString",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toString. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toString", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -140,9 +134,7 @@ func init() {
 			Name: "toInt",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toInt. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toInt", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -180,9 +172,7 @@ func init() {
 			Name: "toFloat",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for toFloat. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "toFloat", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -216,9 +206,7 @@ func init() {
 			Name: "abs",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for abs. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "abs", len(args), "1")
 				}
 
 				switch arg := args[0].(type) {
@@ -246,9 +234,7 @@ func init() {
 			Name: "sqrt",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for sqrt. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "sqrt", len(args), "1")
 				}
 
 				var value float64
@@ -278,9 +264,7 @@ func init() {
 			Name: "pow",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 2 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for pow. got=%d, want=2", len(args)),
-					}
+					return wrongArgs(0, 0, "pow", len(args), "2")
 				}
 
 				var base, exponent float64
@@ -316,9 +300,7 @@ func init() {
 			Name: "floor",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for floor. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "floor", len(args), "1")
 				}
 
 				var value float64
@@ -346,9 +328,7 @@ func init() {
 			Name: "ceil",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 1 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for ceil. got=%d, want=1", len(args)),
-					}
+					return wrongArgs(0, 0, "ceil", len(args), "1")
 				}
 
 				var value float64
@@ -376,9 +356,7 @@ func init() {
 			Name: "now",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 0 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for now. got=%d, want=0", len(args)),
-					}
+					return wrongArgs(0, 0, "now", len(args), "0")
 				}
 
 				return &object.Integer{Value: int64(timeHost.Now())}
@@ -390,9 +368,7 @@ func init() {
 			Name: "timeFormat",
 			Fn: func(args ...object.Object) object.Object {
 				if len(args) != 2 {
-					return &object.Error{
-						Message: strfmt.Sprintf("wrong number of arguments for timeFormat. got=%d, want=2", len(args)),
-					}
+					return wrongArgs(0, 0, "timeFormat", len(args), "2")
 				}
 
 				timestamp, ok := args[0].(*object.Integer)

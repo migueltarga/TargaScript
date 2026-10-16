@@ -406,6 +406,17 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
+// wrongArgs is the error of a call with a number of arguments the
+// function doesn't take: "wrong number of arguments for name: got 3, want
+// 1 or 2".
+func wrongArgs(line, column int, name string, got int, want string) *object.Error {
+	return &object.Error{
+		Message: "wrong number of arguments for " + name + ": got " + strconv.Itoa(got) + ", want " + want,
+		Line:    line,
+		Column:  column,
+	}
+}
+
 func newError(line, column int, format string, a ...interface{}) *object.Error {
 	return &object.Error{
 		Message: strfmt.Sprintf(format, a...),
@@ -571,25 +582,25 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "trim":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.trim(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.trim()", len(args), "0")
 			}
 			return &object.String{Value: strings.TrimSpace(obj.Value)}
 
 		case "lower":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.lower(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.lower()", len(args), "0")
 			}
 			return &object.String{Value: strings.ToLower(obj.Value)}
 
 		case "upper":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for string.upper(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "string.upper()", len(args), "0")
 			}
 			return &object.String{Value: strings.ToUpper(obj.Value)}
 
 		case "replace":
 			if len(args) != 2 {
-				return newError(line, column, "wrong number of arguments for string.replace(): got %d, want 2", len(args))
+				return wrongArgs(line, column, "string.replace()", len(args), "2")
 			}
 
 			oldStr, ok := args[0].(*object.String)
@@ -606,7 +617,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "split":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for string.split(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "string.split()", len(args), "1")
 			}
 
 			delimiter, ok := args[0].(*object.String)
@@ -624,7 +635,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "contains", "indexOf", "startsWith", "endsWith":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for string.%s(): got %d, want 1", method, len(args))
+				return wrongArgs(line, column, "string."+method+"()", len(args), "1")
 			}
 			sub, ok := args[0].(*object.String)
 			if !ok {
@@ -657,7 +668,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "first":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.first(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.first()", len(args), "0")
 			}
 			if len(obj.Elements) > 0 {
 				return obj.Elements[0]
@@ -665,7 +676,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return NULL
 		case "last":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.last(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.last()", len(args), "0")
 			}
 			length := len(obj.Elements)
 			if length > 0 {
@@ -674,7 +685,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return NULL
 		case "insert":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.insert(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.insert()", len(args), "1")
 			}
 
 			// Appends in place, like index assignment, and returns the same array
@@ -682,7 +693,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return obj
 		case "rest":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for array.rest(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "array.rest()", len(args), "0")
 			}
 
 			if len(obj.Elements) == 0 {
@@ -693,7 +704,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: newElements}
 		case "join":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.join(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.join()", len(args), "1")
 			}
 
 			separator, ok := args[0].(*object.String)
@@ -709,7 +720,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.String{Value: strings.Join(strs, separator.Value)}
 		case "map":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.map(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.map()", len(args), "1")
 			}
 
 			fn := args[0]
@@ -731,7 +742,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: result}
 		case "filter":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for array.filter(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "array.filter()", len(args), "1")
 			}
 
 			fn := args[0]
@@ -755,7 +766,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return &object.Array{Elements: result}
 		case "reduce":
 			if len(args) != 2 {
-				return newError(line, column, "wrong number of arguments for array.reduce(): got %d, want 2", len(args))
+				return wrongArgs(line, column, "array.reduce()", len(args), "2")
 			}
 
 			fn := args[0]
@@ -802,7 +813,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		switch method {
 		case "keys":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.keys(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.keys()", len(args), "0")
 			}
 
 			keys := []object.Object{}
@@ -814,7 +825,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "values":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.values(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.values()", len(args), "0")
 			}
 
 			values := []object.Object{}
@@ -826,7 +837,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "has":
 			if len(args) != 1 {
-				return newError(line, column, "wrong number of arguments for object.has(): got %d, want 1", len(args))
+				return wrongArgs(line, column, "object.has()", len(args), "1")
 			}
 
 			hashable, ok := args[0].(object.Hashable)
@@ -839,7 +850,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 		case "length":
 			if len(args) != 0 {
-				return newError(line, column, "wrong number of arguments for object.length(): got %d, want 0", len(args))
+				return wrongArgs(line, column, "object.length()", len(args), "0")
 			}
 
 			return &object.Integer{Value: int64(obj.Len())}

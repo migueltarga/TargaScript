@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"io"
+	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
@@ -117,7 +118,7 @@ func fileChange(name, verb string, change func(FileManager, string) error, args 
 // program that fails gives its code; only one that can't start is an error.
 func execBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 3 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 to 3", len(args))}
+		return wrongArgs(0, 0, "exec", len(args), "1 to 3")
 	}
 	program, ok := args[0].(*object.String)
 	if !ok {
@@ -191,7 +192,7 @@ func noSystem(name string) *object.Error {
 
 func stringArgs(name string, args []object.Object, count int) ([]string, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), count)}
+		return nil, wrongArgs(0, 0, name, len(args), strconv.Itoa(count))
 	}
 	values := make([]string, count)
 	for i, arg := range args {
@@ -261,7 +262,7 @@ func listDirBuiltin(args ...object.Object) object.Object {
 // when it isn't set.
 func envBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for env. got=%d, want=1 or 2", len(args))}
+		return wrongArgs(0, 0, "env", len(args), "1 or 2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
@@ -283,7 +284,7 @@ func envBuiltin(args ...object.Object) object.Object {
 func exitBuiltin(args ...object.Object) object.Object {
 	code := int64(0)
 	if len(args) > 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exit. got=%d, want=0 or 1", len(args))}
+		return wrongArgs(0, 0, "exit", len(args), "0 or 1")
 	}
 	if len(args) == 1 {
 		n, ok := args[0].(*object.Integer)
@@ -303,7 +304,7 @@ func exitBuiltin(args ...object.Object) object.Object {
 // types, or null when the input has ended.
 func inputBuiltin(args ...object.Object) object.Object {
 	if len(args) > 1 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for input. got=%d, want=0 or 1", len(args))}
+		return wrongArgs(0, 0, "input", len(args), "0 or 1")
 	}
 	reader, ok := system.(LineReader)
 	if !ok {

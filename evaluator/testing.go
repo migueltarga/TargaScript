@@ -37,7 +37,7 @@ func init() {
 // tests for -run.
 func describeBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for describe. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "describe", len(args), "2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
@@ -81,7 +81,7 @@ func testIndent() string {
 // passed. A failing test doesn't stop the program, so the rest still run.
 func testBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for test. got=%d, want=2", len(args))}
+		return wrongArgs(0, 0, "test", len(args), "2")
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
