@@ -8,44 +8,46 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 
 **[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
 
-## 🌟 Features
+## 🌟 Why TargaScript
 
-- Clean, intuitive syntax
-- First-class functions
-- Objects and arrays with method-style dot notation
-- Rich set of built-in functions and methods
-- Expressive loop constructs with `repeat`
-- Variable scoping that behaves intuitively
-- String interpolation and formatting
-- Powerful data transformation capabilities
-- Runs in web pages, with access to JavaScript and the DOM
+- **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a 150 KB WebAssembly runtime: add `<script type="text/targascript">` to a page, with no build step.
+- **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
+- **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
+- **Small, modern syntax.** String interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
+- **A bytecode VM.** Programs compile to bytecode, which runs several times faster than the original tree-walking interpreter and allows 10,000 nested calls, in the browser too.
 
-## 📝 Simple Example
+## 📝 A Taste
 
 ```
-// Define a greeting function
-fn greet(name) {
-  return "Hello, " + name + "!"
+// Count the latest commits of a repository by author
+let url = "https://api.github.com/repos/migueltarga/TargaScript/commits?per_page=50"
+let response = await fetch(url)
+if !response.ok { throw "GitHub answered ${response.status}" }
+
+let byAuthor = response.json().groupBy(fn({commit}) { commit.author.name })
+
+repeat name, commits in byAuthor {
+    print("${name.padEnd(20)} ${commits.length} commits")
+}
+```
+
+And the basics:
+
+```
+fn greet(name, greeting = "Hello") {
+    "${greeting}, ${name}!"
 }
 
-// Create and use a simple data structure
-let person = {
-  "name": "Alice",
-  "age": 30,
-  "skills": ["programming", "design"]
+let person = {"name": "Alice", "skills": ["programming", "design"]}
+print(greet(person.name))                  // Hello, Alice!
+
+repeat i, skill in person.skills {
+    print("${i + 1}. ${skill}")
 }
 
-// Print a greeting using dot notation to access properties
-print(greet(person.name))  // Prints: Hello, Alice!
-
-// Embed expressions in strings with ${...}
-print("${person.name} is ${person.age} years old")  // Prints: Alice is 30 years old
-
-// Use a loop to iterate through an array
-print("Skills:")
-repeat skill in person.skills {
-  print("- " + skill)
-}
+let [first, ...rest] = [1, 2, 3]
+print(person.address?.city ?? "unknown")   // unknown
 ```
 
 ## 🧯 Handling Errors
