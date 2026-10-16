@@ -92,6 +92,18 @@
     "operators": {
       "patterns": [
         {
+          "name": "storage.type.function.arrow.targascript",
+          "match": "=>"
+        },
+        {
+          "name": "keyword.operator.assignment.compound.targascript",
+          "match": "(\\*\\*|\\?\\?|[-+*/%])="
+        },
+        {
+          "name": "keyword.operator.spread.targascript",
+          "match": "\\.\\.\\."
+        },
+        {
           "name": "keyword.operator.comparison.targascript",
           "match": "==|!=|<=|>=|<|>"
         },
@@ -109,7 +121,7 @@
         },
         {
           "name": "keyword.operator.arithmetic.targascript",
-          "match": "\\+|-|\\*|\\/|\\^|%"
+          "match": "\\*\\*|\\+|-|\\*|\\/|\\^|%"
         },
         {
           "name": "keyword.operator.assignment.targascript",
