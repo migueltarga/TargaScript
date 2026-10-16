@@ -21,16 +21,26 @@ var (
 // frame is a function call in progress. Its locals live on the stack from
 // base, and loops remembers the stack height of its open loops.
 type frame struct {
-	cl    *object.Closure
-	ip    int
-	base  int
-	loops []loop
+	cl       *object.Closure
+	ip       int
+	base     int
+	loops    []loop
+	handlers []handler
 }
 
 type loop struct {
 	sp         int
 	breakTo    int
 	continueTo int
+	handlers   int // try blocks open when the loop started
+}
+
+// handler is an open try block: where its catch block starts, and the stack
+// height and loops to go back to when an error is caught.
+type handler struct {
+	sp    int
+	catch int
+	loops int
 }
 
 // VM runs compiled programs. A VM keeps its globals between runs, for a
@@ -144,6 +154,14 @@ func (vm *VM) runFiber(base int, fb *fiber) object.Object {
 	}
 
 	result := vm.loop(base)
+	for {
+		err, ok := result.(*object.Error)
+		if !ok || !vm.catch(base, err) {
+			break
+		}
+		result = vm.loop(base)
+	}
+
 	if s, ok := result.(*suspension); ok {
 		if fb == nil {
 			fb = &fiber{promise: object.NewPromise()}
@@ -293,6 +311,7 @@ func (vm *VM) loop(base int) object.Object {
 				sp:         vm.sp,
 				breakTo:    int(code.ReadUint16(ins[ip+1:])),
 				continueTo: int(code.ReadUint16(ins[ip+3:])),
+				handlers:   len(f.handlers),
 			})
 			f.ip += 4
 
@@ -302,6 +321,7 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpBreak:
 			l := f.loops[len(f.loops)-1]
 			vm.sp = l.sp
+			f.handlers = f.handlers[:l.handlers]
 			if ins[ip+1] == 1 {
 				f.ip = l.continueTo
 			} else {
@@ -553,6 +573,20 @@ func (vm *VM) loop(base int) object.Object {
 					"await can't pause here: this function was called by a builtin such as map or sort")
 			}
 			return &suspension{awaited: awaitable, line: line, column: column}
+
+		case code.OpTry:
+			f.handlers = append(f.handlers, handler{
+				sp:    vm.sp,
+				catch: int(code.ReadUint16(ins[ip+1:])),
+				loops: len(f.loops),
+			})
+			f.ip += 2
+
+		case code.OpTryEnd:
+			f.handlers = f.handlers[:len(f.handlers)-1]
+
+		case code.OpThrow:
+			return vm.thrown(f, ip, vm.pop())
 
 		case code.OpError:
 			message := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value

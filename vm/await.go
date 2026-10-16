@@ -42,6 +42,9 @@ func (vm *VM) suspend(base int, fb *fiber, s *suspension) {
 		for i := range f.loops {
 			f.loops[i].sp -= bottom
 		}
+		for i := range f.handlers {
+			f.handlers[i].sp -= bottom
+		}
 	}
 	fb.line, fb.column = s.line, s.column
 
@@ -70,6 +73,9 @@ func (vm *VM) resume(fb *fiber, value, reason object.Object) {
 		f.base += start
 		for i := range f.loops {
 			f.loops[i].sp += start
+		}
+		for i := range f.handlers {
+			f.handlers[i].sp += start
 		}
 	}
 	vm.frames = append(vm.frames, fb.frames...)

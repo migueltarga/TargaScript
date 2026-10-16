@@ -190,15 +190,14 @@ shareButton.addEventListener("click", fn(event) {
     let encoded = compress(code.value)
     js.history.replaceState(null, "", "#code=" + encoded)
 
-    let showLabel = fn(label) {
-        shareButton.textContent = label
-        js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
-    }
     // Without clipboard access the link is still in the address bar
-    js.navigator.clipboard.writeText(js.location.href).then(
-        fn(result) { showLabel("Link copied") },
-        fn(error) { showLabel("Link in address bar") }
-    )
+    shareButton.textContent = try {
+        await js.navigator.clipboard.writeText(js.location.href)
+        "Link copied"
+    } catch {
+        "Link in address bar"
+    }
+    js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
 })
 
 // SECTION 4: Examples

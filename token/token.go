@@ -68,6 +68,9 @@ const (
 	BREAK    = "BREAK"
 	CONTINUE = "CONTINUE"
 	AWAIT    = "AWAIT"
+	TRY      = "TRY"
+	CATCH    = "CATCH"
+	THROW    = "THROW"
 )
 
 type Token struct {
@@ -95,6 +98,9 @@ var keywords = map[string]TokenType{
 	"break":    BREAK,
 	"continue": CONTINUE,
 	"await":    AWAIT,
+	"try":      TRY,
+	"catch":    CATCH,
+	"throw":    THROW,
 }
 
 func LookupIdent(ident string) TokenType {

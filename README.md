@@ -48,6 +48,27 @@ repeat skill in person.skills {
 }
 ```
 
+## 🧯 Handling Errors
+
+`try` runs a block and, if anything in it fails, runs the `catch` block with the error. `throw` raises an error of your own:
+
+```
+fn parseAge(text) {
+    let age = toInt(text)
+    if age < 0 { throw "age can't be negative" }
+    age
+}
+
+let age = try {
+    parseAge("-3")
+} catch err {
+    print("Invalid age:", err.message, "at line", err.line)
+    0
+}
+```
+
+The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
+
 ## 📦 Loading Other Files
 
 Split code across files with `load`. A loaded file runs once, and its top-level variables, constants and functions become available:

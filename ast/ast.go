@@ -625,3 +625,35 @@ func (ae *AwaitExpression) TokenLiteral() string { return ae.Token.Literal }
 func (ae *AwaitExpression) String() string {
 	return "await " + ae.Value.String()
 }
+
+// TryExpression runs Body and, if it fails, Catch with the error in Name:
+// `try { ... } catch err { ... }`. Name is nil when the error is unused.
+// Its value is the value of the block that ran last.
+type TryExpression struct {
+	Token token.Token
+	Body  *BlockStatement
+	Name  *Identifier
+	Catch *BlockStatement
+}
+
+func (ts *TryExpression) expressionNode()      {}
+func (ts *TryExpression) TokenLiteral() string { return ts.Token.Literal }
+func (ts *TryExpression) String() string {
+	name := ""
+	if ts.Name != nil {
+		name = ts.Name.Value + " "
+	}
+	return "try " + ts.Body.String() + " catch " + name + ts.Catch.String()
+}
+
+// ThrowStatement raises an error: `throw "message"`.
+type ThrowStatement struct {
+	Token token.Token
+	Value Expression
+}
+
+func (ts *ThrowStatement) statementNode()       {}
+func (ts *ThrowStatement) TokenLiteral() string { return ts.Token.Literal }
+func (ts *ThrowStatement) String() string {
+	return "throw " + ts.Value.String()
+}

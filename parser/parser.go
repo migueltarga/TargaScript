@@ -84,6 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FLOAT, p.parseFloatLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
+	p.registerPrefix(token.TRY, p.parseTryExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
@@ -212,6 +213,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLoadStatement()
 	case token.REPEAT:
 		return p.parseRepeatStatement()
+	case token.THROW:
+		return p.parseThrowStatement()
 	case token.PRINT:
 		return p.parsePrintStatement()
 	case token.BREAK:
@@ -664,6 +667,36 @@ func (p *Parser) parseLoadStatement() *ast.LoadStatement {
 		p.nextToken()
 	}
 
+	return stmt
+}
+
+func (p *Parser) parseTryExpression() ast.Expression {
+	stmt := &ast.TryExpression{Token: p.curToken}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	stmt.Body = p.parseBlockStatement()
+
+	if !p.expectPeek(token.CATCH) {
+		return nil
+	}
+	if p.peekTokenIs(token.IDENT) {
+		p.nextToken()
+		stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	}
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	stmt.Catch = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseThrowStatement() ast.Statement {
+	stmt := &ast.ThrowStatement{Token: p.curToken}
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
 	return stmt
 }
 
