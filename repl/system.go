@@ -49,6 +49,28 @@ func (osSystem) ListDir(path string) ([]string, error) {
 	return names, nil
 }
 
+func (osSystem) Exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func (osSystem) DeleteFile(path string) error {
+	return unwrapPath(os.Remove(path))
+}
+
+func (osSystem) MakeDir(path string) error {
+	return unwrapPath(os.MkdirAll(path, 0o755))
+}
+
+// unwrapPath leaves the path out of an error, as the message shows it
+func unwrapPath(err error) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return pathErr.Err
+	}
+	return err
+}
+
 func (osSystem) Env(name string) (string, bool) {
 	return os.LookupEnv(name)
 }

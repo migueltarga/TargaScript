@@ -25,6 +25,14 @@ type LineReader interface {
 	ReadLine() (string, bool)
 }
 
+// FileManager is a System that can also look for, delete and make files
+// and directories.
+type FileManager interface {
+	Exists(path string) bool
+	DeleteFile(path string) error
+	MakeDir(path string) error
+}
+
 // CommandRunner is a System that can run other programs, for exec.
 type CommandRunner interface {
 	// RunCommand runs a program with its arguments, or with shell set, a
@@ -52,6 +60,43 @@ func init() {
 	builtins["exit"] = &object.Builtin{Name: "exit", Fn: exitBuiltin}
 	builtins["input"] = &object.Builtin{Name: "input", Fn: inputBuiltin}
 	builtins["exec"] = &object.Builtin{Name: "exec", Fn: execBuiltin}
+	builtins["exists"] = &object.Builtin{Name: "exists", Fn: existsBuiltin}
+	builtins["deleteFile"] = &object.Builtin{Name: "deleteFile", Fn: func(args ...object.Object) object.Object {
+		return fileChange("deleteFile", "delete", FileManager.DeleteFile, args)
+	}}
+	builtins["makeDir"] = &object.Builtin{Name: "makeDir", Fn: func(args ...object.Object) object.Object {
+		return fileChange("makeDir", "make", FileManager.MakeDir, args)
+	}}
+}
+
+// existsBuiltin reports whether a file or directory exists.
+func existsBuiltin(args ...object.Object) object.Object {
+	values, err := stringArgs("exists", args, 1)
+	if err != nil {
+		return err
+	}
+	files, ok := system.(FileManager)
+	if !ok {
+		return noSystem("exists")
+	}
+	return nativeBoolToBooleanObject(files.Exists(values[0]))
+}
+
+// fileChange runs deleteFile, which deletes a file or an empty directory,
+// or makeDir, which makes a directory and the ones it is in.
+func fileChange(name, verb string, change func(FileManager, string) error, args []object.Object) object.Object {
+	values, err := stringArgs(name, args, 1)
+	if err != nil {
+		return err
+	}
+	files, ok := system.(FileManager)
+	if !ok {
+		return noSystem(name)
+	}
+	if changeErr := change(files, values[0]); changeErr != nil {
+		return &object.Error{Message: fmt.Sprintf("cannot %s %q: %s", verb, values[0], changeErr)}
+	}
+	return NULL
 }
 
 // execBuiltin runs a command line in the shell, exec("ls -l"), or a
