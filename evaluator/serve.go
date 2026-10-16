@@ -9,8 +9,9 @@ import (
 
 // Server runs the HTTP server of serve. Only the command line sets one.
 type Server interface {
-	// Serve listens on port and calls handle for each request, one at a
-	// time. It returns only when the server fails.
+	// Serve starts listening on port and returns. It then calls handle for
+	// each request, one at a time, on the goroutine that runs the program.
+	// handle can return a promise, when the handler awaits.
 	Serve(port int, handle func(request *object.Hash) object.Object) error
 }
 
@@ -94,7 +95,10 @@ func serveBuiltin(args ...object.Object) object.Object {
 	err := server.Serve(int(port.Value), func(request *object.Hash) object.Object {
 		return applyFunction(handler, []object.Object{request})
 	})
-	return &object.Error{Message: "serve: " + err.Error()}
+	if err != nil {
+		return &object.Error{Message: "serve: " + err.Error()}
+	}
+	return NULL
 }
 
 // responseBuiltin is response(body) or response(body, {status, headers}).

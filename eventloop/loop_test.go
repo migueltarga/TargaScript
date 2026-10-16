@@ -28,3 +28,17 @@ func TestRunStopsWhenNothingIsPending(t *testing.T) {
 		t.Error("reported done with nothing to wait for")
 	}
 }
+
+func TestPostRunsWorkFromOtherGoroutines(t *testing.T) {
+	l := New()
+	l.Hold()
+	ran := 0
+	go func() {
+		for range 3 {
+			l.Post(func() { ran++ })
+		}
+	}()
+	if !l.Run(func() bool { return ran == 3 }) {
+		t.Fatal("stopped before the posted work ran")
+	}
+}

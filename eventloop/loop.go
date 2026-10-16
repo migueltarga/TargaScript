@@ -32,6 +32,22 @@ func (l *Loop) Go(work func() func()) {
 	}()
 }
 
+// Hold keeps Run going for work with no end of its own, like a server, so
+// Post can be used. Call it on the loop.
+func (l *Loop) Hold() {
+	l.pending++
+}
+
+// Post runs fn on the loop. Unlike the other methods it can be called from
+// any goroutine, while something holds the loop.
+func (l *Loop) Post(fn func()) {
+	l.tasks <- func() {
+		// Run counts this as finished work; it wasn't pending
+		l.pending++
+		fn()
+	}
+}
+
 // Run runs finished work until done returns true or nothing is pending. It
 // reports whether done returned true.
 func (l *Loop) Run(done func() bool) bool {

@@ -7,18 +7,26 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/migueltarga/TargaScript/evaluator"
+	"github.com/migueltarga/TargaScript/eventloop"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
 )
 
 // handlerServer starts a test server with a TargaScript handler, the value
-// of source.
+// of source. The handler runs on an event loop of its own, which runs until
+// the test ends.
 func handlerServer(t *testing.T, source string) *httptest.Server {
 	t.Helper()
+	l := eventloop.New()
+	evaluator.SetHost(l)
+	t.Cleanup(func() { evaluator.SetHost(loop) })
+
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) > 0 {
@@ -28,7 +36,21 @@ func handlerServer(t *testing.T, source string) *httptest.Server {
 	if !evaluator.IsCallable(handler) {
 		t.Fatalf("the source isn't a function: %s", handler.Inspect())
 	}
-	server := httptest.NewServer(newHandler(func(request *object.Hash) object.Object {
+
+	var stopped atomic.Bool
+	done := make(chan bool)
+	l.Hold()
+	go func() {
+		l.Run(stopped.Load)
+		close(done)
+	}()
+	t.Cleanup(func() {
+		stopped.Store(true)
+		l.Post(func() {})
+		<-done
+	})
+
+	server := httptest.NewServer(newHandler(l.Post, func(request *object.Hash) object.Object {
 		return evaluator.CallFunction(handler, []object.Object{request})
 	}))
 	t.Cleanup(server.Close)
@@ -53,6 +75,14 @@ fn(req) {
             response({count: items.length}, {status: 201, headers: {"X-Count": items.length}})
         }
         "/empty" => null
+        "/later" => {
+            await sleep(5)
+            "awaited"
+        }
+        "/rejected" => {
+            await sleep(1)
+            throw "too late"
+        }
         "/fail" => null.x
         _ => response("Not found", {status: 404})
     }
@@ -70,6 +100,8 @@ fn(req) {
 		{"POST", "/add", `{"name": "b"}`, 201, "application/json", `{"count":2}`},
 		{"GET", "/items", "", 200, "application/json", `["a","b"]`},
 		{"GET", "/empty", "", 204, "", ""},
+		{"GET", "/later", "", 200, "text/plain; charset=utf-8", "awaited"},
+		{"GET", "/rejected", "", 500, "text/plain; charset=utf-8", "too late\n"},
 		{"GET", "/fail", "", 500, "text/plain; charset=utf-8", "cannot read property \"x\" of null\n"},
 		{"GET", "/missing", "", 404, "text/plain; charset=utf-8", "Not found"},
 	}
@@ -91,7 +123,7 @@ fn(req) {
 		}
 	}
 
-	if !strings.Contains(log.String(), `GET /fail: ERROR at line 14`) {
+	if !strings.Contains(log.String(), `GET /fail: ERROR at line 22`) {
 		t.Errorf("the failing request wasn't logged: %q", log.String())
 	}
 }
@@ -110,5 +142,42 @@ func TestServeErrors(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), tt.expected) {
 			t.Errorf("%s: got %v, want an error with %q", tt.program, err, tt.expected)
 		}
+	}
+}
+
+func TestServeAnswersWhileAHandlerWaits(t *testing.T) {
+	server := handlerServer(t, `
+fn(req) {
+    if req.path == "/slow" {
+        await sleep(300)
+        return "slow"
+    }
+    "fast"
+}`)
+
+	slow := make(chan string)
+	go func() {
+		res, err := http.Get(server.URL + "/slow")
+		if err != nil {
+			slow <- err.Error()
+			return
+		}
+		body, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		slow <- string(body)
+	}()
+
+	start := time.Now()
+	res, err := http.Get(server.URL + "/fast")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if string(body) != "fast" || time.Since(start) > 200*time.Millisecond {
+		t.Errorf("/fast answered %q after %s, while /slow was waiting", body, time.Since(start))
+	}
+	if got := <-slow; got != "slow" {
+		t.Errorf("/slow answered %q", got)
 	}
 }
