@@ -122,7 +122,7 @@ func execBuiltin(args ...object.Object) object.Object {
 	}
 	program, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `exec`", "a string", args[0])
 	}
 	command := Command{Program: program.Value, Shell: true}
 	rest := args[1:]
@@ -170,7 +170,7 @@ func execOptions(options *object.Hash, command *Command) *object.Error {
 		case "dir", "input":
 			text, ok := pair.Value.(*object.String)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("the %s option of exec must be a string, got %s", name, typeName(pair.Value))}
+				return wrongType(0, 0, "the "+name+" option of exec", "a string", pair.Value)
 			}
 			if name == "dir" {
 				command.Dir = text.Value
@@ -198,7 +198,7 @@ func stringArgs(name string, args []object.Object, count int) ([]string, *object
 	for i, arg := range args {
 		s, ok := arg.(*object.String)
 		if !ok {
-			return nil, &object.Error{Message: strfmt.Sprintf("arguments to %s must be strings, got %s", name, typeName(arg))}
+			return nil, wrongType(0, 0, "arguments to "+name, "strings", arg)
 		}
 		values[i] = s.Value
 	}
@@ -266,7 +266,7 @@ func envBuiltin(args ...object.Object) object.Object {
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("name for env must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "name for env", "a string", args[0])
 	}
 	if system == nil {
 		return noSystem("env")
@@ -289,7 +289,7 @@ func exitBuiltin(args ...object.Object) object.Object {
 	if len(args) == 1 {
 		n, ok := args[0].(*object.Integer)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("exit code must be an integer, got %s", typeName(args[0]))}
+			return wrongType(0, 0, "exit code", "an integer", args[0])
 		}
 		code = n.Value
 	}

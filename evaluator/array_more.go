@@ -127,7 +127,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 		if len(args) == 1 {
 			n, ok := args[0].(*object.Integer)
 			if !ok {
-				return newError(line, column, "depth for array.flatten() must be an integer, got %s", typeName(args[0])), true
+				return wrongType(line, column, "depth for array.flatten()", "an integer", args[0]), true
 			}
 			depth = n.Value
 		}

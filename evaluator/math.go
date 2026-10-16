@@ -55,7 +55,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 	for _, value := range values {
 		n, ok := number(value)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to `%s` must be numbers, got %s", name, typeName(value))}
+			return wrongType(0, 0, "arguments to `"+name+"`", "numbers", value)
 		}
 		if best == nil || better(n, bestValue) {
 			best, bestValue = value, n
@@ -72,7 +72,7 @@ func roundBuiltin(args ...object.Object) object.Object {
 	}
 	value, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `round` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `round`", "a number", args[0])
 	}
 
 	if len(args) == 2 {
@@ -137,7 +137,7 @@ func rangeBuiltin(args ...object.Object) object.Object {
 	for i, arg := range args {
 		integer, ok := arg.(*object.Integer)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to range must be integers, got %s", typeName(arg))}
+			return wrongType(0, 0, "arguments to range", "integers", arg)
 		}
 		values[i] = integer.Value
 	}
@@ -222,7 +222,7 @@ func mathBuiltin(name string) func(args ...object.Object) object.Object {
 		for i, arg := range args {
 			n, ok := number(arg)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("arguments to `%s` must be numbers, got %s", name, typeName(arg))}
+				return wrongType(0, 0, "arguments to `"+name+"`", "numbers", arg)
 			}
 			values[i] = n
 		}
@@ -240,7 +240,7 @@ func truncBuiltin(args ...object.Object) object.Object {
 	}
 	x, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `trunc` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `trunc`", "a number", args[0])
 	}
 	return &object.Float{Value: math.Trunc(x)}
 }
@@ -253,7 +253,7 @@ func signBuiltin(args ...object.Object) object.Object {
 	}
 	x, ok := number(args[0])
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to `sign` must be a number, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to `sign`", "a number", args[0])
 	}
 	switch {
 	case x < 0:
@@ -272,7 +272,7 @@ func clampBuiltin(args ...object.Object) object.Object {
 	value, low, high := args[0], args[1], args[2]
 	for _, arg := range args {
 		if _, ok := number(arg); !ok {
-			return &object.Error{Message: strfmt.Sprintf("arguments to `clamp` must be numbers, got %s", typeName(arg))}
+			return wrongType(0, 0, "arguments to `clamp`", "numbers", arg)
 		}
 	}
 	if result := extreme("max", []object.Object{value, low}, func(a, b float64) bool { return a > b }); result != nil {

@@ -102,7 +102,7 @@ func evalArrayChangeMethod(arr *object.Array, method string, args []object.Objec
 		}
 		index, ok := args[0].(*object.Integer)
 		if !ok {
-			return newError(line, column, "position for array.removeAt() must be an integer, got %s", typeName(args[0])), true
+			return wrongType(line, column, "position for array.removeAt()", "an integer", args[0]), true
 		}
 		i := index.Value
 		if i < 0 {
@@ -126,7 +126,7 @@ func format(args ...object.Object) object.Object {
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to format must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to format", "a string", args[0])
 	}
 	formatted, err := formatPrintf(text.Value, args[1:])
 	if err != nil {

@@ -100,7 +100,7 @@ func init() {
 		}
 		replacement, ok := args[1].(*object.String)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("replacement for string.replacePattern() must be a string or a function, got %s", typeName(args[1]))}
+			return wrongType(0, 0, "replacement for string.replacePattern()", "a string or a function", args[1])
 		}
 		return &object.String{Value: re.ReplaceAllString(s, replacement.Value)}
 	}
@@ -121,7 +121,7 @@ func regexArg(name string, args []object.Object, count int) (Regex, *object.Erro
 	}
 	pattern, ok := args[0].(*object.String)
 	if !ok {
-		return nil, &object.Error{Message: strfmt.Sprintf("pattern for string.%s() must be a string, got %s", name, typeName(args[0]))}
+		return nil, wrongType(0, 0, "pattern for string."+name+"()", "a string", args[0])
 	}
 	if regexEngine == nil {
 		return nil, &object.Error{Message: "patterns are not available here"}

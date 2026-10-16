@@ -52,7 +52,7 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 		for i, arg := range args {
 			n, isInt := arg.(*object.Integer)
 			if !isInt {
-				return newError(line, column, "arguments to array.slice() must be an integer, got %s", typeName(arg)), true
+				return wrongType(line, column, "arguments to array.slice()", "an integer", arg), true
 			}
 			bounds[i] = clampSliceIndex(n.Value, length)
 		}

@@ -86,7 +86,7 @@ func serveBuiltin(args ...object.Object) object.Object {
 	}
 	handler := args[1]
 	if !isCallable(handler) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `serve` must be a function, got %s", typeName(handler))}
+		return wrongType(0, 0, "second argument to `serve`", "a function", handler)
 	}
 	if server == nil {
 		return noSystem("serve")
@@ -113,7 +113,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 
 	options, ok := args[1].(*object.Hash)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("the options of response must be an object, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "the options of response", "an object", args[1])
 	}
 	for _, pair := range options.OrderedPairs() {
 		name := objectToString(pair.Key)
@@ -127,7 +127,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 		case "headers":
 			headers, ok := pair.Value.(*object.Hash)
 			if !ok {
-				return &object.Error{Message: strfmt.Sprintf("the headers of a response must be an object, got %s", typeName(pair.Value))}
+				return wrongType(0, 0, "the headers of a response", "an object", pair.Value)
 			}
 			for _, header := range headers.OrderedPairs() {
 				r.Headers[objectToString(header.Key)] = objectToString(header.Value)

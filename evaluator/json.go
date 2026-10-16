@@ -28,7 +28,7 @@ func parseJSON(args ...object.Object) object.Object {
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("argument to parseJSON must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "argument to parseJSON", "a string", args[0])
 	}
 
 	p := &jsonParser{text: text.Value}
@@ -327,7 +327,7 @@ func toJSON(args ...object.Object) object.Object {
 		case *object.String:
 			indent = arg.Value
 		default:
-			return &object.Error{Message: strfmt.Sprintf("indent for toJSON must be an integer or a string, got %s", typeName(args[1]))}
+			return wrongType(0, 0, "indent for toJSON", "an integer or a string", args[1])
 		}
 	}
 

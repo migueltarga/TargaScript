@@ -73,9 +73,7 @@ func init() {
 
 				format, ok := args[0].(*object.String)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to printf must be a string, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to printf", "a string", args[0])
 				}
 
 				text, err := formatPrintf(format.Value, args[1:])
@@ -222,9 +220,7 @@ func init() {
 				case *object.Float:
 					return &object.Float{Value: math.Abs(arg.Value)}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `abs` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `abs`", "a number", args[0])
 				}
 			},
 		},
@@ -244,9 +240,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `sqrt` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `sqrt`", "a number", args[0])
 				}
 
 				if value < 0 {
@@ -275,9 +269,7 @@ func init() {
 				case *object.Float:
 					base = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to `pow` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to `pow`", "a number", args[0])
 				}
 
 				switch arg := args[1].(type) {
@@ -286,9 +278,7 @@ func init() {
 				case *object.Float:
 					exponent = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("second argument to `pow` must be a number, got %s", typeName(args[1])),
-					}
+					return wrongType(0, 0, "second argument to `pow`", "a number", args[1])
 				}
 
 				return &object.Float{Value: math.Pow(base, exponent)}
@@ -310,9 +300,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `floor` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `floor`", "a number", args[0])
 				}
 
 				result, ok := floatToInt(math.Floor(value))
@@ -338,9 +326,7 @@ func init() {
 				case *object.Float:
 					value = arg.Value
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("argument to `ceil` must be a number, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "argument to `ceil`", "a number", args[0])
 				}
 
 				result, ok := floatToInt(math.Ceil(value))
@@ -373,16 +359,12 @@ func init() {
 
 				timestamp, ok := args[0].(*object.Integer)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("first argument to `timeFormat` must be an integer, got %s", typeName(args[0])),
-					}
+					return wrongType(0, 0, "first argument to `timeFormat`", "an integer", args[0])
 				}
 
 				format, ok := args[1].(*object.String)
 				if !ok {
-					return &object.Error{
-						Message: strfmt.Sprintf("second argument to `timeFormat` must be a string, got %s", typeName(args[1])),
-					}
+					return wrongType(0, 0, "second argument to `timeFormat`", "a string", args[1])
 				}
 
 				return &object.String{Value: formatTime(timestamp.Value, format.Value)}

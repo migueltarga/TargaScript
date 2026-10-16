@@ -91,7 +91,7 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 			array.Elements[arrayIdx] = val
 			return val
 		}
-		return newError(line, column, "array index must be an integer, got %s", typeName(index))
+		return wrongType(line, column, "array index", "an integer", index)
 	}
 
 	if hash, ok := container.(*object.Hash); ok {
@@ -107,7 +107,7 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 	if external, ok := container.(object.External); ok {
 		name, ok := externalKey(index)
 		if !ok {
-			return newError(line, column, "index must be a string or an integer, got %s", typeName(index))
+			return wrongType(line, column, "index", "a string or an integer", index)
 		}
 		return withPosition(external.Set(name, val), line, column)
 	}
@@ -417,6 +417,12 @@ func wrongArgs(line, column int, name string, got int, want string) *object.Erro
 	}
 }
 
+// wrongType is the error of a value of a type a function doesn't take:
+// "argument to sleep must be a number, got a string".
+func wrongType(line, column int, what, want string, got object.Object) *object.Error {
+	return &object.Error{Message: what + " must be " + want + ", got " + typeName(got), Line: line, Column: column}
+}
+
 func newError(line, column int, format string, a ...interface{}) *object.Error {
 	return &object.Error{
 		Message: strfmt.Sprintf(format, a...),
@@ -474,7 +480,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 	if external, ok := left.(object.External); ok {
 		name, ok := externalKey(index)
 		if !ok {
-			return newError(line, column, "index must be a string or an integer, got %s", typeName(index))
+			return wrongType(line, column, "index", "a string or an integer", index)
 		}
 		return withPosition(external.Get(name), line, column)
 	}
@@ -605,12 +611,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			oldStr, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "first argument to string.replace() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "first argument to string.replace()", "a string", args[0])
 			}
 
 			newStr, ok := args[1].(*object.String)
 			if !ok {
-				return newError(line, column, "second argument to string.replace() must be a string, got %s", typeName(args[1]))
+				return wrongType(line, column, "second argument to string.replace()", "a string", args[1])
 			}
 
 			return &object.String{Value: strings.Replace(obj.Value, oldStr.Value, newStr.Value, -1)}
@@ -622,7 +628,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			delimiter, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to string.split() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to string.split()", "a string", args[0])
 			}
 
 			parts := strings.Split(obj.Value, delimiter.Value)
@@ -639,7 +645,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 			sub, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to string.%s() must be a string, got %s", method, typeName(args[0]))
+				return wrongType(line, column, "argument to string."+method+"()", "a string", args[0])
 			}
 
 			switch method {
@@ -709,7 +715,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			separator, ok := args[0].(*object.String)
 			if !ok {
-				return newError(line, column, "argument to array.join() must be a string, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to array.join()", "a string", args[0])
 			}
 
 			strs := make([]string, len(obj.Elements))
@@ -725,7 +731,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "argument to array.map() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "argument to array.map()", "a function", fn)
 			}
 
 			result := make([]object.Object, 0, len(obj.Elements))
@@ -747,7 +753,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "argument to array.filter() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "argument to array.filter()", "a function", fn)
 			}
 
 			result := make([]object.Object, 0)
@@ -771,7 +777,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			fn := args[0]
 			if !isCallable(fn) {
-				return newError(line, column, "first argument to array.reduce() must be a function, got %s", typeName(fn))
+				return wrongType(line, column, "first argument to array.reduce()", "a function", fn)
 			}
 
 			initialValue := args[1]
@@ -842,7 +848,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 
 			hashable, ok := args[0].(object.Hashable)
 			if !ok {
-				return newError(line, column, "argument to `has` must be hashable, got %s", typeName(args[0]))
+				return wrongType(line, column, "argument to `has`", "hashable", args[0])
 			}
 
 			exists := obj.Has(hashable.HashKey())

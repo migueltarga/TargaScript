@@ -132,7 +132,7 @@ func pad(name, s string, args []object.Object, atStart bool) object.Object {
 	}
 	width, ok := args[0].(*object.Integer)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("width for string.%s() must be an integer, got %s", name, typeName(args[0]))}
+		return wrongType(0, 0, "width for string."+name+"()", "an integer", args[0])
 	}
 	if width.Value > maxStringLength {
 		return &object.Error{Message: strfmt.Sprintf("string.%s() would make a string too long", name)}
@@ -170,7 +170,7 @@ func stringArg(name string, args []object.Object) (string, *object.Error) {
 	}
 	s, ok := args[0].(*object.String)
 	if !ok {
-		return "", &object.Error{Message: strfmt.Sprintf("argument to string.%s() must be a string, got %s", name, typeName(args[0]))}
+		return "", wrongType(0, 0, "argument to string."+name+"()", "a string", args[0])
 	}
 	return s.Value, nil
 }
@@ -187,7 +187,7 @@ func intArgs(name string, args []object.Object, minCount, maxCount int) ([]int64
 	for i, arg := range args {
 		n, ok := arg.(*object.Integer)
 		if !ok {
-			return nil, &object.Error{Message: strfmt.Sprintf("arguments to string.%s() must be integers, got %s", name, typeName(arg))}
+			return nil, wrongType(0, 0, "arguments to string."+name+"()", "integers", arg)
 		}
 		values[i] = n.Value
 	}

@@ -41,10 +41,10 @@ func describeBuiltin(args ...object.Object) object.Object {
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `describe` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `describe`", "a string", args[0])
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `describe` must be a function, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "second argument to `describe`", "a function", args[1])
 	}
 
 	testGroups = append(testGroups, name.Value)
@@ -85,10 +85,10 @@ func testBuiltin(args ...object.Object) object.Object {
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: strfmt.Sprintf("first argument to `test` must be a string, got %s", typeName(args[0]))}
+		return wrongType(0, 0, "first argument to `test`", "a string", args[0])
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: strfmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
+		return wrongType(0, 0, "second argument to `test`", "a function", args[1])
 	}
 
 	fullName := strings.Join(append(append([]string{}, testGroups...), name.Value), " ")
