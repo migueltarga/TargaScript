@@ -544,7 +544,11 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 		}
 		return NULL
 	default:
-		return newError(line, column, "cannot read property %q of %s", propertyName, typeName(obj))
+		hint := ""
+		if obj.Type() == object.NULL_OBJ {
+			hint = fmt.Sprintf(". To read it only when there's a value, write ?.%s", propertyName)
+		}
+		return newError(line, column, "cannot read property %q of %s%s", propertyName, typeName(obj), hint)
 	}
 }
 
@@ -860,7 +864,11 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return newError(line, column, "object has no method %q%s", method, message)
 		}
 	default:
-		return newError(line, column, "cannot call method %q on %s", method, typeName(obj))
+		hint := ""
+		if obj.Type() == object.NULL_OBJ {
+			hint = fmt.Sprintf(". To call it only when there's a value, write ?.%s()", method)
+		}
+		return newError(line, column, "cannot call method %q on %s%s", method, typeName(obj), hint)
 	}
 }
 

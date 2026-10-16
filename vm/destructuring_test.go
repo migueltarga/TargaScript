@@ -20,7 +20,7 @@ func TestDestructuring(t *testing.T) {
 		{"const [a, b] = [1, 2]\na = 5", "ERROR at line 2, column 3: cannot reassign constant: a"},
 		{"const a = 1\nlet [a, b] = [1, 2]", "ERROR at line 2, column 1: cannot reassign constant: a"},
 		{"let [a, b] = 5", "ERROR at line 1, column 5: cannot use [] on an integer"},
-		{`let {a} = null`, `ERROR at line 1, column 5: cannot read property "a" of null`},
+		{`let {a} = null`, `ERROR at line 1, column 5: cannot read property "a" of null. To read it only when there's a value, write ?.a`},
 		{`let {a, b} = {"a": 1}` + "\nlet [c, d] = [a, b]\n[c, d]", "[1, null]"},
 	}
 

@@ -45,7 +45,7 @@ print(try { "ab".replacePattern("a", 5) } catch e { e.message })
 a[1|]b[2|2]
 prices: 20, 50
 none here
-cannot read property "y" of null
+cannot read property "y" of null. To read it only when there's a value, write ?.y
 replacement for string.replacePattern() must be a string or a function, got an integer
 `
 	var out bytes.Buffer

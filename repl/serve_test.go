@@ -102,7 +102,7 @@ fn(req) {
 		{"GET", "/empty", "", 204, "", ""},
 		{"GET", "/later", "", 200, "text/plain; charset=utf-8", "awaited"},
 		{"GET", "/rejected", "", 500, "text/plain; charset=utf-8", "too late\n"},
-		{"GET", "/fail", "", 500, "text/plain; charset=utf-8", "cannot read property \"x\" of null\n"},
+		{"GET", "/fail", "", 500, "text/plain; charset=utf-8", "cannot read property \"x\" of null. To read it only when there's a value, write ?.x\n"},
 		{"GET", "/missing", "", 404, "text/plain; charset=utf-8", "Not found"},
 	}
 	for _, tt := range tests {
