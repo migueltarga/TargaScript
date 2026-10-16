@@ -17,6 +17,7 @@
     --brand-text: #ffffff;
     --link: #266ca4;
     --error: #b91c1c;
+    --pass: #15803d;
     --tok-comment: #8a8a85;
     --tok-string: #15803d;
     --tok-number: #b45309;
@@ -36,6 +37,7 @@
       --brand-text: #ffffff;
       --link: #7fb3e6;
       --error: #f87171;
+      --pass: #4ade80;
       --tok-comment: #7d7c77;
       --tok-string: #86efac;
       --tok-number: #fdba74;
@@ -138,7 +140,8 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
-  #output .error { color: var(--error); }
+  #output .error, #output .fail { color: var(--error); }
+  #output .pass { color: var(--pass); }
   .tok-comment { color: var(--tok-comment); font-style: italic; }
   .tok-string { color: var(--tok-string); }
   .tok-number { color: var(--tok-number); }

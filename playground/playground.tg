@@ -145,16 +145,37 @@ fn finish(message) {
     status.textContent = message
 }
 
-fn showError(text) {
-    let line = doc.createElement("span")
-    line.className = "error"
-    line.textContent = text + "\n"
-    output.appendChild(line)
+fn showText(text, className) {
+    let span = doc.createElement("span")
+    span.className = className
+    span.textContent = text
+    output.appendChild(span)
+}
+
+fn showError(text) { showText(text + "\n", "error") }
+
+// Results of test() in the current run
+let passed = 0
+let failed = 0
+
+// Colors the lines test() prints, which come in one piece each
+fn showOutput(text) {
+    if text.startsWith("✓ ") {
+        passed++
+        showText(text, "pass")
+    } else if text.startsWith("✗ ") {
+        failed++
+        showText(text, "fail")
+    } else {
+        output.append(text)
+    }
 }
 
 fn run() {
     if worker != null { finish("") }
     output.textContent = ""
+    passed = 0
+    failed = 0
     status.textContent = "Running..."
     runButton.disabled = true
     stopButton.disabled = false
@@ -168,11 +189,12 @@ fn run() {
         if message.type == "ready" {
             current.postMessage(code.value)
         } else if message.type == "output" {
-            output.append(message.text)
+            showOutput(message.text)
         } else if message.type == "done" {
             if message.error != null { showError(message.error) }
             let elapsed = round(js.performance.now() - started)
-            finish("Finished in ${elapsed} ms")
+            let tests = if passed + failed > 0 { " · ${passed} passed, ${failed} failed" } else { "" }
+            finish("Finished in ${elapsed} ms${tests}")
         }
     }
 
