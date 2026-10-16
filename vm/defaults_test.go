@@ -19,7 +19,7 @@ func TestDefaultParameters(t *testing.T) {
 		{"fn f(n, acc = 1) { if n <= 1 { return acc }\nf(n - 1, acc * n) }\nf(5)", "120"},
 		{"fn f(a = missing) { a }\nf(1)", "1"},
 		{"fn f(a = missing) { a }\nf()", `ERROR at line 1, column 10: "missing" is not defined`},
-		{"fn f(a, b = 2) { a + b }\nf", "fn f(a, b = 2) {\n{ (a + b) }\n}"},
+		{"fn f(a, b = 2) { a + b }\nf", "fn f(a, b = 2)"},
 		{"[1, 2].map(fn(x, i = 100) { x + i })", "[101, 102]"},
 	}
 

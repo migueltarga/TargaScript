@@ -48,7 +48,7 @@ type CompiledFunction struct {
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
 func (cf *CompiledFunction) Inspect() string {
-	return inspectFunction(cf.Name, cf.Parameters, cf.Defaults, cf.Rest, cf.Body)
+	return inspectFunction(cf.Name, cf.Parameters, cf.Defaults, cf.Rest)
 }
 
 // PositionAt returns the line and column of the instruction at offset, or

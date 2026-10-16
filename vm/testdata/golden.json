@@ -229,7 +229,7 @@
  },
  "fn f() { 1 }\nf": {
   "output": "",
-  "value": "FUNCTION fn f() {\n{ 1 }\n}"
+  "value": "FUNCTION fn f()"
  },
  "fn f() { break }\nf()": {
   "output": "",

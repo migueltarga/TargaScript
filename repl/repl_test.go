@@ -52,3 +52,20 @@ func TestStartReadsUnfinishedCode(t *testing.T) {
 		t.Errorf("ran the function before it was finished:\n%s", output)
 	}
 }
+
+func TestReplShowsValuesLikeCode(t *testing.T) {
+	input := "let x = 1\nx\n\"hi\"\nfn f(a) { a }\nf\nconst c = 2\nhelp\nexit\nprint(\"not reached\")\n"
+	var out bytes.Buffer
+	Start(strings.NewReader(input), &out, true, false)
+
+	got := out.String()
+	for _, want := range []string{">> 1\n", ">> \"hi\"\n", ">> fn f(a)\n", "Type TargaScript and press Enter"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in:\n%s", want, got)
+		}
+	}
+	// Declarations show nothing, and exit stops before the last line
+	if strings.Count(got, ">> ") != 8 || strings.Contains(got, "not reached") {
+		t.Errorf("unexpected output:\n%s", got)
+	}
+}

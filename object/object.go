@@ -103,23 +103,13 @@ func (e *Error) Inspect() string {
 	return "ERROR: " + e.Message
 }
 
-// inspectFunction prints a function as its source.
-func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.Expression, rest bool, body *ast.BlockStatement) string {
-	var out bytes.Buffer
-
+// inspectFunction shows a function by its name and parameters: fn add(a, b).
+func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.Expression, rest bool) string {
 	params := ast.ParameterStrings(parameters, defaults, rest)
-
-	out.WriteString("fn")
-	if name != "" {
-		out.WriteString(" " + name)
+	if name == "" {
+		return "fn(" + strings.Join(params, ", ") + ")"
 	}
-	out.WriteString("(")
-	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") {\n")
-	out.WriteString(body.String())
-	out.WriteString("\n}")
-
-	return out.String()
+	return "fn " + name + "(" + strings.Join(params, ", ") + ")"
 }
 
 type String struct {

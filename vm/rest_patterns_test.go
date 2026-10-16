@@ -18,7 +18,7 @@ func TestRestInPatterns(t *testing.T) {
 		{"let out = []\nrepeat {id, ...data} in [{\"id\": 1, \"x\": 2}] { out.insert(data) }\nout", `[{"x": 2}]`},
 		{`let {a, ...r} = 5`, "ERROR at line 1, column 5: cannot read property \"a\" of an integer"},
 		{"let [...rest, last] = [1]", "ERROR: parser errors: line 1:13: ...rest must be the last name in [...rest]"},
-		{"fn f([a, ...b]) { 1 }\nf", "fn f([a, ...b]) {\n{ 1 }\n}"},
+		{"fn f([a, ...b]) { 1 }\nf", "fn f([a, ...b])"},
 	}
 
 	for _, tt := range tests {
