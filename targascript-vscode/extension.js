@@ -8,7 +8,8 @@ const path = require("path");
 
 const DELAY = 300; // milliseconds to wait after a change before checking
 
-// Signature and description of each builtin; a Go test keeps it complete
+// Signature and description of each builtin, copied from lsp/ by build.sh;
+// a Go test keeps it complete
 const BUILTINS = require("./builtins.json");
 
 const KEYWORDS = ["let", "const", "fn", "if", "else", "return", "repeat", "in", "break",

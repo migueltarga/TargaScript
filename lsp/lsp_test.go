@@ -1,0 +1,108 @@
+package lsp
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/migueltarga/TargaScript/diag"
+)
+
+func frame(v any) string {
+	body, _ := json.Marshal(v)
+	return fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(body), body)
+}
+
+// replies runs a session and returns the messages the server sent.
+func replies(t *testing.T, check Checker, messages ...any) []map[string]any {
+	t.Helper()
+	var in strings.Builder
+	for _, m := range messages {
+		in.WriteString(frame(m))
+	}
+	var out bytes.Buffer
+	if err := NewServer(&out, check).Serve(strings.NewReader(in.String())); err != nil {
+		t.Fatal(err)
+	}
+	sent := []map[string]any{}
+	reader := bufio.NewReader(&out)
+	for {
+		body, err := readMessage(reader)
+		if err != nil {
+			break
+		}
+		var m map[string]any
+		json.Unmarshal(body, &m)
+		sent = append(sent, m)
+	}
+	return sent
+}
+
+func TestDiagnosticsCompletionAndHover(t *testing.T) {
+	check := func(source, dir string) []diag.Diagnostic {
+		if dir != "/home/ana" {
+			t.Errorf("checked in %q, want /home/ana", dir)
+		}
+		if strings.Contains(source, "totl") {
+			return []diag.Diagnostic{{Line: 2, Column: 7, Message: `"totl" is not defined`}}
+		}
+		return nil
+	}
+	uri := "file:///home/ana/main.tg"
+	sent := replies(t, check,
+		map[string]any{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": map[string]any{}},
+		map[string]any{"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri, "text": "let total = 1\nprint(totl)"}}},
+		map[string]any{"jsonrpc": "2.0", "method": "textDocument/didChange", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri}, "contentChanges": []any{map[string]any{"text": "let x = fetch(1)"}}}},
+		map[string]any{"jsonrpc": "2.0", "id": 2, "method": "textDocument/completion", "params": map[string]any{}},
+		map[string]any{"jsonrpc": "2.0", "id": 3, "method": "textDocument/hover", "params": map[string]any{
+			"textDocument": map[string]any{"uri": uri}, "position": map[string]any{"line": 0, "character": 10}}},
+		map[string]any{"jsonrpc": "2.0", "id": 4, "method": "workspace/symbol", "params": map[string]any{}},
+		map[string]any{"jsonrpc": "2.0", "id": 5, "method": "shutdown"},
+		map[string]any{"jsonrpc": "2.0", "method": "exit"},
+	)
+
+	if len(sent) != 7 {
+		t.Fatalf("sent %d messages: %v", len(sent), sent)
+	}
+	capabilities := sent[0]["result"].(map[string]any)["capabilities"].(map[string]any)
+	if capabilities["textDocumentSync"].(float64) != 1 || capabilities["hoverProvider"] != true {
+		t.Errorf("capabilities: %v", capabilities)
+	}
+
+	opened := sent[1]["params"].(map[string]any)
+	problems := opened["diagnostics"].([]any)
+	if sent[1]["method"] != "textDocument/publishDiagnostics" || len(problems) != 1 {
+		t.Fatalf("after didOpen: %v", sent[1])
+	}
+	start := problems[0].(map[string]any)["range"].(map[string]any)["start"].(map[string]any)
+	if start["line"].(float64) != 1 || start["character"].(float64) != 6 {
+		t.Errorf("the problem starts at %v, want line 1, character 6", start)
+	}
+	if changed := sent[2]["params"].(map[string]any)["diagnostics"].([]any); len(changed) != 0 {
+		t.Errorf("after the fix: %v", changed)
+	}
+
+	items := sent[3]["result"].([]any)
+	found := false
+	for _, item := range items {
+		if item.(map[string]any)["label"] == "parseJSON" && item.(map[string]any)["detail"] == "parseJSON(text)" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("parseJSON isn't completed with its signature")
+	}
+
+	hover := sent[4]["result"].(map[string]any)["contents"].(map[string]any)["value"].(string)
+	if !strings.Contains(hover, "fetch(url, options?)") {
+		t.Errorf("hover over fetch: %q", hover)
+	}
+	if sent[5]["result"] != nil || sent[6]["result"] != nil {
+		t.Errorf("unknown requests and shutdown should answer null: %v %v", sent[5], sent[6])
+	}
+}

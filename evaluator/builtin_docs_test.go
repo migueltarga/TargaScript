@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-// The VS Code extension shows the docs in builtins.json when the mouse is
-// over a builtin, so every builtin needs an entry, and only builtins.
+// Editors show the docs in lsp/builtins.json when the mouse is over a
+// builtin, so every builtin needs an entry, and only builtins.
 func TestEveryBuiltinHasDocs(t *testing.T) {
-	data, err := os.ReadFile("../targascript-vscode/builtins.json")
+	data, err := os.ReadFile("../lsp/builtins.json")
 	if err != nil {
 		t.Fatal(err)
 	}

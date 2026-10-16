@@ -49,13 +49,15 @@ func main() {
 
 	// test, check and build are commands, unless there's a file with
 	// their name
-	if len(args) > 0 && (args[0] == "test" || args[0] == "check" || args[0] == "build") {
+	if len(args) > 0 && (args[0] == "test" || args[0] == "check" || args[0] == "build" || args[0] == "lsp") {
 		if _, err := os.Stat(args[0]); err != nil {
 			switch args[0] {
 			case "test":
 				os.Exit(runTests(args[1:], noColor))
 			case "check":
 				os.Exit(runCheck(args[1:]))
+			case "lsp":
+				os.Exit(runLSP())
 			default:
 				os.Exit(runBuild(args[1:]))
 			}
