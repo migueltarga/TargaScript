@@ -69,6 +69,24 @@ let age = try {
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
+## ⏳ Waiting with await
+
+`await` waits for a promise and gives its result, without blocking. `sleep(ms)` returns a promise that resolves after some milliseconds:
+
+```
+fn countdown(n) {
+    repeat i in 1..n {
+        print(n - i + 1)
+        await sleep(1000)
+    }
+    print("Go!")
+}
+
+countdown(3)
+```
+
+The same code runs in the CLI, where an event loop keeps the program alive while it waits, and in the browser, where `await` also works with JavaScript promises like `fetch`.
+
 ## 📦 Loading Other Files
 
 Split code across files with `load`. A loaded file runs once, and its top-level variables, constants and functions become available:

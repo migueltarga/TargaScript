@@ -10,11 +10,29 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
-var builtins map[string]*object.Builtin
+// builtins are the builtin functions, by name. Files other than this one
+// add theirs in their own init functions, which can run before this one.
+var builtins = map[string]*object.Builtin{}
+
+// Host runs the asynchronous work of builtins like sleep: an event loop in
+// the CLI, JavaScript's timers in the browser.
+type Host interface {
+	// After calls fn after the given number of milliseconds, on the
+	// goroutine that runs the program.
+	After(milliseconds int64, fn func())
+}
+
+var host Host
+
+// SetHost sets where asynchronous builtins schedule their work. Without a
+// host, they fail.
+func SetHost(h Host) {
+	host = h
+}
 
 // initBuiltins initializes all built-in functions
 func init() {
-	builtins = map[string]*object.Builtin{
+	for name, builtin := range map[string]*object.Builtin{
 		// printf - Formatted printing with support for format specifiers
 		"printf": {
 			Name: "printf",
@@ -518,6 +536,7 @@ func init() {
 				return &object.String{Value: formatted}
 			},
 		},
+	} {
+		builtins[name] = builtin
 	}
-
 }

@@ -178,6 +178,8 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 			return handleTrue, false
 		}
 		return handleFalse, false
+	case *object.Null:
+		return handleNull, false
 	case *object.Array:
 		array := hostMakeArray()
 		for _, element := range obj.Elements {
@@ -426,4 +428,28 @@ func toJSPromise(p *object.Promise) uint32 {
 		return handleUndefined
 	}
 	return result
+}
+
+// Timers schedules the asynchronous work of builtins like sleep with
+// JavaScript's setTimeout.
+type Timers struct{}
+
+// After calls fn after the given number of milliseconds.
+func (Timers) After(milliseconds int64, fn func()) {
+	var id uint32
+	id = registerCallback(&object.Builtin{Fn: func(args ...object.Object) object.Object {
+		callbacks[id] = nil
+		freeCallbacks = append(freeCallbacks, id)
+		fn()
+		return evaluator.NULL
+	}})
+	handles := []uint32{hostMakeFunction(id), hostMakeNumber(float64(milliseconds))}
+	ptr, n := stringPtr("setTimeout")
+	result := hostCall(handleGlobal, ptr, n, &handles[0], 2)
+	if result&failed != 0 {
+		result &^= failed
+	}
+	hostRelease(result)
+	hostRelease(handles[0])
+	hostRelease(handles[1])
 }

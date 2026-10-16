@@ -10,6 +10,7 @@ import (
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
+	"github.com/migueltarga/TargaScript/eventloop"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
@@ -20,6 +21,13 @@ const PROMPT = ">> "
 
 // mainDir is the directory load paths are relative to in the main program.
 var mainDir string
+
+// loop runs the asynchronous work of builtins like sleep.
+var loop = eventloop.New()
+
+func init() {
+	evaluator.SetHost(loop)
+}
 
 // SetMainDir sets the directory used to resolve `load` paths in the main
 // program, normally the directory of the script being run. Empty means the
@@ -52,7 +60,32 @@ func (s *session) run(program *ast.Program) object.Object {
 	if err != nil {
 		return &object.Error{Message: err.Error()}
 	}
-	return s.machine.Run(bytecode)
+	return wait(s.machine.Run(bytecode))
+}
+
+// wait runs the event loop until a program that paused at an await
+// finishes, and returns its result. It then runs work still pending, like
+// timers nothing waits for, as a script ends only when nothing is left to do.
+func wait(result object.Object) object.Object {
+	promise, ok := result.(*object.Promise)
+	if !ok {
+		loop.Run(func() bool { return false })
+		return result
+	}
+
+	if !loop.Run(promise.Settled) {
+		return &object.Error{Message: "the program is waiting for something that will never happen"}
+	}
+	loop.Run(func() bool { return false })
+
+	value, rejected := promise.Result()
+	if rejected {
+		if err, ok := value.(*object.Error); ok {
+			return err
+		}
+		return &object.Error{Message: evaluator.ToDisplayString(value)}
+	}
+	return value
 }
 
 func evalSource(source string, sess *session, out io.Writer, noColor bool, debug bool, isRepl bool) error {

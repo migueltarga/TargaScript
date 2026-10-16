@@ -151,6 +151,7 @@ func callback(id, args uint32) uint32 {
 
 func init() {
 	vm.MaxNestedRuns = maxNestedRuns
+	evaluator.SetHost(jsbridge.Timers{})
 	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }

@@ -41,6 +41,15 @@ func (p *Promise) Inspect() string {
 
 func (p *Promise) IsAwaitable() bool { return true }
 
+// Settled reports whether the promise has a result yet.
+func (p *Promise) Settled() bool { return p.settled }
+
+// Result returns the value the promise resolved to, or the reason it was
+// rejected, with rejected set.
+func (p *Promise) Result() (value Object, rejected bool) {
+	return p.value, p.rejected
+}
+
 // Then calls resolve or reject when the promise settles, right away if it
 // already has.
 func (p *Promise) Then(resolve func(Object), reject func(Object)) {
