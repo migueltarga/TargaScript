@@ -163,6 +163,9 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 		if strings.HasPrefix(p.curToken.Literal, "\"") {
 			msg = fmt.Sprintf("line %d:%d: unterminated string",
 				p.curToken.Line, p.curToken.Column)
+		} else if p.curToken.Literal == "/*" {
+			msg = fmt.Sprintf("line %d:%d: unterminated comment",
+				p.curToken.Line, p.curToken.Column)
 		} else {
 			msg = fmt.Sprintf("line %d:%d: unexpected %q",
 				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
