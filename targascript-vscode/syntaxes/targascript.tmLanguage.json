@@ -117,7 +117,7 @@
         },
         {
           "name": "keyword.operator.logical.targascript",
-          "match": "\\?\\?|\\?\\.|&&|\\|\\||!"
+          "match": "\\|>|\\?\\?|\\?\\.|&&|\\|\\||!"
         },
         {
           "name": "keyword.operator.arithmetic.targascript",
