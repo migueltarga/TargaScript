@@ -4,7 +4,7 @@
 
 > If TypeScript can be rewritten in Go, why not create our own language with Go?
 
-TargaScript is a lightweight scripting language with a clean, intuitive syntax. It's designed to be easy to learn while providing powerful features for various programming tasks. TargaScript files use the `.tg` extension.
+TargaScript is a small, modern scripting language that runs in your terminal, in web pages and inside Go programs. It reads like JavaScript, has the conveniences of newer languages (pipes, pattern matching, destructuring, top-level `await`), and comes with everything around it: a web server, a test runner, a formatter, a REPL and editor support, in one binary. Files use the `.tg` extension.
 
 **[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
 
@@ -14,11 +14,12 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 
 - **One language for scripts and web pages.** The same code runs from a 7 MB command-line binary and in the browser from a WebAssembly runtime of about 200 KB compressed: add `<script type="text/targascript">` to a page, with no build step.
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
-- **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
+- **Errors that help.** Mistakes point at the exact spot in your code with the calls that led there, a typo gets a "Did you mean...?", and habits from other languages get the TargaScript way: `list.push(x)` suggests `insert`, `for` suggests `repeat`, `a.b` on null suggests `?.`.
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match` with guards, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
 - **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
 - **Embed it in Go.** `targascript.New().Run(rule)` gives your Go program a safe scripting language for user rules, formulas and plugins; see [embedding](docs/EMBEDDING.md).
 - **Ship one file.** `targascript build app.tg` makes an executable with the program and everything it loads; whoever gets it doesn't need TargaScript.
+- **The tools are included.** `targascript fmt`, `check`, `test` and `build`, a REPL with history and Tab completion, a VS Code extension, and a language server for Neovim, Helix and other editors.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **As fast as Python.** Programs compile to bytecode for a VM that runs about as fast as CPython on [these benchmarks](bench/), and allows 10,000 nested calls, in the browser too.
