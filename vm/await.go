@@ -87,7 +87,9 @@ func (vm *VM) resume(fb *fiber, value, reason object.Object) {
 		vm.push(value)
 	}
 
+	vm.asyncBases = append(vm.asyncBases, base)
 	result := vm.runFiber(base, fb)
+	vm.asyncBases = vm.asyncBases[:len(vm.asyncBases)-1]
 	if result == fb.promise {
 		return // paused again
 	}

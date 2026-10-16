@@ -291,7 +291,7 @@ fn later(value) {
 print(later(21))                              // → 42
 ```
 
-`await` waits for a promise and gives its result; on anything else it gives the value itself. Functions that await pause the whole program until the promise settles, so calling them needs no `await`. `sleep(ms)` and `fetch(url, options)` return promises; in the browser, so do many JavaScript functions. `await` can't pause inside a function called back by a builtin like `map`.
+`await` waits for a promise and gives its result; on anything else it gives the value itself. Functions that await pause the whole program until the promise settles, so calling them needs no `await`. `sleep(ms)` and `fetch(url, options)` return promises; in the browser, so do many JavaScript functions. Builtins like `filter` and `sort` need the result of their function at once, so it can't await.
 
 ```
 let response = await fetch("https://api.github.com/repos/migueltarga/TargaScript")
@@ -309,6 +309,16 @@ A response has `status`, `ok`, `url`, `headers`, `text` and `json()`. A `body` t
 let repos = ["golang/go", "rust-lang/rust"]
 let responses = await all(repos.map(r => fetch("https://api.github.com/repos/${r}")))
 print(responses.map(r => r.json().stargazers_count))
+```
+
+A function given to `map` can await too. Then `map` gives its promise instead of waiting, so the calls run side by side:
+
+```targascript
+fn slowDouble(n) {
+    await sleep(50)
+    n * 2
+}
+print(await all([1, 2, 3].map(slowDouble)))   // → [2, 4, 6], in about 50 ms
 ```
 
 ## Loading files
