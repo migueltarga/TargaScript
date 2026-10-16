@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"strconv"
+
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
@@ -666,11 +668,21 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		set(w.A(), hash)
 
 	case code.RTemplate:
-		text := ""
+		// The parts go in one buffer, integers and strings without a
+		// string of their own
+		var small [64]byte
+		text := small[:0]
 		for i := w.B(); i < w.B()+w.C(); i++ {
-			text += evaluator.ToDisplayString(r(i))
+			switch part := r(i).(type) {
+			case *object.String:
+				text = append(text, part.Value...)
+			case *object.Integer:
+				text = strconv.AppendInt(text, part.Value, 10)
+			default:
+				text = append(text, evaluator.ToDisplayString(part)...)
+			}
 		}
-		set(w.A(), &object.String{Value: text})
+		set(w.A(), &object.String{Value: string(text)})
 
 	case code.RAppend:
 		array := r(w.A()).(*object.Array)
