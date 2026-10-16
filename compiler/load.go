@@ -178,7 +178,7 @@ func (c *Compiler) compileLoad(stmt *ast.LoadStatement) error {
 	}
 	for _, n := range names {
 		c.emit(token.Token{}, code.OpDup)
-		c.emit(token.Token{}, code.OpGetProperty, c.addConstant(&object.String{Value: n.name}))
+		c.emit(token.Token{}, code.OpGetProperty, c.addConstant(&object.String{Value: n.name}), c.cache())
 		c.emitDefine(c.define(n.name, n.isConst))
 		c.emit(token.Token{}, code.OpPop)
 	}

@@ -193,16 +193,16 @@ func (vm *VM) step(f *frame, ip int) *object.Error {
 // ownMethod returns the function an object holds under name, when it runs
 // on this VM. An object's own functions come before the methods every
 // object has, like keys.
-func (vm *VM) ownMethod(obj object.Object, name string) *object.Closure {
+func (vm *VM) ownMethod(obj object.Object, name *object.String, cache *object.PropertyCache) *object.Closure {
 	hash, ok := obj.(*object.Hash)
 	if !ok {
 		return nil
 	}
-	pair, ok := hash.Get((&object.String{Value: name}).HashKey())
+	value, ok := hash.Lookup(name.HashKey(), cache)
 	if !ok {
 		return nil
 	}
-	if cl, ok := pair.Value.(*object.Closure); ok && cl.Runner == vm {
+	if cl, ok := value.(*object.Closure); ok && cl.Runner == vm {
 		return cl
 	}
 	return nil
@@ -697,12 +697,13 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpGetProperty:
 			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
 			name := nameObj.Value
-			f.ip += 2
-			// Fast path for objects, with the hash of the name computed once;
+			cache := &f.cl.Fn.Caches[code.ReadUint16(ins[ip+3:])]
+			f.ip += 4
+			// Fast path for objects, through the cache of this instruction;
 			// an object without a length property counts its keys
 			if hash, ok := vm.stack[vm.sp-1].(*object.Hash); ok {
-				if pair, ok := hash.Get(nameObj.HashKey()); ok {
-					vm.stack[vm.sp-1] = pair.Value
+				if value, ok := hash.Lookup(nameObj.HashKey(), cache); ok {
+					vm.stack[vm.sp-1] = value
 					continue
 				}
 				if name != "length" {
@@ -717,11 +718,19 @@ func (vm *VM) loop(base int) object.Object {
 			vm.push(result)
 
 		case code.OpSetProperty:
-			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
-			f.ip += 2
+			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
+			cache := &f.cl.Fn.Caches[code.ReadUint16(ins[ip+3:])]
+			f.ip += 4
 			value := vm.pop()
 			obj := vm.pop()
-			result := evaluator.SetProperty(obj, name, value, 0, 0)
+			if hash, ok := obj.(*object.Hash); ok {
+				if !hash.Update(nameObj.HashKey(), cache, value) {
+					hash.Set(nameObj, value)
+				}
+				vm.push(value)
+				continue
+			}
+			result := evaluator.SetProperty(obj, nameObj.Value, value, 0, 0)
 			if err, ok := result.(*object.Error); ok {
 				return vm.positioned(f, ip, err)
 			}
@@ -779,10 +788,13 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpCallMethodArray:
-			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
+			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
+			name := nameObj.Value
 			f.ip += 2
 			args := vm.pop().(*object.Array)
-			if cl := vm.ownMethod(vm.stack[vm.sp-1], name); cl != nil {
+			// Calls with spread are rare enough to go without a cache
+			var cache object.PropertyCache
+			if cl := vm.ownMethod(vm.stack[vm.sp-1], nameObj, &cache); cl != nil {
 				receiver := vm.stack[vm.sp-1]
 				vm.stack[vm.sp-1] = cl
 				for _, arg := range args.Elements {
@@ -866,12 +878,14 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpCallMethod:
-			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
+			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
+			name := nameObj.Value
 			argc := int(ins[ip+3])
-			f.ip += 3
+			cache := &f.cl.Fn.Caches[code.ReadUint16(ins[ip+4:])]
+			f.ip += 5
 			// An object's own function runs like any call, so it can await
 			receiver := vm.stack[vm.sp-1-argc]
-			if cl := vm.ownMethod(receiver, name); cl != nil {
+			if cl := vm.ownMethod(receiver, nameObj, cache); cl != nil {
 				vm.stack[vm.sp-1-argc] = cl
 				vm.receiver = receiver
 				if err := vm.callClosure(cl, argc); err != nil {
