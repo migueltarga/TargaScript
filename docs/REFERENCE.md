@@ -347,6 +347,8 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `timeFormat(seconds, layout)` | formats a time with `YYYY`, `YY`, `MMMM`, `MMM`, `MM`, `DD`, `dddd`, `ddd`, `HH`, `hh`, `mm`, `ss` and `A` (AM/PM), e.g. `timeFormat(now(), "DD/MM/YYYY HH:mm")` |
 | `clock()` | milliseconds since the program started, for timing code |
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
+| `escapeHTML(text)` | text safe to put in HTML: `<`, `>`, `&` and quotes become entities |
+| `encodeURL(text)`, `decodeURL(text)` | text for a part of a URL, like a query value, and back |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
@@ -426,6 +428,15 @@ serve(8080, fn(req) {
         return {time: timeFormat(now(), "HH:mm:ss")}
     }
     staticFile("public", req.path)
+})
+```
+
+Text from a request that goes into HTML must pass through `escapeHTML`, so it can't add its own tags or scripts:
+
+```text
+serve(8080, fn(req) {
+    let name = req.query.name ?? "world"
+    "<h1>Hello, ${escapeHTML(name)}!</h1>"
 })
 ```
 
