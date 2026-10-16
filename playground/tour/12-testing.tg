@@ -1,0 +1,22 @@
+// Lesson 12: Testing
+//
+// test runs a function as a named test. assert and assertEqual fail
+// it, and a failing test shows why without stopping the others.
+// On the command line, `targascript test` runs every *_test.tg file.
+
+fn initials(name) {
+    name.split(" ").map(w => w[0].upper()).join("")
+}
+
+test("takes the first letter of each word", fn() {
+    assertEqual(initials("ada lovelace"), "AL")
+})
+
+test("works with one word", fn() {
+    assertEqual(initials("grace"), "G")
+})
+
+// This one fails on purpose. Can you fix it?
+test("ignores extra spaces", fn() {
+    assertEqual(initials("  alan   turing "), "AT")
+})
