@@ -287,7 +287,10 @@ func (l *Lexer) isStartingWithDigitFollowedByLetter() bool {
 	ch := l.ch
 	column := l.column
 
-	for isDigit(l.ch) {
+	if l.ch == '0' && strings.ContainsRune("xXbBoO", l.peekChar()) {
+		return false
+	}
+	for isDigit(l.ch) || (l.ch == '_' && isDigit(l.peekChar())) {
 		l.readChar()
 	}
 
@@ -314,7 +317,18 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 	start := l.position
 	hasDot := false
 
-	for isDigit(l.ch) || (l.ch == '.' && !hasDot) {
+	// 0x1F, 0b1010 and 0o17
+	if l.ch == '0' && strings.ContainsRune("xXbBoO", l.peekChar()) {
+		l.readChar()
+		l.readChar()
+		for isHexDigit(l.ch) || (l.ch == '_' && isHexDigit(l.peekChar())) {
+			l.readChar()
+		}
+		return token.INT, l.input[start:l.position]
+	}
+
+	// Underscores separate digits: 1_000_000
+	for isDigit(l.ch) || (l.ch == '.' && !hasDot) || (l.ch == '_' && isDigit(l.peekChar())) {
 		if l.ch == '.' {
 			if l.peekChar() == '.' {
 				break
@@ -338,6 +352,10 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 		return token.FLOAT, lit
 	}
 	return token.INT, lit
+}
+
+func isHexDigit(ch rune) bool {
+	return isDigit(ch) || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F')
 }
 
 // atExponent reports whether the lexer is at the exponent of a number, an e

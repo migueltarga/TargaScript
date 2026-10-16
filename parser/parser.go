@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -564,9 +565,21 @@ func (p *Parser) parseArrowFunction(tok token.Token, params []*ast.Identifier, d
 func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.curToken}
 
-	value, err := strconv.ParseInt(p.curToken.Literal, 10, 64)
-	if err != nil {
+	text := p.curToken.Literal
+	base := 10
+	if len(text) > 1 && text[0] == '0' && strings.ContainsRune("xXbBoO", rune(text[1])) {
+		// Base 0 reads the prefix; plain numbers stay decimal, so 010 is 10
+		base = 0
+	} else {
+		text = strings.ReplaceAll(text, "_", "")
+	}
+	value, err := strconv.ParseInt(text, base, 64)
+	if errors.Is(err, strconv.ErrRange) {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for an integer, the limit is 9223372036854775807", p.curToken.Literal)
+		return nil
+	}
+	if err != nil {
+		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is not a valid number", p.curToken.Literal)
 		return nil
 	}
 
@@ -578,7 +591,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 func (p *Parser) parseFloatLiteral() ast.Expression {
 	lit := &ast.FloatLiteral{Token: p.curToken}
 
-	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
+	value, err := strconv.ParseFloat(strings.ReplaceAll(p.curToken.Literal, "_", ""), 64)
 	if err != nil {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for a number", p.curToken.Literal)
 		return nil
