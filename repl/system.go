@@ -2,7 +2,11 @@ package repl
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"os"
+	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -62,4 +66,28 @@ func (osSystem) ReadLine() (string, bool) {
 		return "", false
 	}
 	return strings.TrimRight(line, "\r\n"), true
+}
+
+func (osSystem) RunCommand(program string, args []string, shell bool) (string, string, int, error) {
+	if shell {
+		args = []string{"-c", program}
+		program = "sh"
+		if runtime.GOOS == "windows" {
+			args[0] = "/C"
+			program = "cmd"
+		}
+	}
+	cmd := exec.Command(program, args...)
+	cmd.Stdin = os.Stdin
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return stdout.String(), stderr.String(), exitErr.ExitCode(), nil
+	}
+	if errors.Is(err, exec.ErrNotFound) {
+		err = errors.New("no such program")
+	}
+	return stdout.String(), stderr.String(), 0, err
 }

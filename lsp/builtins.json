@@ -47,6 +47,7 @@
   "sqrt": ["sqrt(x)", "The square root of a number."],
   "staticFile": ["staticFile(dir, path)", "A reply with the file at path inside dir, its content type, or a 404. Command line only."],
   "tan": ["tan(x)", "The tangent of an angle in radians."],
+  "exec": ["exec(command), exec(program, args)", "Runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`. Command line only."],
   "describe": ["describe(name, fn)", "Groups the tests that `fn` defines under a name, printed above them."],
   "test": ["test(name, fn)", "Runs a function as a test and prints ✓ or ✗. `targascript test` runs every `*_test.tg` file."],
   "timeFormat": ["timeFormat(seconds, layout)", "Formats a Unix time with `YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `dddd`, `MMMM`, `A`..."],

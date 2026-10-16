@@ -413,6 +413,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `encodeURL(text)`, `decodeURL(text)` | text for a part of a URL, like a query value, and back |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
+| `exec(command)`, `exec(program, args)` | runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`: `exec("git", ["log", "-1"]).output`. A program that fails gives its exit code in `code`; one that can't start is an error. Command line only |
 | `input`, `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing
