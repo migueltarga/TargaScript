@@ -374,6 +374,9 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 		} else if err := c.compileExpression(stmt.ReturnValue); err != nil {
 			return err
 		}
+		if err := c.leaveTries(0); err != nil {
+			return err
+		}
 		c.emit(token.Token{}, code.OpReturnValue)
 		return nil
 
@@ -640,6 +643,9 @@ func (c *Compiler) compileLoopControl(tok token.Token, keyword string, kind int)
 		c.emitError(tok, "%s outside of a loop", keyword)
 		return nil
 	}
+	if err := c.leaveTries(c.fn.loops); err != nil {
+		return err
+	}
 	c.emit(tok, code.OpBreak, kind)
 	return nil
 }
@@ -716,13 +722,46 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 }
 
 // compileTry compiles a try expression, whose value is the value of its
-// body, or of its catch block when the body fails.
+// body, or of its catch block when the body fails. A finally block runs
+// after both, and again before an error it did not catch goes on.
 func (c *Compiler) compileTry(stmt *ast.TryExpression) error {
-	try := c.emit(token.Token{}, code.OpTry, 9999)
+	if stmt.Finally == nil {
+		return c.compileTryCatch(stmt)
+	}
+
+	try := c.openTry(stmt.Finally)
+	var err error
+	if stmt.Catch != nil {
+		err = c.compileTryCatch(stmt)
+	} else {
+		err = c.compileBlock(stmt.Body)
+	}
+	if err != nil {
+		return err
+	}
+	c.closeTry()
+	if err := c.compileFinally(stmt.Finally); err != nil {
+		return err
+	}
+	jumpEnd := c.emit(token.Token{}, code.OpJump, 9999)
+
+	// The VM jumps here with the error on the stack, to throw it again
+	c.changeOperands(try, len(c.scope.instructions))
+	if err := c.compileFinally(stmt.Finally); err != nil {
+		return err
+	}
+	c.emit(token.Token{}, code.OpThrow)
+
+	c.changeOperands(jumpEnd, len(c.scope.instructions))
+	return nil
+}
+
+func (c *Compiler) compileTryCatch(stmt *ast.TryExpression) error {
+	try := c.openTry(nil)
 	if err := c.compileBlock(stmt.Body); err != nil {
 		return err
 	}
-	c.emit(token.Token{}, code.OpTryEnd)
+	c.closeTry()
 	jumpEnd := c.emit(token.Token{}, code.OpJump, 9999)
 
 	// The VM jumps here with the error on the stack
@@ -739,6 +778,60 @@ func (c *Compiler) compileTry(stmt *ast.TryExpression) error {
 	}
 
 	c.changeOperands(jumpEnd, len(c.scope.instructions))
+	return nil
+}
+
+// openTry emits the start of a try block and returns the instruction whose
+// operand is where its errors go.
+func (c *Compiler) openTry(finally *ast.BlockStatement) int {
+	c.fn.tries = append(c.fn.tries, openTry{finally: finally, loops: c.fn.loops})
+	return c.emit(token.Token{}, code.OpTry, 9999)
+}
+
+func (c *Compiler) closeTry() {
+	c.fn.tries = c.fn.tries[:len(c.fn.tries)-1]
+	c.emit(token.Token{}, code.OpTryEnd)
+}
+
+// hasFinally reports whether one of the tries opened with at least loops
+// loops open has a finally block.
+func hasFinally(tries []openTry, loops int) bool {
+	for i := len(tries) - 1; i >= 0 && tries[i].loops >= loops; i-- {
+		if tries[i].finally != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// compileFinally compiles a finally block, leaving the stack as it was.
+func (c *Compiler) compileFinally(block *ast.BlockStatement) error {
+	if err := c.compileBlock(block); err != nil {
+		return err
+	}
+	c.emit(token.Token{}, code.OpPop)
+	return nil
+}
+
+// leaveTries closes the try blocks that return, break or continue jump out
+// of, innermost first, and runs their finally blocks. Those blocks are
+// compiled as outside the tries they belong to, so that a return in one of
+// them does not run it again.
+func (c *Compiler) leaveTries(loops int) error {
+	tries := c.fn.tries
+	if !hasFinally(tries, loops) {
+		return nil // the VM closes the tries itself
+	}
+	defer func() { c.fn.tries = tries }()
+	for i := len(tries) - 1; i >= 0 && tries[i].loops >= loops; i-- {
+		c.fn.tries = tries[:i]
+		c.emit(token.Token{}, code.OpTryEnd)
+		if tries[i].finally != nil {
+			if err := c.compileFinally(tries[i].finally); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

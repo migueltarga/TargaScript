@@ -312,6 +312,21 @@ print(result)                                // → 0
 
 An error stops the program, showing where it happened, unless a `try` around it catches it. The caught error is an object with `message`, `line` and `column`; `throw err` raises it again. `try` is an expression, like `if`.
 
+```targascript
+fn firstLine(lines) {
+    print("opening")
+    try {
+        if lines.length == 0 { throw "empty" }
+        return lines[0]
+    } finally {
+        print("closing")                     // runs on return and on errors
+    }
+}
+print(firstLine(["a", "b"]))   // → opening, then closing, then a
+```
+
+`finally` runs after the `try` block and its `catch`, however they end: normally, with an error, or by `return`, `break` or `continue`. An error that no `catch` handled goes on after it. `catch` can be left out: `try { ... } finally { ... }`.
+
 `throw` also works where a value goes, to fail instead of giving one: `let port = config.port ?? throw "no port set"`, or `_ => throw "unknown command"` in a `match`.
 
 ## Asynchronous code

@@ -77,6 +77,7 @@ const (
 	AWAIT    = "AWAIT"
 	TRY      = "TRY"
 	CATCH    = "CATCH"
+	FINALLY  = "FINALLY"
 	THROW    = "THROW"
 	MATCH    = "MATCH"
 	ARROW    = "=>"
@@ -108,6 +109,7 @@ var keywords = map[string]TokenType{
 	"await":    AWAIT,
 	"try":      TRY,
 	"catch":    CATCH,
+	"finally":  FINALLY,
 	"throw":    THROW,
 	"match":    MATCH,
 }

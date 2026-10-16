@@ -19,7 +19,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 - Arrow functions, default parameters, and `this` in methods
 - The pipe operator: `data |> parse |> summarize`
 - `??`, `?.`, `?.[` and `??=`; `**`; `+=` and the other compound assignments
-- `try`/`catch`/`throw`, with `throw` usable as a value: `x ?? throw "missing"`
+- `try`/`catch`/`finally`/`throw`, with `throw` usable as a value: `x ?? throw "missing"`
 - `await` anywhere, `all(promises)`, and `map` running functions that await side by side
 - `in` for arrays, objects, strings and ranges
 - Strings in backticks for JSON and HTML, interpolation with format specs: `${price:.2f}`
