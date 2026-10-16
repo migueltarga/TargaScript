@@ -139,5 +139,61 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 }
 
 func objectsEqual(a, b object.Object) bool {
-	return evalInfixExpression("==", a, b, 0, 0) == TRUE
+	return valuesEqual(a, b, 0)
+}
+
+// maxEqualDepth stops comparing arrays and objects nested this deep, which
+// only happens when they contain themselves.
+const maxEqualDepth = 100
+
+// valuesEqual reports whether two values are equal: numbers by value, so 1
+// equals 1.0, strings and booleans by value, arrays and objects by their
+// contents, and other values, like functions, only when they are the same.
+func valuesEqual(a, b object.Object, depth int) bool {
+	if a == b {
+		return true
+	}
+	if depth > maxEqualDepth {
+		return false
+	}
+
+	switch a := a.(type) {
+	case *object.Array:
+		b, ok := b.(*object.Array)
+		if !ok || len(a.Elements) != len(b.Elements) {
+			return false
+		}
+		for i := range a.Elements {
+			if !valuesEqual(a.Elements[i], b.Elements[i], depth+1) {
+				return false
+			}
+		}
+		return true
+
+	case *object.Hash:
+		b, ok := b.(*object.Hash)
+		if !ok || len(a.Pairs) != len(b.Pairs) {
+			return false
+		}
+		for key, pair := range a.Pairs {
+			other, ok := b.Pairs[key]
+			if !ok || !valuesEqual(pair.Value, other.Value, depth+1) {
+				return false
+			}
+		}
+		return true
+
+	case *object.Integer, *object.Float:
+		switch b.(type) {
+		case *object.Integer, *object.Float:
+			return evalInfixExpression("==", a, b, 0, 0) == TRUE
+		}
+	case *object.String:
+		b, ok := b.(*object.String)
+		return ok && a.Value == b.Value
+	case *object.Boolean:
+		b, ok := b.(*object.Boolean)
+		return ok && a.Value == b.Value
+	}
+	return false
 }

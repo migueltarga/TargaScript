@@ -27,7 +27,7 @@ func TestJSON(t *testing.T) {
 		{`toJSON({1: "x"})`, `{"1":"x"}`},
 		{`toJSON(1.0 / 0)`, "ERROR: cannot convert Inf to JSON"},
 		{`toJSON([fn() { 1 }])`, "ERROR: cannot convert a function to JSON"},
-		{`let data = {"items": [1, 2, 3], "label": "x"}` + "\nparseJSON(toJSON(data)) == data", "false"},
+		{`let data = {"items": [1, 2, 3], "label": "x"}` + "\nparseJSON(toJSON(data)) == data", "true"},
 		{`let data = {"items": [1, 2, 3], "label": "x"}` + "\ntoJSON(parseJSON(toJSON(data))) == toJSON(data)", "true"},
 	}
 
