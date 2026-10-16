@@ -53,7 +53,47 @@ func TestOrderedPairsIsACopy(t *testing.T) {
 	pairs := h.OrderedPairs()
 	h.Set(&String{Value: "b"}, &Integer{Value: 2})
 	pairs[0].Value = &Integer{Value: 9}
-	if len(pairs) != 1 || h.pairs[0].Value.(*Integer).Value != 1 {
+	if _, first := h.At(0); len(pairs) != 1 || first.Value.(*Integer).Value != 1 {
 		t.Error("OrderedPairs shares its slice with the hash")
+	}
+}
+
+func TestShapes(t *testing.T) {
+	point := func(x, y int64) *Hash {
+		h := NewHash()
+		h.Set(&String{Value: "x"}, &Integer{Value: x})
+		h.Set(&String{Value: "y"}, &Integer{Value: y})
+		return h
+	}
+	a, b := point(1, 2), point(3, 4)
+	if a.shape == nil || a.shape != b.shape {
+		t.Fatal("objects with the same keys don't share a shape")
+	}
+	if pair, ok := b.Get((&String{Value: "y"}).HashKey()); !ok || pair.Value.(*Integer).Value != 4 {
+		t.Errorf("y of b = %v", pair.Value)
+	}
+
+	// Updating a value keeps the shape; deleting a key makes a dictionary
+	b.Set(&String{Value: "x"}, &Integer{Value: 9})
+	if b.shape != a.shape {
+		t.Error("updating a value changed the shape")
+	}
+	b.Delete(&String{Value: "x"})
+	if b.shape != nil || b.Len() != 1 || !b.Has((&String{Value: "y"}).HashKey()) {
+		t.Errorf("after a delete: shape %v, %d pairs", b.shape, b.Len())
+	}
+
+	// Many keys make a dictionary, keeping every pair in order
+	big := NewHash()
+	for i := 0; i < shapedUpTo+5; i++ {
+		big.Set(&Integer{Value: int64(i)}, &Integer{Value: int64(i * 10)})
+	}
+	if big.shape != nil || big.Len() != shapedUpTo+5 {
+		t.Fatalf("big: shape %v, %d pairs", big.shape, big.Len())
+	}
+	for i, pair := range big.OrderedPairs() {
+		if pair.Key.(*Integer).Value != int64(i) || pair.Value.(*Integer).Value != int64(i*10) {
+			t.Fatalf("pair %d is %v", i, pair)
+		}
 	}
 }
