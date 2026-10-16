@@ -40,6 +40,9 @@ jobs:
             ./targascript "$f" > /dev/null
           done
 
+      - name: Run the TargaScript tests
+        run: ./targascript test tests
+
   wasm:
     runs-on: ubuntu-latest
     steps:
