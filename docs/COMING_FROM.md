@@ -18,6 +18,7 @@ TargaScript will feel familiar. These tables show how to write what you already 
 | `while (cond) { }` | `repeat cond { }` |
 | `list.forEach((x, i) => ...)` | `repeat i, x in list { }` |
 | `===`, `!==` | `==`, `!=`, which never convert types |
+| `a > 1 ? "big" : "small"` | `if a > 1 { "big" } else { "small" }` |
 | `switch (x) { case 1: ... }` | `match x { 1 => ..., _ => ... }` |
 | `list.push(x)` | `list.insert(x)` |
 | `list.includes(x)`, `"k" in obj` | `x in list`, `"k" in obj` |
@@ -60,6 +61,7 @@ TargaScript adds:
 | `for i, x in enumerate(items):` | `repeat i, x in items { }` |
 | `for k, v in d.items():` | `repeat k, v in d { }` |
 | `while cond:` | `repeat cond { }` |
+| `"big" if a > 1 else "small"` | `if a > 1 { "big" } else { "small" }` |
 | `None`, `True`, `False` | `null`, `true`, `false` |
 | `len(x)` | `x.length` |
 | `items.append(x)` | `items.insert(x)` |

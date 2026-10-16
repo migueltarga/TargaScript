@@ -22,6 +22,7 @@ func TestHintsForOtherLanguagesSyntax(t *testing.T) {
 		{`throww "x"`, "Did you mean throw?"},
 		{"Return 5", "Did you mean return?"},
 		{"if a === b { }", "TargaScript compares with =="},
+		{"let x = a > 1 ? \"big\" : \"small\"", "if gives a value: if a { b } else { c }"},
 		{"if a !== b { }", "TargaScript compares with !="},
 	}
 	for _, tt := range tests {
