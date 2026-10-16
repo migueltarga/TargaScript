@@ -59,11 +59,42 @@ fn render() {
     // A trailing newline keeps the last line visible in the overlay
     highlight.innerHTML = js.String.prototype.replace.call(source, tokenPattern, colorToken) + "\n"
 
-    let lines = source.split("\n").length
-    let numbers = []
-    repeat n in 1..lines { numbers.insert(n) }
-    gutter.textContent = numbers.join("\n")
+    renderGutter(source.split("\n").length)
     syncScroll()
+    scheduleCheck()
+}
+
+// Problems found by the last check, keyed by line number
+let problems = {}
+let checkTimer = null
+
+fn renderGutter(lines) {
+    let numbers = []
+    repeat n in 1..lines {
+        let message = problems["${n}"]
+        if message == null {
+            numbers.insert("${n}")
+        } else {
+            numbers.insert("<span class=\"problem\" title=\"${escapeHtml(message).replace("\"", "&quot;")}\">${n}</span>")
+        }
+    }
+    gutter.innerHTML = numbers.join("\n")
+}
+
+// Checks the code a moment after the last keystroke, without running
+// it, and marks the lines with problems
+fn scheduleCheck() {
+    if checkTimer != null { js.clearTimeout(checkTimer) }
+    checkTimer = js.setTimeout(fn() {
+        checkTimer = null
+        let found = {}
+        repeat problem in js.targascriptCheck(code.value) {
+            let line = "${problem.line}"
+            if problem.line > 0 && found[line] == null { found[line] = problem.message }
+        }
+        problems = found
+        renderGutter(code.value.split("\n").length)
+    }, 300)
 }
 
 fn syncScroll() {
