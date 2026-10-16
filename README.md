@@ -12,7 +12,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 
 ## 🌟 Why TargaScript
 
-- **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a WebAssembly runtime under 200 KB: add `<script type="text/targascript">` to a page, with no build step.
+- **One language for scripts and web pages.** The same code runs from a 7 MB command-line binary and in the browser from a WebAssembly runtime of about 200 KB compressed: add `<script type="text/targascript">` to a page, with no build step.
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match`, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
@@ -20,6 +20,22 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **A bytecode VM.** Programs compile to bytecode, which runs several times faster than the original tree-walking interpreter and allows 10,000 nested calls, in the browser too.
+
+## ⚖️ Compared with Python and JavaScript
+
+| | TargaScript | Python | JavaScript (Node) |
+|---|---|---|---|
+| Runs in a web page with no build step | ✅ `<script type="text/targascript">`, ~200 KB | ⚠️ through Pyodide, several MB | ✅ |
+| One file to install, no runtime | ✅ | ❌ | ❌ |
+| HTTP server in a few lines, no library | ✅ `serve(8080, fn(req) {...})` | ⚠️ `http.server`, low level | ⚠️ `http.createServer`, low level |
+| Test runner, no library | ✅ `targascript test` | ✅ `unittest` | ✅ `node --test` |
+| `await` at the top of a script | ✅ | ❌ needs `asyncio.run` | ✅ in modules |
+| Pipe operator | ✅ `x \|> f` | ❌ | ❌ (a proposal) |
+| Pattern matching | ✅ `match` | ✅ `match` | ❌ |
+| Errors that know other languages | ✅ `push` → "use insert(value)" | ⚠️ "Did you mean" for typos | ❌ |
+| Objects keep insertion order, JSON built in | ✅ | ✅ | ✅ |
+
+TargaScript is young and small: no packages, no classes, no threads. It aims at scripts, small servers and web pages, where those are rarely missed.
 
 ## 📝 A Taste
 
