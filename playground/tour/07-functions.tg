@@ -2,7 +2,7 @@
 //
 // fn makes functions. The last value is returned, or use return.
 // Parameters can have defaults, and functions are values too.
-// Short functions can be written (a, b) => a + b.
+// Short functions can be written (a, b) => a + b, and |> chains calls.
 
 fn greet(name, greeting = "Hello") {
     "${greeting}, ${name}!"
@@ -21,3 +21,12 @@ let next = counter()
 next()
 next()
 print("counted", next())
+
+// |> passes a value through functions, left to right: x |> f is f(x),
+// and x |> f(a) is f(x, a)
+fn shout(text) { text.upper() + "!" }
+
+"hey"
+    |> shout
+    |> (s => s * 2)
+    |> print
