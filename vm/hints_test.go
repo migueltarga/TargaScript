@@ -13,6 +13,8 @@ func TestHintsForOtherLanguages(t *testing.T) {
 		{`parseInt("1")`, "use toInt(value)"},
 		{`console.log(1)`, "use print(...)"},
 		{`let x = None`, "use null"},
+		{`[1].length()`, "length is a property: write .length, without ()"},
+		{`"ab".length()`, "length is a property: write .length, without ()"},
 		{`[1].push(2)`, `arrays have no method "push". In TargaScript, use insert(value)`},
 		{`[1].includes(1)`, "use contains(value) or the in operator"},
 		{`"a".toUpperCase()`, `strings have no method "toUpperCase". In TargaScript, use upper()`},
