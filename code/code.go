@@ -82,12 +82,12 @@ const (
 	// Objects
 	OpIndex       // pop index and container, push container[index]
 	OpSetIndex    // pop value, index, container; store; push value
-	OpGetProperty // pop object, push object.name
-	OpSetProperty // pop value, object; store object.name; push value
+	OpGetProperty // pop object, push object.name; the second operand is the property cache
+	OpSetProperty // pop value, object; store object.name; push value; the second operand is the property cache
 
 	// Calls
 	OpCall            // call the function below the arguments
-	OpCallMethod      // call the method named by a constant on the object below the arguments
+	OpCallMethod      // call the method named by a constant on the object below the arguments; the last operand is the property cache
 	OpCallArray       // call the function below an array, with its elements as arguments
 	OpCallMethodArray // call a method with the elements of the array on top as arguments
 	OpReturnValue
@@ -180,11 +180,11 @@ var definitions = map[Opcode]*Definition{
 
 	OpIndex:       {"OpIndex", []int{}},
 	OpSetIndex:    {"OpSetIndex", []int{}},
-	OpGetProperty: {"OpGetProperty", []int{2}},
-	OpSetProperty: {"OpSetProperty", []int{2}},
+	OpGetProperty: {"OpGetProperty", []int{2, 2}},
+	OpSetProperty: {"OpSetProperty", []int{2, 2}},
 
 	OpCall:            {"OpCall", []int{1}},
-	OpCallMethod:      {"OpCallMethod", []int{2, 1}},
+	OpCallMethod:      {"OpCallMethod", []int{2, 1, 2}},
 	OpCallArray:       {"OpCallArray", []int{}},
 	OpCallMethodArray: {"OpCallMethodArray", []int{2}},
 	OpReturnValue:     {"OpReturnValue", []int{}},
@@ -292,13 +292,9 @@ func formatInstruction(def *Definition, operands []int) string {
 		return fmt.Sprintf("ERROR: operand len %d does not match defined %d\n", len(operands), len(def.OperandWidths))
 	}
 
-	switch len(operands) {
-	case 0:
-		return def.Name
-	case 1:
-		return fmt.Sprintf("%s %d", def.Name, operands[0])
-	case 2:
-		return fmt.Sprintf("%s %d %d", def.Name, operands[0], operands[1])
+	text := def.Name
+	for _, operand := range operands {
+		text += fmt.Sprintf(" %d", operand)
 	}
-	return fmt.Sprintf("ERROR: unhandled operand count for %s\n", def.Name)
+	return text
 }

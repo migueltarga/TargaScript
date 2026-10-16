@@ -37,6 +37,11 @@ type CompiledFunction struct {
 	// was called on, or null
 	HasThis bool
 
+	// Caches for the instructions that read and write properties, which
+	// have the index of theirs as an operand. A VM runs one instruction at a
+	// time, so they need no lock.
+	Caches []PropertyCache
+
 	// Positions, sorted by offset, for error messages
 	Positions []Position
 

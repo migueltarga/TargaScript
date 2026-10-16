@@ -88,7 +88,14 @@ func (c *Compiler) Problems() []Problem {
 type compilation struct {
 	instructions code.Instructions
 	positions    []object.Position
+	caches       int // property caches given out
 	outer        *compilation
+}
+
+// cache gives out a property cache for an instruction of this function.
+func (c *Compiler) cache() int {
+	c.scope.caches++
+	return c.scope.caches - 1
 }
 
 func New() *Compiler {
@@ -242,6 +249,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 		fuse(scope.instructions)
 		compiled := &object.CompiledFunction{
 			Instructions: scope.instructions,
+			Caches:       make([]object.PropertyCache, scope.caches),
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
 			HasThis:      hasThis && fn.usesThis,
@@ -469,7 +477,7 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 	for i, name := range pattern.Names {
 		c.emit(token.Token{}, code.OpDup)
 		if pattern.Object {
-			c.emit(pattern.Token, code.OpGetProperty, c.addConstant(&object.String{Value: pattern.Key(i)}))
+			c.emit(pattern.Token, code.OpGetProperty, c.addConstant(&object.String{Value: pattern.Key(i)}), c.cache())
 		} else {
 			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(i)}))
 			c.emit(pattern.Token, code.OpIndex)
@@ -496,7 +504,7 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 			c.emit(pattern.Token, code.OpWithout, c.addConstant(&object.Array{Elements: names}))
 		} else {
 			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(len(pattern.Names))}))
-			c.emit(pattern.Token, code.OpCallMethod, c.addConstant(&object.String{Value: "slice"}), 1)
+			c.emit(pattern.Token, code.OpCallMethod, c.addConstant(&object.String{Value: "slice"}), 1, c.cache())
 		}
 		c.emitDefine(c.define(pattern.Rest.Value, isConst))
 		c.emit(token.Token{}, code.OpPop)
@@ -921,7 +929,7 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 			return err
 		}
 		c.optionalJump(node.Optional)
-		c.emit(node.Token, code.OpGetProperty, c.addConstant(&object.String{Value: node.Property.Value}))
+		c.emit(node.Token, code.OpGetProperty, c.addConstant(&object.String{Value: node.Property.Value}), c.cache())
 
 	case *ast.MethodCallExpression:
 		if err := c.compileExpression(node.Object); err != nil {
@@ -940,7 +948,7 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 				return err
 			}
 		}
-		c.emit(node.Token, code.OpCallMethod, c.addConstant(&object.String{Value: node.Method.Value}), len(node.Arguments))
+		c.emit(node.Token, code.OpCallMethod, c.addConstant(&object.String{Value: node.Method.Value}), len(node.Arguments), c.cache())
 
 	case *ast.CallExpression:
 		if err := c.compileExpression(node.Function); err != nil {
@@ -1279,7 +1287,7 @@ func (c *Compiler) compileAssignment(node *ast.AssignmentExpression) error {
 		if err := c.compileExpression(node.Value); err != nil {
 			return err
 		}
-		c.emit(node.Token, code.OpSetProperty, c.addConstant(&object.String{Value: target.Property.Value}))
+		c.emit(node.Token, code.OpSetProperty, c.addConstant(&object.String{Value: target.Property.Value}), c.cache())
 
 	default:
 		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
@@ -1317,9 +1325,9 @@ func (c *Compiler) compilePostfix(node *ast.PostfixExpression) error {
 		}
 		name := c.addConstant(&object.String{Value: target.Property.Value})
 		c.emit(token.Token{}, code.OpDup)
-		c.emit(target.Token, code.OpGetProperty, name)
+		c.emit(target.Token, code.OpGetProperty, name, c.cache())
 		c.emit(node.Token, code.OpIncrement, decrement)
-		c.emit(node.Token, code.OpSetProperty, name)
+		c.emit(node.Token, code.OpSetProperty, name, c.cache())
 
 	default:
 		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
@@ -1542,9 +1550,9 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 		}
 		name := c.addConstant(&object.String{Value: target.Property.Value})
 		c.emit(token.Token{}, code.OpDup)
-		c.emit(target.Token, code.OpGetProperty, name)
+		c.emit(target.Token, code.OpGetProperty, name, c.cache())
 		below = 1
-		set = func() { c.emit(node.Token, code.OpSetProperty, name) }
+		set = func() { c.emit(node.Token, code.OpSetProperty, name, c.cache()) }
 	default:
 		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
 		return nil

@@ -223,3 +223,49 @@ func (h *Hash) OrderedPairs() []HashPair {
 	}
 	return pairs
 }
+
+// PropertyCache remembers, for one place in a program that reads a property,
+// the shape of the last object read there and where the key was in it. The
+// next object of the same shape needs no search.
+type PropertyCache struct {
+	shape *Shape
+	index int
+}
+
+// Lookup returns the value of a key, using and updating cache.
+func (h *Hash) Lookup(key HashKey, cache *PropertyCache) (Object, bool) {
+	if h.shape != nil {
+		if h.shape == cache.shape {
+			return h.values[cache.index], true
+		}
+		if i := h.shape.Find(key); i >= 0 {
+			cache.shape, cache.index = h.shape, i
+			return h.values[i], true
+		}
+		return nil, false
+	}
+	pair, ok := h.Get(key)
+	return pair.Value, ok
+}
+
+// Update replaces the value of a key the hash has, using and updating
+// cache, and reports whether it had the key.
+func (h *Hash) Update(key HashKey, cache *PropertyCache, value Object) bool {
+	if h.shape != nil {
+		if h.shape == cache.shape {
+			h.values[cache.index] = value
+			return true
+		}
+		if i := h.shape.Find(key); i >= 0 {
+			cache.shape, cache.index = h.shape, i
+			h.values[i] = value
+			return true
+		}
+		return false
+	}
+	if i := h.find(key); i >= 0 {
+		h.pairs[i].Value = value
+		return true
+	}
+	return false
+}
