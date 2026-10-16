@@ -105,10 +105,10 @@ func (e *Error) Inspect() string {
 }
 
 // inspectFunction prints a function as its source.
-func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.Expression, body *ast.BlockStatement) string {
+func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.Expression, rest bool, body *ast.BlockStatement) string {
 	var out bytes.Buffer
 
-	params := ast.ParameterStrings(parameters, defaults)
+	params := ast.ParameterStrings(parameters, defaults, rest)
 
 	out.WriteString("fn")
 	if name != "" {

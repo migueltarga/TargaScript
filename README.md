@@ -105,6 +105,15 @@ let config = {...defaults, "port": 8080}
 print(max(...numbers))
 ```
 
+A last parameter written `...name` collects the extra arguments in an array:
+
+```
+fn log(level, ...parts) {
+    print("[${level}]", parts.join(" "))
+}
+log("info", "server", "started")    // [info] server started
+```
+
 ## 🫥 Working with null
 
 `a ?? b` is `b` when `a` is null, and `a?.b` is null when `a` is null instead of an error. A `?.` skips the rest of the chain, so `user?.name.upper()` is null when there's no user:

@@ -626,7 +626,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	lit.Parameters, lit.Defaults = p.parseFunctionParameters()
+	lit.Parameters, lit.Defaults, lit.Rest = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
@@ -637,25 +637,41 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return lit
 }
 
-// parseFunctionParameters parses the parameters of a function and their
-// default values, nil for those without one.
-func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression) {
+// parseFunctionParameters parses the parameters of a function, their
+// default values, nil for those without one, and whether the last one is a
+// rest parameter (...name).
+func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression, bool) {
 	identifiers := []*ast.Identifier{}
 	defaults := []ast.Expression{}
+	rest := false
 
 	for !p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
 
+		if p.curTokenIs(token.SPREAD) {
+			rest = true
+			p.nextToken()
+		}
+
 		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "invalid parameter name %q: names can't start with a digit", p.curToken.Literal)
-			return nil, nil
+			return nil, nil, false
 		}
 		if !p.curTokenIs(token.IDENT) {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a parameter name, found %s", describe(p.curToken))
-			return nil, nil
+			return nil, nil, false
 		}
 
 		identifiers = append(identifiers, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+		if rest {
+			defaults = append(defaults, nil)
+			if !p.peekTokenIs(token.RPAREN) {
+				p.errorAt(p.peekToken.Line, p.peekToken.Column, "the ...%s parameter must be the last one", p.curToken.Literal)
+				return nil, nil, false
+			}
+			break
+		}
 
 		var defaultValue ast.Expression
 		if p.peekTokenIs(token.ASSIGN) {
@@ -663,7 +679,7 @@ func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression)
 			p.nextToken()
 			// The value ends at the comma or parenthesis after it
 			if defaultValue = p.parseExpression(LOWEST); defaultValue == nil {
-				return nil, nil
+				return nil, nil, false
 			}
 		}
 		defaults = append(defaults, defaultValue)
@@ -675,10 +691,10 @@ func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression)
 	}
 
 	if !p.expectPeek(token.RPAREN) {
-		return nil, nil
+		return nil, nil, false
 	}
 
-	return identifiers, defaults
+	return identifiers, defaults, rest
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
@@ -1016,7 +1032,7 @@ func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 		return nil
 	}
 
-	stmt.Parameters, stmt.Defaults = p.parseFunctionParameters()
+	stmt.Parameters, stmt.Defaults, stmt.Rest = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil

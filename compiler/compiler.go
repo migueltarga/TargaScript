@@ -402,7 +402,7 @@ func (c *Compiler) compileFunctionStatement(stmt *ast.FunctionStatement) error {
 	}); err != nil {
 		return err
 	}
-	c.setFunctionSource(stmt.Parameters, stmt.Defaults, stmt.Body)
+	c.setFunctionSource(stmt.Parameters, stmt.Defaults, stmt.Rest, stmt.Body)
 
 	if inScope && existing.Const {
 		c.emitError(stmt.Token, "cannot reassign constant: %s", name)
@@ -439,10 +439,12 @@ func (c *Compiler) emitAssignDefined(s *Symbol) {
 
 // setFunctionSource records the source of the function just compiled, to
 // print it.
-func (c *Compiler) setFunctionSource(params []*ast.Identifier, defaults []ast.Expression, body *ast.BlockStatement) {
+func (c *Compiler) setFunctionSource(params []*ast.Identifier, defaults []ast.Expression, rest bool, body *ast.BlockStatement) {
 	fn := c.constants[len(c.constants)-1].(*object.CompiledFunction)
 	fn.Parameters = params
 	fn.Defaults = defaults
+	fn.Rest = rest
+	fn.Variadic = rest
 	fn.Body = body
 }
 
@@ -847,7 +849,7 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		}); err != nil {
 			return err
 		}
-		c.setFunctionSource(node.Parameters, node.Defaults, node.Body)
+		c.setFunctionSource(node.Parameters, node.Defaults, node.Rest, node.Body)
 
 	default:
 		return fmt.Errorf("cannot compile %T", node)

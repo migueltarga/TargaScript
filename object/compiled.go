@@ -28,6 +28,10 @@ type CompiledFunction struct {
 	NumParams    int
 	Name         string
 
+	// Variadic is set when the last parameter collects the extra arguments
+	// in an array
+	Variadic bool
+
 	// Positions, sorted by offset, for error messages
 	Positions []Position
 
@@ -38,12 +42,13 @@ type CompiledFunction struct {
 	// Kept to print the function as its source
 	Parameters []*ast.Identifier
 	Defaults   []ast.Expression
+	Rest       bool
 	Body       *ast.BlockStatement
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
 func (cf *CompiledFunction) Inspect() string {
-	return inspectFunction(cf.Name, cf.Parameters, cf.Defaults, cf.Body)
+	return inspectFunction(cf.Name, cf.Parameters, cf.Defaults, cf.Rest, cf.Body)
 }
 
 // PositionAt returns the line and column of the instruction at offset, or
