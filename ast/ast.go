@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/token"
@@ -705,6 +706,19 @@ type Pattern struct {
 	// Defaults has the value of each name when what it takes is null, as
 	// in `{port = 8080}`, or nil; it's empty when no name has one
 	Defaults []Expression
+
+	// Keys has the property each name of an object pattern takes, when it
+	// isn't the name itself, as in `{first: name}`, or ""; it's empty when
+	// no name has one
+	Keys []string
+}
+
+// Key returns the property the name at i takes in an object pattern.
+func (p *Pattern) Key(i int) string {
+	if i < len(p.Keys) && p.Keys[i] != "" {
+		return p.Keys[i]
+	}
+	return p.Names[i].Value
 }
 
 // Default returns the default value of the name at i, or nil.
@@ -718,11 +732,14 @@ func (p *Pattern) Default(i int) Expression {
 func (p *Pattern) String() string {
 	names := []string{}
 	for i, n := range p.Names {
-		if d := p.Default(i); d != nil {
-			names = append(names, n.Value+" = "+d.String())
-			continue
+		name := n.Value
+		if key := p.Key(i); key != name {
+			name = strconv.Quote(key) + ": " + name
 		}
-		names = append(names, n.Value)
+		if d := p.Default(i); d != nil {
+			name += " = " + d.String()
+		}
+		names = append(names, name)
 	}
 	if p.Rest != nil {
 		names = append(names, "..."+p.Rest.Value)

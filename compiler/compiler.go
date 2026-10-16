@@ -446,7 +446,7 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 	for i, name := range pattern.Names {
 		c.emit(token.Token{}, code.OpDup)
 		if pattern.Object {
-			c.emit(pattern.Token, code.OpGetProperty, c.addConstant(&object.String{Value: name.Value}))
+			c.emit(pattern.Token, code.OpGetProperty, c.addConstant(&object.String{Value: pattern.Key(i)}))
 		} else {
 			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(i)}))
 			c.emit(pattern.Token, code.OpIndex)
@@ -467,8 +467,8 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 		c.emit(token.Token{}, code.OpDup)
 		if pattern.Object {
 			names := []object.Object{}
-			for _, name := range pattern.Names {
-				names = append(names, &object.String{Value: name.Value})
+			for i := range pattern.Names {
+				names = append(names, &object.String{Value: pattern.Key(i)})
 			}
 			c.emit(pattern.Token, code.OpWithout, c.addConstant(&object.Array{Elements: names}))
 		} else {
