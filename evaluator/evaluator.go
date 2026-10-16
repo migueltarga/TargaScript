@@ -304,26 +304,33 @@ func evalPostfixExpression(node *ast.PostfixExpression, env *object.Environment)
 		return current
 	}
 
+	updated := increment(current, node.Operator, line, column)
+	if isError(updated) {
+		return updated
+	}
+
+	return assign(node.Left, updated, env, line, column)
+}
+
+// increment returns current + 1 for "++" or current - 1 for "--".
+func increment(current object.Object, operator string, line, column int) object.Object {
 	delta := int64(1)
-	if node.Operator == "--" {
+	if operator == "--" {
 		delta = -1
 	}
 
-	var updated object.Object
 	switch current := current.(type) {
 	case *object.Integer:
 		value, ok := addInt(current.Value, delta)
 		if !ok {
 			return newError(line, column, "integer overflow")
 		}
-		updated = &object.Integer{Value: value}
+		return &object.Integer{Value: value}
 	case *object.Float:
-		updated = &object.Float{Value: current.Value + float64(delta)}
+		return &object.Float{Value: current.Value + float64(delta)}
 	default:
-		return newError(line, column, "operator %s not supported for %s", node.Operator, current.Type())
+		return newError(line, column, "operator %s not supported for %s", operator, current.Type())
 	}
-
-	return assign(node.Left, updated, env, line, column)
 }
 
 // assign stores val in target, which must be a variable, a property
@@ -347,18 +354,7 @@ func assign(target ast.Expression, val object.Object, env *object.Environment, l
 			return obj
 		}
 
-		propertyName := left.Property.Value
-
-		if hash, ok := obj.(*object.Hash); ok {
-			hash.Set(&object.String{Value: propertyName}, val)
-			return val
-		}
-
-		if external, ok := obj.(object.External); ok {
-			return withPosition(external.Set(propertyName, val), line, column)
-		}
-
-		return newError(line, column, "cannot assign to property of non-object: %s", obj.Type())
+		return setProperty(obj, left.Property.Value, val, line, column)
 
 	case *ast.IndexExpression:
 		container := Eval(left.Left, env)
@@ -371,44 +367,63 @@ func assign(target ast.Expression, val object.Object, env *object.Environment, l
 			return index
 		}
 
-		if array, ok := container.(*object.Array); ok {
-			if idx, ok := index.(*object.Integer); ok {
-				arrayIdx := idx.Value
-				arrayLen := int64(len(array.Elements))
-
-				if arrayIdx < 0 || arrayIdx >= arrayLen {
-					return newError(line, column, "index out of bounds: %d", arrayIdx)
-				}
-
-				array.Elements[arrayIdx] = val
-				return val
-			}
-			return newError(line, column, "array index must be an integer, got: %s", index.Type())
-		}
-
-		if hash, ok := container.(*object.Hash); ok {
-			hashable, ok := index.(object.Hashable)
-			if !ok {
-				return newError(line, column, "unusable as hash key: %s", index.Type())
-			}
-
-			hash.Set(hashable, val)
-			return val
-		}
-
-		if external, ok := container.(object.External); ok {
-			name, ok := externalKey(index)
-			if !ok {
-				return newError(line, column, "index must be a string or an integer, got: %s", index.Type())
-			}
-			return withPosition(external.Set(name, val), line, column)
-		}
-
-		return newError(line, column, "index assignment not supported for: %s", container.Type())
+		return setIndex(container, index, val, line, column)
 
 	default:
 		return newError(line, column, "invalid assignment target: %T", target)
 	}
+}
+
+// setProperty stores val in obj.name.
+func setProperty(obj object.Object, propertyName string, val object.Object, line, column int) object.Object {
+	if hash, ok := obj.(*object.Hash); ok {
+		hash.Set(&object.String{Value: propertyName}, val)
+		return val
+	}
+
+	if external, ok := obj.(object.External); ok {
+		return withPosition(external.Set(propertyName, val), line, column)
+	}
+
+	return newError(line, column, "cannot assign to property of non-object: %s", obj.Type())
+}
+
+// setIndex stores val in container[index].
+func setIndex(container, index, val object.Object, line, column int) object.Object {
+	if array, ok := container.(*object.Array); ok {
+		if idx, ok := index.(*object.Integer); ok {
+			arrayIdx := idx.Value
+			arrayLen := int64(len(array.Elements))
+
+			if arrayIdx < 0 || arrayIdx >= arrayLen {
+				return newError(line, column, "index out of bounds: %d", arrayIdx)
+			}
+
+			array.Elements[arrayIdx] = val
+			return val
+		}
+		return newError(line, column, "array index must be an integer, got: %s", index.Type())
+	}
+
+	if hash, ok := container.(*object.Hash); ok {
+		hashable, ok := index.(object.Hashable)
+		if !ok {
+			return newError(line, column, "unusable as hash key: %s", index.Type())
+		}
+
+		hash.Set(hashable, val)
+		return val
+	}
+
+	if external, ok := container.(object.External); ok {
+		name, ok := externalKey(index)
+		if !ok {
+			return newError(line, column, "index must be a string or an integer, got: %s", index.Type())
+		}
+		return withPosition(external.Set(name, val), line, column)
+	}
+
+	return newError(line, column, "index assignment not supported for: %s", container.Type())
 }
 
 func evalProgram(statements []ast.Statement, env *object.Environment) object.Object {
@@ -747,6 +762,8 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 			return newError(0, 0, "builtin function is nil")
 		}
 		return fn.Fn(args...)
+	case *object.Closure:
+		return fn.Runner.CallClosure(fn, args)
 	case object.External:
 		return fn.Call(args)
 	default:
@@ -756,7 +773,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 func isCallable(obj object.Object) bool {
 	switch obj.(type) {
-	case *object.Function, *object.Builtin, object.External:
+	case *object.Function, *object.Builtin, *object.Closure, object.External:
 		return true
 	default:
 		return false
@@ -883,27 +900,29 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 }
 
 func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.Environment) object.Object {
+	return getProperty(obj, node.Property.Value, node.Token.Line, node.Token.Column)
+}
+
+// getProperty returns obj.name.
+func getProperty(obj object.Object, propertyName string, line, column int) object.Object {
 	switch obj := obj.(type) {
 	case object.External:
-		return withPosition(obj.Get(node.Property.Value), node.Token.Line, node.Token.Column)
+		return withPosition(obj.Get(propertyName), line, column)
 	case *object.Array:
-		propertyName := node.Property.Value
 		switch propertyName {
 		case "length":
 			return &object.Integer{Value: int64(len(obj.Elements))}
 		default:
-			return newError(node.Token.Line, node.Token.Column, "arrays have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
+			return newError(line, column, "arrays have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
 	case *object.String:
-		propertyName := node.Property.Value
 		switch propertyName {
 		case "length":
 			return &object.Integer{Value: int64(utf8.RuneCountInString(obj.Value))}
 		default:
-			return newError(node.Token.Line, node.Token.Column, "strings have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
+			return newError(line, column, "strings have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
 	case *object.Hash:
-		propertyName := node.Property.Value
 
 		if propertyName == "length" {
 			return &object.Integer{Value: int64(len(obj.Pairs))}
@@ -917,7 +936,7 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 		}
 		return NULL
 	default:
-		return newError(node.Token.Line, node.Token.Column, "dot operator not supported for %s", obj.Type())
+		return newError(line, column, "dot operator not supported for %s", obj.Type())
 	}
 }
 
@@ -1186,10 +1205,8 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			hashKey := key.HashKey()
 
 			if pair, ok := obj.Pairs[hashKey]; ok {
-				if function, ok := pair.Value.(*object.Function); ok {
-					return applyFunction(function, args)
-				} else if builtin, ok := pair.Value.(*object.Builtin); ok {
-					return builtin.Fn(args...)
+				if isCallable(pair.Value) {
+					return withPosition(applyFunction(pair.Value, args), line, column)
 				} else {
 					return newError(line, column, "property %q is %s, not a function", method, typeName(pair.Value))
 				}
@@ -1396,7 +1413,13 @@ func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object
 		args = append(args, evaluated)
 	}
 
-	// Convert all arguments to strings for printing
+	printValues(args)
+
+	return NULL
+}
+
+// printValues prints values separated by spaces, followed by a newline.
+func printValues(args []object.Object) {
 	values := make([]string, len(args))
 	for i, arg := range args {
 		if arg == nil {
@@ -1407,8 +1430,6 @@ func evalPrintExpression(pe *ast.PrintStatement, env *object.Environment) object
 	}
 
 	fmt.Fprintln(output, strings.Join(values, " "))
-
-	return NULL
 }
 
 func objectToString(obj object.Object) string {

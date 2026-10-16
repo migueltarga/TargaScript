@@ -140,21 +140,27 @@ type Function struct {
 
 func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
 func (f *Function) Inspect() string {
+	return inspectFunction(f.Name, f.Parameters, f.Body)
+}
+
+// inspectFunction prints a function as its source, the same way for
+// evaluated and compiled functions.
+func inspectFunction(name string, parameters []*ast.Identifier, body *ast.BlockStatement) string {
 	var out bytes.Buffer
 
 	params := []string{}
-	for _, p := range f.Parameters {
+	for _, p := range parameters {
 		params = append(params, p.String())
 	}
 
 	out.WriteString("fn")
-	if f.Name != "" {
-		out.WriteString(" " + f.Name)
+	if name != "" {
+		out.WriteString(" " + name)
 	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") {\n")
-	out.WriteString(f.Body.String())
+	out.WriteString(body.String())
 	out.WriteString("\n}")
 
 	return out.String()
