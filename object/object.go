@@ -93,6 +93,17 @@ type Error struct {
 	Message string
 	Line    int
 	Column  int
+
+	// Trace is the calls that led to the error, the innermost first, for
+	// errors no try caught
+	Trace []Call
+}
+
+// Call is a function in the trace of an error, with the line it was at.
+// The top level of a program has no name.
+type Call struct {
+	Function string
+	Line     int
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }

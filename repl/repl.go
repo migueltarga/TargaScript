@@ -158,9 +158,7 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 
 	// If the evaluation resulted in an error, return it
 	if errObj, ok := evaluated.(*object.Error); ok {
-		err := errors.New(diag.Format(source, diag.Diagnostic{
-			Line: errObj.Line, Column: errObj.Column, Message: errObj.Message,
-		}))
+		err := errors.New(diag.Format(source, evaluator.Diagnostic(errObj)))
 		if isRepl {
 			printError(out, err, noColor)
 		}

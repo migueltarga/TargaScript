@@ -160,6 +160,21 @@ func (vm *VM) CallClosureAsync(cl *object.Closure, args []object.Object) object.
 	return vm.CallClosure(cl, args)
 }
 
+// trace adds the calls of the run from base to the trace of err. The
+// innermost frame is where the error happened, unless a run inside it,
+// like the function given to map, already traced it; the others are at the
+// call they're waiting for.
+func (vm *VM) trace(base int, err *object.Error) {
+	for i := len(vm.frames) - 1; i >= base; i-- {
+		f := vm.frames[i]
+		line := err.Line
+		if i < len(vm.frames)-1 || len(err.Trace) > 0 {
+			line, _ = f.cl.Fn.PositionAt(f.ip - 1)
+		}
+		err.Trace = append(err.Trace, object.Call{Function: f.cl.Fn.Name, Line: line})
+	}
+}
+
 // step counts a loop iteration or a call against MaxSteps.
 func (vm *VM) step(f *frame, ip int) *object.Error {
 	vm.steps++
@@ -218,6 +233,7 @@ func (vm *VM) runFiber(base int, fb *fiber) object.Object {
 		if err.Line == 0 {
 			err.Line, err.Column = f.cl.Fn.PositionAt(f.ip)
 		}
+		vm.trace(base, err)
 		bottom := vm.frames[base]
 		vm.sp = bottom.base - 1
 		vm.frames = vm.frames[:base]
