@@ -58,6 +58,9 @@ type translation struct {
 	// writes its result to register A, for an assignment after it to make
 	// it write the local instead
 	lastWrite int
+	// straight is where the code that runs straight to the end starts,
+	// with no jumps from or to it
+	straight int
 }
 
 // fixup is a jump to point at the new place of its target: the operand
@@ -226,6 +229,7 @@ func (t *translation) u16(at, offset int) int { return int(code.ReadUint16(t.in[
 func (t *translation) jump(old int, op code.Op, a, b, c, operand, target int) {
 	at := t.emit(old, op, a, b, c)
 	t.fixups = append(t.fixups, fixup{at, operand, target})
+	t.straight = len(t.out)
 }
 
 // smallInt returns the value of a constant that fits an instruction.
@@ -319,6 +323,7 @@ func (t *translation) run() {
 				t.push(inRegister(t.own(i)))
 			}
 			t.lastWrite = -1
+			t.straight = len(t.out)
 		}
 		if len(t.stack) != d {
 			t.fail("wrong stack depth at", at)
@@ -373,6 +378,54 @@ func (t *translation) shortenReturns() {
 	for i, w := range t.out {
 		if w.Op() == code.RMove && i+1 < len(t.out) && t.out[i+1].Op() == code.RReturn && t.out[i+1].A() == w.A() {
 			t.out[i] = code.MakeWord(code.RReturn, w.B(), 0, 0)
+		}
+	}
+}
+
+// globalLoad returns the index of the instruction that loaded the global
+// in register r, the function of a call, when the instructions after it
+// can't change it or see it, so the call can load it itself; or -1.
+func (t *translation) globalLoad(r int) int {
+	for i := len(t.out) - 1; i >= t.straight; i-- {
+		w := t.out[i]
+		if w.A() == r {
+			if w.Op() == code.RGetGlobal {
+				return i
+			}
+			return -1
+		}
+		switch w.Op() {
+		case code.RLoadK, code.RLoadI, code.RLoadNull, code.RLoadTrue, code.RLoadFalse, code.RGetBuiltin, code.RGetGlobal:
+		case code.RMove, code.RAddI, code.RSubI:
+			if w.B() == r {
+				return -1
+			}
+		default:
+			return -1
+		}
+	}
+	return -1
+}
+
+// remove takes out the instruction at i, in the code that runs straight
+// to the end.
+func (t *translation) remove(i int) {
+	t.out = append(t.out[:i], t.out[i+1:]...)
+	for old, at := range t.newAt {
+		if at > i {
+			t.newAt[old] = at - 1
+		}
+	}
+	for j := 0; j < len(t.positions); j++ {
+		p := &t.positions[j]
+		if p.Offset == i && (j+1 == len(t.positions) || t.positions[j+1].Offset == i+1) {
+			// The instruction after it starts a position of its own
+			t.positions = append(t.positions[:j], t.positions[j+1:]...)
+			j--
+			continue
+		}
+		if p.Offset > i {
+			p.Offset--
 		}
 	}
 }
@@ -682,6 +735,10 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.keepBelow(at, fn, t.own(fn))
 		t.place(at, fn)
 		t.stack = t.stack[:fn]
+		if load := t.globalLoad(t.own(fn)); rop == code.RCall && load >= 0 {
+			rop, name = code.RCallGlobal, t.out[load].B()
+			t.remove(load)
+		}
 		t.emit(at, rop, t.own(fn), argc, name)
 		t.push(inRegister(t.own(fn)))
 

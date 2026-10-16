@@ -131,6 +131,7 @@ const (
 	// Calls, with the function in R[A] and the arguments after it; the
 	// result goes in R[A]
 	RCall             // B arguments
+	RCallGlobal       // R[A] = the global C, then a call with B arguments
 	RCallMethod       // the method K[C] of R[A], with B arguments
 	RCallSpread       // the arguments are the elements of the array R[A+1]
 	RCallMethodSpread // the method K[C] of R[A], with the elements of the array R[A+1]
@@ -163,7 +164,7 @@ var opNames = [...]string{
 	RIterStart: "ITERSTART", RRangeIter: "RANGEITER", RIterNext: "ITERNEXT", RIterNextPair: "ITERNEXT2",
 	RArray: "ARRAY", RHash: "HASH", RTemplate: "TEMPLATE", RAppend: "APPEND", RHashSet: "HASHSET",
 	RHashMerge: "HASHMERGE", RWithout: "WITHOUT", RIndex: "INDEX", RSetIndex: "SETINDEX", RGetProp: "GETPROP",
-	RSetProp: "SETPROP", RCall: "CALL", RCallMethod: "CALLMETHOD", RCallSpread: "CALLSPREAD",
+	RSetProp: "SETPROP", RCall: "CALL", RCallGlobal: "CALLGLOBAL", RCallMethod: "CALLMETHOD", RCallSpread: "CALLSPREAD",
 	RCallMethodSpread: "CALLMETHODSPREAD", RReturn: "RETURN", RClosure: "CLOSURE", RLoad: "LOAD", RAwait: "AWAIT",
 	RTry: "TRY", RTryEnd: "TRYEND", RThrow: "THROW", RError: "ERROR", RIsArray: "ISARRAY",
 }

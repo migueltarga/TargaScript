@@ -267,6 +267,20 @@ func (vm *VM) loopWords(base int) object.Object {
 		case code.RFreeCell:
 			r[w.A()] = f.cl.Free[w.B()]
 
+		case code.RCallGlobal:
+			value := vm.globals[w.C()]
+			if value == nil {
+				name := vm.names.Names()[w.C()]
+				builtin, ok := vm.builtin(name)
+				if !ok {
+					f.ip = pc
+					return vm.notDefined(f, pc-1, name)
+				}
+				value = builtin
+			}
+			r[w.A()] = value
+			fallthrough
+
 		case code.RCall:
 			argc := w.B()
 			fn := f.base + w.A()
