@@ -243,7 +243,14 @@ let defaults = {"port": 80, "host": "localhost"}
 print({...defaults, "port": 8080}, [...[1, 2], 3])
 ```
 
-Patterns work in `let`, `const`, `repeat` and parameters. Missing parts are `null`.
+Patterns work in `let`, `const`, `repeat` and parameters. Missing parts are `null`, unless the name has a default, used when the part is missing or `null`:
+
+```targascript
+let {port = 8080, host = "localhost"} = {"host": "example.com"}
+print(port, host)                          // → 8080 example.com
+fn connect({url, retries = 3}) { "${url} x${retries}" }
+print(connect({"url": "db"}))              // → db x3
+```
 
 ## Null
 

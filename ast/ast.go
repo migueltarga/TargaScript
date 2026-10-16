@@ -688,11 +688,27 @@ type Pattern struct {
 	// Rest gets what the names don't take, in `[first, ...rest]` or
 	// `{name, ...others}`
 	Rest *Identifier
+
+	// Defaults has the value of each name when what it takes is null, as
+	// in `{port = 8080}`, or nil; it's empty when no name has one
+	Defaults []Expression
+}
+
+// Default returns the default value of the name at i, or nil.
+func (p *Pattern) Default(i int) Expression {
+	if i < len(p.Defaults) {
+		return p.Defaults[i]
+	}
+	return nil
 }
 
 func (p *Pattern) String() string {
 	names := []string{}
-	for _, n := range p.Names {
+	for i, n := range p.Names {
+		if d := p.Default(i); d != nil {
+			names = append(names, n.Value+" = "+d.String())
+			continue
+		}
 		names = append(names, n.Value)
 	}
 	if p.Rest != nil {

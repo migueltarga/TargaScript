@@ -423,6 +423,14 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(i)}))
 			c.emit(pattern.Token, code.OpIndex)
 		}
+		if value := pattern.Default(i); value != nil {
+			// Like ??: the default replaces a null
+			jump := c.emit(token.Token{}, code.OpJumpNotNullKeep, 9999)
+			if err := c.compileExpression(value); err != nil {
+				c.emitError(pattern.Token, "%s", err)
+			}
+			c.changeOperands(jump, len(c.scope.instructions))
+		}
 		c.emitDefine(c.define(name.Value, isConst))
 		c.emit(token.Token{}, code.OpPop)
 	}

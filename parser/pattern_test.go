@@ -37,7 +37,7 @@ func TestPatternErrors(t *testing.T) {
 		{"let [] = x", `expected at least one name in []`},
 		{"let [a b] = x", `expected ",", found "b"`},
 		{"let {1} = x", `expected a name, found "1"`},
-		{"let [a, b = x", `expected ",", found "="`},
+		{"let [a, b + 1] = x", `expected ",", found "+"`},
 	}
 	for _, tt := range tests {
 		p := New(lexer.New(tt.input))
