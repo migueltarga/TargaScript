@@ -177,26 +177,26 @@ func TestErrorHandling(t *testing.T) {
 	}{
 		{
 			"5 + true",
-			"type mismatch: INTEGER + BOOLEAN",
+			`cannot use "+" with an integer and a boolean`,
 		},
 		{
 			`
 5 + true
 5
 `,
-			"type mismatch: INTEGER + BOOLEAN",
+			`cannot use "+" with an integer and a boolean`,
 		},
 		{
 			"-true",
-			"unknown operator: -BOOLEAN",
+			`cannot use "-" on a boolean`,
 		},
 		{
 			"true + false",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			`cannot use "+" with a boolean and a boolean`,
 		},
 		{
 			"true + false + true + false",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			`cannot use "+" with a boolean and a boolean`,
 		},
 		{
 			`
@@ -204,15 +204,15 @@ func TestErrorHandling(t *testing.T) {
 true + false
 5
 `,
-			"unknown operator: BOOLEAN + BOOLEAN",
+			`cannot use "+" with a boolean and a boolean`,
 		},
 		{
 			`"Hello" - "World"`,
-			"unknown operator: STRING - STRING",
+			`cannot use "-" with a string and a string`,
 		},
 		{
 			"if 10 > 1 { true + false }",
-			"unknown operator: BOOLEAN + BOOLEAN",
+			`cannot use "+" with a boolean and a boolean`,
 		},
 		{
 			`
@@ -224,11 +224,11 @@ if 10 > 1 {
   return 1
 }
 `,
-			"unknown operator: BOOLEAN + BOOLEAN",
+			`cannot use "+" with a boolean and a boolean`,
 		},
 		{
 			"foobar",
-			"identifier not found: foobar",
+			`"foobar" is not defined`,
 		},
 		{
 			`{"name": "Monkey"}[fn(x) { x }]`,
@@ -236,7 +236,7 @@ if 10 > 1 {
 		},
 		{
 			`999[1]`,
-			"index operator not supported: INTEGER",
+			`cannot use [] on an integer`,
 		},
 	}
 

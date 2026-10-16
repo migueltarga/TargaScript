@@ -49,7 +49,7 @@ func TestStringInterpolationRuntimeError(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected an error")
 	}
-	if errObj.Message != "identifier not found: missing" {
+	if errObj.Message != `"missing" is not defined` {
 		t.Errorf("wrong error message: %q", errObj.Message)
 	}
 }

@@ -77,6 +77,18 @@ func (e *Environment) ModuleDir() string {
 	return ""
 }
 
+// Names returns every name visible from this environment, including those
+// of the enclosing environments.
+func (e *Environment) Names() []string {
+	names := []string{}
+	for env := e; env != nil; env = env.outer {
+		for name := range env.store {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 // LocalNames returns the names defined directly in this environment, sorted.
 func (e *Environment) LocalNames() []string {
 	names := make([]string, 0, len(e.store))
