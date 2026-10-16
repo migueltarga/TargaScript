@@ -309,6 +309,7 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `now()` | the current Unix time in seconds |
 | `timeFormat(seconds, layout)` | formats a time with `YYYY`, `YY`, `MMMM`, `MMM`, `MM`, `DD`, `dddd`, `ddd`, `HH`, `hh`, `mm`, `ss` and `A` (AM/PM), e.g. `timeFormat(now(), "DD/MM/YYYY HH:mm")` |
 | `clock()` | milliseconds since the program started, for timing code |
+| `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)` | promises for `await` |
 | `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit` | [command line](#command-line) only |
