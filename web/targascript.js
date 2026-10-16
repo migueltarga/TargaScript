@@ -100,6 +100,15 @@
     },
     number: (h) => values[h],
     makeNumber: (f) => handle(f),
+    // The digits of floats and the value of numbers, which the interpreter
+    // leaves to JavaScript instead of carrying code and tables for them
+    numberText: (f, digits, ptr, size) => {
+      const text = digits < 0 ? f.toExponential() : f >= 2 ** 53 ? BigInt(f).toString() : f.toExponential(digits);
+      const encoded = encoder.encode(text).subarray(0, size);
+      bytes(ptr, encoded.length).set(encoded);
+      return encoded.length;
+    },
+    numberParse: (ptr, len) => Number(text(ptr, len)),
     stringLength: (h) => (pending = encoder.encode(String(values[h]))).length,
     stringRead: (ptr) => { bytes(ptr, pending.length).set(pending); },
     makeString: (p, n) => handle(text(p, n)),

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/migueltarga/TargaScript/floats"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -177,8 +178,8 @@ func init() {
 				case *object.Integer:
 					return &object.Float{Value: float64(arg.Value)}
 				case *object.String:
-					value, err := strconv.ParseFloat(arg.Value, 64)
-					if err != nil {
+					value, ok := floats.Parse(arg.Value)
+					if !ok {
 						return &object.Error{
 							Message: strfmt.Sprintf("cannot convert %q to a float", arg.Value),
 						}
