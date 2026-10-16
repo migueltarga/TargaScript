@@ -696,12 +696,19 @@ type Pattern struct {
 	Token  token.Token
 	Object bool
 	Names  []*Identifier
+
+	// Rest gets what the names don't take, in `[first, ...rest]` or
+	// `{name, ...others}`
+	Rest *Identifier
 }
 
 func (p *Pattern) String() string {
 	names := []string{}
 	for _, n := range p.Names {
 		names = append(names, n.Value)
+	}
+	if p.Rest != nil {
+		names = append(names, "..."+p.Rest.Value)
 	}
 	if p.Object {
 		return "{" + strings.Join(names, ", ") + "}"

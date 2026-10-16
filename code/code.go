@@ -24,6 +24,7 @@ const (
 	OpAppend    // pop a value and add it to the array below, or its elements when the operand is 1
 	OpHashSet   // pop a value and a key and set them in the object below
 	OpHashMerge // pop an object and copy its properties into the object below
+	OpWithout   // replace the object on top with a copy without the keys in constants[index]
 
 	// Operators
 	OpAdd
@@ -114,6 +115,7 @@ var definitions = map[Opcode]*Definition{
 	OpAppend:    {"OpAppend", []int{1}},
 	OpHashSet:   {"OpHashSet", []int{}},
 	OpHashMerge: {"OpHashMerge", []int{}},
+	OpWithout:   {"OpWithout", []int{2}},
 
 	OpAdd:          {"OpAdd", []int{}},
 	OpSub:          {"OpSub", []int{}},

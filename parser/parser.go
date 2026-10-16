@@ -286,7 +286,13 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 	switch literal := expression.(type) {
 	case *ast.ArrayLiteral:
 		pattern := &ast.Pattern{Token: literal.Token}
-		for _, element := range literal.Elements {
+		for i, element := range literal.Elements {
+			if spread, ok := element.(*ast.SpreadExpression); ok && i == len(literal.Elements)-1 {
+				if pattern.Rest, ok = spread.Value.(*ast.Identifier); !ok {
+					return nil
+				}
+				continue
+			}
 			ident, ok := element.(*ast.Identifier)
 			if !ok {
 				return nil
@@ -296,8 +302,14 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 		return pattern
 	case *ast.HashLiteral:
 		pattern := &ast.Pattern{Token: literal.Token, Object: true}
-		for _, name := range literal.Order {
+		for i, name := range literal.Order {
 			pair := literal.Pairs[name]
+			if spread, ok := pair.Key.(*ast.SpreadExpression); ok && i == len(literal.Order)-1 {
+				if pattern.Rest, ok = spread.Value.(*ast.Identifier); !ok {
+					return nil
+				}
+				continue
+			}
 			key, ok := pair.Key.(*ast.Identifier)
 			value, isIdent := pair.Value.(*ast.Identifier)
 			if !ok || !isIdent || key != value {
@@ -320,6 +332,18 @@ func (p *Parser) parsePattern() *ast.Pattern {
 	}
 
 	for !p.peekTokenIs(closing) {
+		if p.peekTokenIs(token.SPREAD) {
+			p.nextToken()
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			pattern.Rest = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+			if !p.peekTokenIs(closing) {
+				p.errorAt(p.peekToken.Line, p.peekToken.Column, "...%s must be the last name in %s", pattern.Rest.Value, pattern.String())
+				return nil
+			}
+			break
+		}
 		if !p.expectPeek(token.IDENT) {
 			return nil
 		}
@@ -330,7 +354,7 @@ func (p *Parser) parsePattern() *ast.Pattern {
 	}
 	p.nextToken()
 
-	if len(pattern.Names) == 0 {
+	if len(pattern.Names) == 0 && pattern.Rest == nil {
 		p.errorAt(pattern.Token.Line, pattern.Token.Column, "expected at least one name in %s", pattern.String())
 		return nil
 	}
