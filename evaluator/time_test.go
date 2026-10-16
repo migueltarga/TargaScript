@@ -33,3 +33,38 @@ func TestClock(t *testing.T) {
 		t.Errorf("clock(1) should fail")
 	}
 }
+
+func TestParseTime(t *testing.T) {
+	previous := time.Local
+	time.Local = time.UTC
+	defer func() { time.Local = previous }()
+
+	tests := []struct {
+		text, layout string
+		want         int64
+	}{
+		{"1970-01-02", "YYYY-MM-DD", 86400},
+		{"02/01/1970 01:00", "DD/MM/YYYY HH:mm", 86400 + 3600},
+		{"Jan 2 1970", "MMM D YYYY", -1},
+		{"1970-01-01T00:00:10Z", "2006-01-02T15:04:05Z07:00", 10},
+	}
+	for _, tt := range tests {
+		result := parseTimeBuiltin(&object.String{Value: tt.text}, &object.String{Value: tt.layout})
+		if tt.want == -1 {
+			if _, ok := result.(*object.Error); !ok {
+				t.Errorf("%q in %q: want an error, got %s", tt.text, tt.layout, result.Inspect())
+			}
+			continue
+		}
+		if n, ok := result.(*object.Integer); !ok || n.Value != tt.want {
+			t.Errorf("%q in %q: got %s, want %d", tt.text, tt.layout, result.Inspect(), tt.want)
+		}
+	}
+
+	// timeFormat and parseTime are opposites
+	stamp := int64(1_760_000_000)
+	formatted := time.Unix(stamp, 0).Format(dateLayout("YYYY-MM-DD HH:mm:ss"))
+	if n := parseTimeBuiltin(&object.String{Value: formatted}, &object.String{Value: "YYYY-MM-DD HH:mm:ss"}).(*object.Integer); n.Value != stamp {
+		t.Errorf("round trip: got %d, want %d", n.Value, stamp)
+	}
+}
