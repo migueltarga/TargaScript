@@ -300,6 +300,7 @@ targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(pow(2, 10))' # run code from the command line
 cat script.tg | targascript -     # run code from standard input
 targascript test                  # run the *_test.tg files
+targascript check                 # find problems in .tg files without running them
 targascript --debug script.tg     # print the syntax tree before running
 ```
 
