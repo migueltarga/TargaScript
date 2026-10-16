@@ -1,7 +1,8 @@
 package evaluator
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"github.com/migueltarga/TargaScript/object"
 )
@@ -103,37 +104,30 @@ func clampSliceIndex(index, length int64) int64 {
 // order like in JavaScript: negative if a comes first, positive if b does.
 // Without one, elements must all be numbers or all be strings.
 func sortArray(arr *object.Array, args []object.Object, line, column int) *object.Error {
-	var sortErr *object.Error
-
-	less := func(a, b object.Object) bool {
-		if sortErr != nil {
-			return false
+	if len(args) == 0 {
+		order, err := sortedOrder(arr.Elements, line, column)
+		if err == nil {
+			arr.Elements = inOrder(arr.Elements, order)
 		}
-		if len(args) == 1 {
-			result := applyFunction(args[0], []object.Object{a, b})
-			switch result := result.(type) {
-			case *object.Error:
-				sortErr = result
-			case *object.Integer:
-				return result.Value < 0
-			case *object.Float:
-				return result.Value < 0
-			default:
-				sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
-			}
-			return false
-		}
-
-		lt := evalInfixExpression("<", a, b, line, column)
-		if errObj, isErr := lt.(*object.Error); isErr {
-			sortErr = newError(line, column, "cannot sort: %s", errObj.Message)
-			return false
-		}
-		return lt == TRUE
+		return err
 	}
 
-	sort.SliceStable(arr.Elements, func(i, j int) bool {
-		return less(arr.Elements[i], arr.Elements[j])
+	var sortErr *object.Error
+	slices.SortStableFunc(arr.Elements, func(a, b object.Object) int {
+		if sortErr != nil {
+			return 0
+		}
+		switch result := applyFunction(args[0], []object.Object{a, b}).(type) {
+		case *object.Error:
+			sortErr = result
+		case *object.Integer:
+			return cmp.Compare(result.Value, 0)
+		case *object.Float:
+			return cmp.Compare(result.Value, 0)
+		default:
+			sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
+		}
+		return 0
 	})
 	return sortErr
 }
