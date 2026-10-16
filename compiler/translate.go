@@ -328,7 +328,7 @@ func (t *translation) run() {
 			// Jumps come here with the values the layout keeps where they
 			// came from, and the others in their own places
 			if len(t.stack) == d {
-				t.placeFor(at, layout)
+				t.placeFor(at, layout, at)
 			}
 			t.stack = append(t.stack[:0], layout...)
 			t.lastWrite = -1
@@ -336,7 +336,7 @@ func (t *translation) run() {
 		} else if t.targets[at] {
 			// Jumps come here with every value in its own place
 			if len(t.stack) == d {
-				t.place(at, 0)
+				t.placeFor(at, nil, at)
 			}
 			t.stack = t.stack[:0]
 			for i := 0; i < d; i++ {
@@ -500,9 +500,15 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 	return layout
 }
 
-// placeFor moves the values a layout has in their own places there.
-func (t *translation) placeFor(old int, layout []where) {
-	for i := range t.stack {
+// placeFor moves the values a layout of target has in their own places
+// there, or all the values without a layout. A value the target pops
+// right away needs no place; a target of -1 has no such value.
+func (t *translation) placeFor(old int, layout []where, target int) {
+	n := len(t.stack)
+	if target >= 0 && target < len(t.in) && code.Opcode(t.in[target]) == code.OpPop && t.flow.depths[target] == n {
+		n--
+	}
+	for i := 0; i < n; i++ {
 		if i < len(layout) && layout[i] != inRegister(t.own(i)) {
 			// The value is where the layout has it, or a copy of it
 			continue
@@ -672,12 +678,12 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(inRegister(t.own(d - 1)))
 
 	case code.OpJump:
-		t.place(at, 0)
+		t.placeFor(at, nil, t.u16(at, 1))
 		t.jump(at, code.RJump, 0, 0, 0, 0, t.u16(at, 1))
 
 	case code.OpJumpNotTruthy:
 		value := t.secure(at, t.pop(), t.own(d-1))
-		t.place(at, 0)
+		t.placeFor(at, nil, t.u16(at, 1))
 		r := t.register(at, value, t.own(d-1))
 		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, t.u16(at, 1))
 
@@ -690,11 +696,8 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 			layout = t.keptLayout(at, next, target, d)
 			t.layouts[target] = layout
 		}
-		if layout != nil {
-			t.placeFor(at, layout)
-		} else {
-			t.place(at, 0)
-		}
+		// The value tested goes in its place even if the target pops it
+		t.placeFor(at, layout, -1)
 		rop := code.RJumpFalsy
 		switch op {
 		case code.OpJumpTruthyKeep:

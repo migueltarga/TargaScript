@@ -48,3 +48,20 @@ func TestLoopAtEnd(t *testing.T) {
 	}
 	t.Fatal("no function compiled")
 }
+
+// A branch whose value is dropped where the branches meet doesn't move it
+func TestDroppedBranchValues(t *testing.T) {
+	p := parser.New(lexer.New("fn f(i, s) { if i % 2 == 0 { s += i } else { s -= 1 }\ni }"))
+	bytecode, err := New().Compile(p.ParseProgram())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range bytecode.Constants {
+		if f, ok := k.(*object.CompiledFunction); ok {
+			if listing := code.WordsString(f.Code); strings.Contains(listing, "MOVE") {
+				t.Fatalf("the branches shouldn't move their values:\n%s", listing)
+			}
+			return
+		}
+	}
+}
