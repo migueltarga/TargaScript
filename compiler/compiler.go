@@ -1308,6 +1308,13 @@ func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
 		for _, jump := range toBody {
 			c.changeOperands(jump, len(c.scope.instructions))
 		}
+		guardMiss := -1
+		if arm.Guard != nil {
+			if err := c.compileOperand(arm.Guard); err != nil {
+				return err
+			}
+			guardMiss = c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+		}
 		c.emit(token.Token{}, code.OpPop) // the subject
 		var err error
 		if block, ok := arm.Body.(*ast.BlockStatement); ok {
@@ -1322,6 +1329,9 @@ func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
 
 		if nextArm >= 0 {
 			c.changeOperands(nextArm, len(c.scope.instructions))
+		}
+		if guardMiss >= 0 {
+			c.changeOperands(guardMiss, len(c.scope.instructions))
 		}
 	}
 
