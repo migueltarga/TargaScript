@@ -10,7 +10,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 
 ## 🌟 Why TargaScript
 
-- **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a 150 KB WebAssembly runtime: add `<script type="text/targascript">` to a page, with no build step.
+- **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a WebAssembly runtime under 200 KB: add `<script type="text/targascript">` to a page, with no build step.
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
 - **Small, modern syntax.** String interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
@@ -275,7 +275,7 @@ Build it with [TinyGo](https://tinygo.org) 0.39:
 ./web/build.sh build
 ```
 
-and serve `build/targascript.js` and `build/targascript.wasm` (about 330 KB, 150 KB compressed) next to your page. Recursion goes up to 10,000 calls in the browser too. Only functions called back by builtins or by JavaScript, like the function given to `map` or an event handler, can nest at most 100 deep there.
+and serve `build/targascript.js` and `build/targascript.wasm` (about 420 KB, 190 KB compressed) next to your page. Recursion goes up to 10,000 calls in the browser too. Only functions called back by builtins or by JavaScript, like the function given to `map` or an event handler, can nest at most 100 deep there.
 
 ## 🤔 Why TargaScript?
 
