@@ -1,0 +1,51 @@
+// sales_report.tg
+// A sales report from CSV data: parsing, grouping, sorting and formatting,
+// with the newer parts of the language.
+
+const CSV = `date,region,product,units,price
+2026-01-03,North,Keyboard,10,49.90
+2026-01-05,South,Monitor,3,199.00
+2026-02-11,North,Monitor,7,199.00
+2026-02-14,East,Mouse,40,19.50
+2026-03-01,South,Keyboard,20,47.50
+2026-03-09,East,Monitor,2,205.00`
+
+fn parseCSV(text) {
+    let [header, ...rows] = text.lines()
+    let names = header.split(",")
+    rows.map(row => names.zip(row.split(",")).toObject())
+}
+
+// Each sale with numbers instead of text, and its total
+let sales = parseCSV(CSV).map(({units, price, date, ...rest}) => {
+    ...rest,
+    units: toInt(units),
+    total: toInt(units) * toFloat(price),
+    month: timeFormat(parseTime(date, "YYYY-MM-DD"), "MMMM"),
+})
+
+fn label(total) {
+    match total {
+        _ if total >= 1800 => "big"
+        _ if total >= 1300 => "medium"
+        _ => "small"
+    }
+}
+
+print("By region")
+let regions = sales.groupBy(s => s.region).entries()
+    .map(([region, list]) => {region, total: list.map(s => s.total).sum()})
+    .sortBy(r => -r.total)
+repeat {region, total} in regions {
+    print("  ${region.padEnd(6)} ${total:10,.2f}  ${label(total)}")
+}
+
+print("By month")
+repeat month, list in sales.groupBy(s => s.month) {
+    let units = list.map(s => s.units).sum()
+    print("  ${month.padEnd(9)} ${units:4d} units")
+}
+
+let best = sales.sortBy(s => [-s.total, s.product])[0]
+print("Best sale: ${best.units} × ${best.product} in ${best.region} for ${best.total:,.2f}")
+print("Total: ${sales.map(s => s.total).sum():,.2f}")
