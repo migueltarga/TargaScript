@@ -154,6 +154,12 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		leftVal := left.(*object.String).Value
 		rightVal := objectToString(right)
 		return &object.String{Value: leftVal + rightVal}
+	case left.Type() == object.ARRAY_OBJ && right.Type() == object.ARRAY_OBJ && operator == "+":
+		leftElements := left.(*object.Array).Elements
+		rightElements := right.(*object.Array).Elements
+		elements := make([]object.Object, 0, len(leftElements)+len(rightElements))
+		elements = append(append(elements, leftElements...), rightElements...)
+		return &object.Array{Elements: elements}
 	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
 		return evalBooleanInfixExpression(operator, left, right, line, column)
 	case operator == "==":

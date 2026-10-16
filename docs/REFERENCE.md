@@ -53,7 +53,7 @@ From loosest to tightest:
 | `==` `!=` | equality; arrays and objects compare by content, and `1 == 1.0` |
 | `<` `>` `<=` `>=` | comparison of numbers or strings |
 | `..` | inclusive range of integers: `1..3` is `[1, 2, 3]` |
-| `+` `-` `^` | addition (and joining strings), subtraction, bitwise xor |
+| `+` `-` `^` | addition (and joining strings or arrays), subtraction, bitwise xor |
 | `*` `/` `%` | multiplication, division, remainder |
 | `**` | power, grouping to the right: `2 ** 3 ** 2` is `512` |
 | `-x` `!x` | negation, not |
