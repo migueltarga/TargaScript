@@ -285,6 +285,7 @@ type FunctionLiteral struct {
 	Parameters []*Identifier
 	Defaults   []Expression // default value of each parameter, or nil
 	Rest       bool         // the last parameter collects the extra arguments
+	Patterns   []*Pattern   // a pattern taking a parameter apart, or nil
 	Body       *BlockStatement
 }
 
@@ -442,6 +443,9 @@ type RepeatStatement struct {
 	// the value: the index for arrays, strings and ranges, the key for
 	// objects
 	Key *Identifier
+
+	// Pattern takes each value apart, as in `repeat [x, y] in points`
+	Pattern *Pattern
 }
 
 func (rs *RepeatStatement) statementNode()       {}
@@ -620,6 +624,7 @@ type FunctionStatement struct {
 	Parameters []*Identifier
 	Defaults   []Expression // default value of each parameter, or nil
 	Rest       bool         // the last parameter collects the extra arguments
+	Patterns   []*Pattern   // a pattern taking a parameter apart, or nil
 	Body       *BlockStatement
 }
 

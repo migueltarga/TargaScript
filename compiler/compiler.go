@@ -90,7 +90,7 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 		}
 	}
 
-	main, err := c.compileFunction(program, "", nil, nil, func() error {
+	main, err := c.compileFunction(program, "", nil, nil, nil, func() error {
 		return c.compileStatements(program.Statements)
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
 // compileFunction compiles a function body, compiling it again when a
 // closure in it turns out to capture a local the body already used without a
 // cell.
-func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Identifier, defaults []ast.Expression, body func() error) (*object.CompiledFunction, error) {
+func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Identifier, defaults []ast.Expression, patterns []*ast.Pattern, body func() error) (*object.CompiledFunction, error) {
 	captured := c.captured[node]
 	if captured == nil {
 		captured = map[int]bool{}
@@ -160,6 +160,14 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 
 		if err := c.compileDefaults(params, defaults); err != nil {
 			return nil, err
+		}
+		for i, pattern := range patterns {
+			if pattern != nil {
+				s, _ := c.fn.lookupLocal(params[i].Value)
+				c.emit(token.Token{}, code.OpGetLocal, s.Index)
+				c.emitDestructure(pattern, false)
+				c.emit(token.Token{}, code.OpPop)
+			}
 		}
 		if err := body(); err != nil {
 			return nil, err
@@ -371,6 +379,13 @@ func (c *Compiler) compileDestructuring(tok token.Token, pattern *ast.Pattern, v
 		}
 	}
 
+	c.emitDestructure(pattern, isConst)
+	return nil
+}
+
+// emitDestructure declares the names of a pattern with the parts of the
+// value on top of the stack, keeping it.
+func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 	for i, name := range pattern.Names {
 		c.emit(token.Token{}, code.OpDup)
 		if pattern.Object {
@@ -382,7 +397,6 @@ func (c *Compiler) compileDestructuring(tok token.Token, pattern *ast.Pattern, v
 		c.emitDefine(c.define(name.Value, isConst))
 		c.emit(token.Token{}, code.OpPop)
 	}
-	return nil
 }
 
 func (c *Compiler) compileFunctionStatement(stmt *ast.FunctionStatement) error {
@@ -397,7 +411,7 @@ func (c *Compiler) compileFunctionStatement(stmt *ast.FunctionStatement) error {
 		target = existing
 	}
 
-	if _, err := c.compileFunction(stmt, name, stmt.Parameters, stmt.Defaults, func() error {
+	if _, err := c.compileFunction(stmt, name, stmt.Parameters, stmt.Defaults, stmt.Patterns, func() error {
 		return c.compileStatements(stmt.Body.Statements)
 	}); err != nil {
 		return err
@@ -569,6 +583,11 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 	if stmt.Key != nil {
 		key := c.fn.defineLocal(stmt.Key.Value, false)
 		c.emitDefine(key)
+		c.emit(token.Token{}, code.OpPop)
+	}
+	if stmt.Pattern != nil {
+		c.emit(token.Token{}, code.OpGetLocal, iterator.Index)
+		c.emitDestructure(stmt.Pattern, false)
 		c.emit(token.Token{}, code.OpPop)
 	}
 	err := c.compileStatements(stmt.Body.Statements)
@@ -844,7 +863,7 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		if node.Name != nil {
 			name = node.Name.Value
 		}
-		if _, err := c.compileFunction(node, name, node.Parameters, node.Defaults, func() error {
+		if _, err := c.compileFunction(node, name, node.Parameters, node.Defaults, node.Patterns, func() error {
 			return c.compileStatements(node.Body.Statements)
 		}); err != nil {
 			return err
