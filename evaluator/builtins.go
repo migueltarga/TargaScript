@@ -32,26 +32,11 @@ func init() {
 					}
 				}
 
-				values := make([]interface{}, len(args)-1)
-				for i, arg := range args[1:] {
-					switch arg := arg.(type) {
-					case *object.Integer:
-						values[i] = arg.Value
-					case *object.Float:
-						values[i] = arg.Value
-					case *object.Boolean:
-						values[i] = arg.Value
-					case *object.String:
-						values[i] = arg.Value
-					case *object.Null:
-						values[i] = "null"
-					default:
-						values[i] = arg.Inspect()
-					}
+				text, err := formatPrintf(format.Value, args[1:])
+				if err != nil {
+					return err
 				}
-
-				// Use the format with the values
-				fmt.Fprintf(output, format.Value, values...)
+				fmt.Fprint(output, text)
 				fmt.Fprintln(output) // add newline at the end
 
 				return NULL
