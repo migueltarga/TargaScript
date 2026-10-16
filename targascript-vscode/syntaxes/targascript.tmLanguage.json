@@ -86,7 +86,7 @@
         },
         {
           "name": "variable.language.this.targascript",
-          "match": "\\bthis\\b"
+          "match": "\\b(this|it)\\b"
         }
       ]
     },
