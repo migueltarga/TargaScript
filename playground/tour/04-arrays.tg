@@ -2,10 +2,12 @@
 //
 // Arrays hold values in order. map, filter and reduce transform them,
 // and calls can be chained. x => x * 2 is a short way to write a function.
+// + joins arrays and in checks if a value is there.
 
 let numbers = [5, 3, 8, 1, 9, 2]
 
-print(numbers.length, numbers.first(), numbers.last())
+print(numbers.length, numbers[0], numbers[-1])
+print(8 in numbers, numbers + [7])
 print(numbers.map(n => n * 2))
 print(numbers.filter(n => n > 4))
 print(numbers.sum(), numbers.max(), numbers.sort())
