@@ -1,9 +1,10 @@
 # TargaScript Language Support for VS Code
 
-This extension provides syntax highlighting for TargaScript (.tg) files in Visual Studio Code.
+This extension provides syntax highlighting and error checking for TargaScript (.tg) files in Visual Studio Code.
 
 ## Features
 
+- Errors while you edit: syntax errors, names that aren't defined (with "Did you mean...?" for typos), constants assigned again, `break` outside a loop. They're found by the TargaScript runtime itself, compiled to WebAssembly and included in the extension, so nothing else needs to be installed
 - Syntax highlighting for TargaScript files
 - Recognition of language keywords, operators, and built-in functions
 - Support for TargaScript's specific syntax constructs
@@ -60,3 +61,6 @@ For issues, feature requests, or contributions, please visit the [extension's Gi
 ## License
 
 This extension is licensed under the [MIT License](LICENSE). 
+## Building
+
+The error checking needs the TargaScript runtime in `runtime/`. `npm run vscode:prepublish` (or `sh build.sh`) builds it with [TinyGo](https://tinygo.org), and `vsce package` runs it automatically.

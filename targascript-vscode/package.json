@@ -1,16 +1,21 @@
 {
   "name": "targascript",
   "displayName": "TargaScript",
-  "description": "Syntax highlighting for TargaScript (.tg) files",
-  "version": "0.4.0",
+  "description": "Syntax highlighting and error checking for TargaScript (.tg) files",
+  "version": "0.5.0",
   "publisher": "migueltarga",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters"
   ],
+  "activationEvents": [
+    "onLanguage:targascript"
+  ],
+  "main": "./extension.js",
   "contributes": {
     "languages": [
       {
@@ -41,8 +46,12 @@
     "targascript",
     "tg",
     "syntax",
-    "highlighting"
+    "highlighting",
+    "diagnostics"
   ],
   "author": "Miguel Targa",
-  "license": "MIT"
-} 
+  "license": "MIT",
+  "scripts": {
+    "vscode:prepublish": "sh build.sh"
+  }
+}
