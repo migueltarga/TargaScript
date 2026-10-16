@@ -206,6 +206,8 @@ fn add(a, b) {
 let double = fn(x) { x * 2 }
 let triple = x => x * 3
 let multiply = (a, b) => a * b
+let point = (x, y) => {x, y}          // braces with name: or name, are an object
+print(point(1, 2))                    // → {"x": 1, "y": 2}
 
 fn greet(name, greeting = "Hello") { "${greeting}, ${name}!" }
 fn sum(...numbers) { numbers.reduce((a, b) => a + b, 0) }

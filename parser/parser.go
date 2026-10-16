@@ -544,7 +544,7 @@ func (p *Parser) parseArrowFunction(tok token.Token, params []*ast.Identifier, d
 	lit := &ast.FunctionLiteral{Token: tok, Parameters: params, Defaults: defaults, Patterns: patterns, Arrow: true}
 	p.nextToken()
 
-	if p.curTokenIs(token.LBRACE) {
+	if p.curTokenIs(token.LBRACE) && !p.startsObject() {
 		lit.Body = p.parseBlockStatement()
 		return lit
 	}
@@ -561,6 +561,23 @@ func (p *Parser) parseArrowFunction(tok token.Token, params []*ast.Identifier, d
 		&ast.ExpressionStatement{Token: tok, Expression: body},
 	}}
 	return lit
+}
+
+// startsObject reports whether the { at the current token starts an object
+// like {name: 1}, {x, y} or {...other} rather than a block. No block starts
+// with a spread, or with a name or a string followed by a colon or a comma.
+// {x} stays a block that returns x.
+func (p *Parser) startsObject() bool {
+	if p.peekTokenIs(token.SPREAD) {
+		return true
+	}
+	if !p.peekTokenIs(token.IDENT) && !p.peekTokenIs(token.STRING) {
+		return false
+	}
+	saved := *p.l
+	next := p.l.NextToken()
+	*p.l = saved
+	return next.Type == token.COLON || next.Type == token.COMMA
 }
 
 func (p *Parser) parseIntegerLiteral() ast.Expression {
@@ -1042,8 +1059,8 @@ func (p *Parser) parseMatchExpression() ast.Expression {
 			return nil
 		}
 		p.nextToken()
-		// Braces start a block; an object needs parentheses: => ({"a": 1})
-		if p.curTokenIs(token.LBRACE) {
+		// Braces start a block, unless they hold an object: => {a: 1}
+		if p.curTokenIs(token.LBRACE) && !p.startsObject() {
 			arm.Body = p.parseBlockStatement()
 		} else {
 			arm.Body = p.parseExpression(LOWEST)
