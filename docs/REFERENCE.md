@@ -456,8 +456,10 @@ It exits with 1 when a test fails, when a file has an error outside a test, or w
 ```sh
 targascript                       # the REPL: unfinished code continues on the next line; help, exit
 targascript script.tg a b         # run a file; it sees ["a", "b"] in args
+targascript --watch script.tg     # run it again whenever a .tg file next to it changes
 targascript -e 'print(2 ** 10)'   # run code given on the command line
 targascript test                  # run the *_test.tg files, see Testing
+targascript test --watch          # and again whenever a .tg file changes
 targascript check                 # find problems in the .tg files without running them
 targascript build app.tg -o app   # make an executable that runs app.tg, see below
 targascript lsp                   # a language server, for editors other than VS Code

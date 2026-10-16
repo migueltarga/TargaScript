@@ -25,6 +25,7 @@ func main() {
 	code := flag.String("e", "", "Run the given code instead of a file")
 	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
 	debugNoColor := flag.Bool("debug-no-color", false, "Enable debug mode with AST pretty printing (no colors)")
+	watch := flag.Bool("watch", false, "Run the file again whenever a .tg file next to it changes")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -39,6 +40,22 @@ func main() {
 	debugEnabled := *debug || *debugNoColor
 
 	args := flag.Args()
+
+	// test --watch, as well as --watch test
+	if len(args) > 0 && args[0] == "test" && (contains(args, "--watch") || contains(args, "-watch")) {
+		*watch = true
+	}
+	if *watch {
+		if len(args) == 0 || *code != "" {
+			fmt.Fprintln(os.Stderr, "--watch needs a file to run, or test")
+			os.Exit(1)
+		}
+		dir := filepath.Dir(args[0])
+		if args[0] == "test" {
+			dir = "."
+		}
+		os.Exit(runWatch(withoutWatch(os.Args[1:]), dir))
+	}
 
 	if *code != "" {
 		repl.SetArgs(args)
@@ -171,12 +188,14 @@ func usage() {
 Usage:
   targascript                      start the REPL
   targascript file.tg [args...]    run a program; it sees the arguments in args
+  targascript --watch file.tg      run it again whenever a .tg file next to it changes
   targascript -e 'code'            run code given on the command line
   targascript -                    run a program read from standard input
 
 Commands:
-  targascript test [-run text] [paths]
-                                   run the tests in *_test.tg files; -run only those named like text
+  targascript test [-run text] [--watch] [paths]
+                                   run the tests in *_test.tg files; -run only those named like text,
+                                   --watch again whenever a .tg file changes
   targascript check [paths]        find problems in .tg files without running them
   targascript fmt [--check] [paths]
                                    lay out .tg files; --check only lists the ones that need it
@@ -191,4 +210,24 @@ Flags:
 Reference: https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md
 Playground: https://migueltarga.github.io/TargaScript/
 `)
+}
+
+func contains(list []string, value string) bool {
+	for _, item := range list {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+// withoutWatch returns the arguments without --watch, for the runs of watch.
+func withoutWatch(args []string) []string {
+	var out []string
+	for _, arg := range args {
+		if arg != "--watch" && arg != "-watch" {
+			out = append(out, arg)
+		}
+	}
+	return out
 }
