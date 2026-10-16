@@ -120,6 +120,9 @@ func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
 	for _, n := range pattern.Names {
 		names = append(names, n.Value)
 	}
+	if pattern.Rest != nil {
+		names = append(names, pattern.Rest.Value)
+	}
 	return names
 }
 
@@ -367,7 +370,7 @@ func (c *Compiler) compileDestructuring(tok token.Token, pattern *ast.Pattern, v
 		return err
 	}
 
-	for _, name := range pattern.Names {
+	for _, name := range append(append([]*ast.Identifier{}, pattern.Names...), restName(pattern)...) {
 		existing, inScope := c.lookupCurrentScope(name.Value)
 		if inScope && isConst {
 			c.emitError(tok, "identifier already declared: %s", name.Value)
@@ -395,6 +398,22 @@ func (c *Compiler) emitDestructure(pattern *ast.Pattern, isConst bool) {
 			c.emit(pattern.Token, code.OpIndex)
 		}
 		c.emitDefine(c.define(name.Value, isConst))
+		c.emit(token.Token{}, code.OpPop)
+	}
+
+	if pattern.Rest != nil {
+		c.emit(token.Token{}, code.OpDup)
+		if pattern.Object {
+			names := []object.Object{}
+			for _, name := range pattern.Names {
+				names = append(names, &object.String{Value: name.Value})
+			}
+			c.emit(pattern.Token, code.OpWithout, c.addConstant(&object.Array{Elements: names}))
+		} else {
+			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(len(pattern.Names))}))
+			c.emit(pattern.Token, code.OpCallMethod, c.addConstant(&object.String{Value: "slice"}), 1)
+		}
+		c.emitDefine(c.define(pattern.Rest.Value, isConst))
 		c.emit(token.Token{}, code.OpPop)
 	}
 }
@@ -1170,4 +1189,11 @@ func (c *Compiler) compileSpreadHash(node *ast.HashLiteral) error {
 		c.emit(node.Token, code.OpHashSet)
 	}
 	return nil
+}
+
+func restName(pattern *ast.Pattern) []*ast.Identifier {
+	if pattern.Rest == nil {
+		return nil
+	}
+	return []*ast.Identifier{pattern.Rest}
 }

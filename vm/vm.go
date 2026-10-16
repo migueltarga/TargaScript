@@ -573,6 +573,25 @@ func (vm *VM) loop(base int) object.Object {
 			}
 			hash.Set(hashable, value)
 
+		case code.OpWithout:
+			names := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.Array)
+			f.ip += 2
+			from, ok := vm.stack[vm.sp-1].(*object.Hash)
+			if !ok {
+				return vm.errorAt(f, ip, "cannot take the rest of %s, only of an object", evaluator.TypeName(vm.stack[vm.sp-1]))
+			}
+			rest := object.NewHash()
+		pairs:
+			for _, pair := range from.OrderedPairs() {
+				for _, name := range names.Elements {
+					if pair.Key.(object.Hashable).HashKey() == name.(*object.String).HashKey() {
+						continue pairs
+					}
+				}
+				rest.Set(pair.Key.(object.Hashable), pair.Value)
+			}
+			vm.stack[vm.sp-1] = rest
+
 		case code.OpHashMerge:
 			source := vm.pop()
 			hash := vm.stack[vm.sp-1].(*object.Hash)
