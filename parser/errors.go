@@ -55,6 +55,8 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 		switch {
 		case strings.HasPrefix(cur.Literal, "\""):
 			p.errorAt(cur.Line, cur.Column, "this string is never closed, add a \" at its end")
+		case strings.HasPrefix(cur.Literal, "`"):
+			p.errorAt(cur.Line, cur.Column, "this string is never closed, add a ` at its end")
 		case cur.Literal == "/*":
 			p.errorAt(cur.Line, cur.Column, "this comment is never closed, add */ at its end")
 		default:

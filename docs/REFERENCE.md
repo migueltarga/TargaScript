@@ -98,6 +98,16 @@ repeat c in "abc" { print(c) }
 
 Escapes are `\n`, `\t`, `\r`, `\"`, `\\` and `\$` (for a literal `${`); other backslashes stay as written, so `"\d+"` is `\d+`. `${value:spec}` formats like [`format`](#builtin-functions). Strings can be joined with `+`, which turns the right side into text: `"n = " + 5`.
 
+Strings in backticks can span lines and take text as written, quotes and backslashes included, which suits JSON, HTML and patterns. Only `` \` `` and `\${` are escapes, and `${...}` still interpolates:
+
+```targascript
+let user = parseJSON(`{"name": "Ana", "tags": ["admin"]}`)
+let card = `<div class="card">
+  <b>${user.name}</b>
+</div>`
+print(card.lines().length)   // → 3
+```
+
 Patterns are regular expressions in strings:
 
 ```targascript
