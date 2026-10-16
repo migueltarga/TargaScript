@@ -112,6 +112,7 @@ print(numbers.reduce((a, b) => a + b, 0), numbers.sum())  // → 26 26
 print(numbers.sort())                  // sorts in place → [1, 3, 5, 8, 9]
 print([1, [2, [3]]].flatten(), [1, 1, 2].unique())  // → [1, 2, [3]] [1, 2]
 print(["bb", "a"].sortBy(s => s.length))            // → ["a", "bb"]
+print([1, 2, 3].chunk(2), ["a", "b"].zip([1, 2]))   // → [[1, 2], [3]] [["a", 1], ["b", 2]]
 print(["apple", "avocado", "kiwi"].groupBy(w => w[0]))
 // → {"a": ["apple", "avocado"], "k": ["kiwi"]}
 ```
@@ -119,14 +120,14 @@ print(["apple", "avocado", "kiwi"].groupBy(w => w[0]))
 Array methods:
 
 - **Reading**: `length`, `first()`, `last()`, `rest()`, `slice(start, end)`, `contains(value)`, `indexOf(value)`, `find(fn)`, `some(fn)`, `every(fn)`, `count(value or fn)`, `min()`, `max()`, `sum()`.
-- **Transforming**: `map(fn)`, `filter(fn)`, `reduce(fn, initial)`, `join(sep)`, `unique()`, `flatten(depth)`, `groupBy(fn)`.
+- **Transforming**: `map(fn)`, `filter(fn)`, `reduce(fn, initial)`, `join(sep)`, `unique()`, `flatten(depth)`, `groupBy(fn)`, `chunk(size)`, `zip(other)`, `toObject()` (from `[key, value]` pairs, the opposite of `entries()`).
 - **Changing the array in place**:
   - `insert(value)` and `unshift(value)` add at the end or the start;
   - `pop()` and `shift()` remove from the end or the start;
   - `removeAt(i)` removes at a position;
   - `sort()`, `sort(compare)`, `sortBy(fn)` and `reverse()` reorder it.
 
-`array[i]` is `null` outside the array, and negative positions in `slice` and `removeAt` count from the end.
+`array[i]` is `null` outside the array, and negative positions in `array[i]`, `slice` and `removeAt` count from the end.
 
 ## Objects
 

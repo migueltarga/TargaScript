@@ -168,6 +168,9 @@ Arrays support the following method-style operations:
 - `array.min()` / `array.max()` - The smallest or largest element, or `null` for an empty array
 - `array.unique()` - The elements without repeats, in their first order
 - `array.flatten(depth)` - Nested arrays replaced by their elements, `depth` levels deep (1 by default)
+- `array.chunk(size)` - The elements in arrays of `size`, the last one possibly shorter
+- `array.zip(other)` - Pairs `[a, b]` of the elements at the same position, as many as the shorter array has
+- `array.toObject()` - An object from `[key, value]` pairs, the opposite of `object.entries()`
 - `array.groupBy(function)` - An object of arrays, grouping the elements by what the function returns
 - `array.sortBy(function)` - Sort the array in place by what the function returns for each element, and return it
 - `array.pop()` / `array.shift()` - Remove and return the last or first element, or `null` when empty

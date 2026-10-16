@@ -732,6 +732,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			if result, ok := evalArrayChangeMethod(obj, method, args, line, column); ok {
 				return result
 			}
+			if result, ok := evalArrayShapeMethod(obj, method, args, line, column); ok {
+				return result
+			}
 			return newError(line, column, "arrays have no method %q%s", method, hint(method, otherLanguageArrayMethods, arrayMethods))
 		}
 	case *object.Hash:
