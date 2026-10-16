@@ -19,6 +19,7 @@ import (
 	"io"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/diag"
@@ -166,6 +167,7 @@ func callValue(fn object.Object, args []any) (any, error) {
 //
 //   - nil, bools, numbers and strings as they are;
 //   - slices and arrays as arrays, maps as objects, with their keys sorted;
+//   - structs as objects of their exported fields, named by their json tags;
 //   - functions as functions the script can call. Their arguments are
 //     converted with FromValue, and a last result of type error that isn't
 //     nil fails the call in the script.
@@ -219,6 +221,22 @@ func ToValue(value any) (object.Object, error) {
 			hash.Set(&object.String{Value: fmt.Sprint(key.Interface())}, element)
 		}
 		return hash, nil
+	case reflect.Struct:
+		hash := object.NewHash()
+		t := v.Type()
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			name, skip := fieldName(field)
+			if skip {
+				continue
+			}
+			element, err := ToValue(v.Field(i).Interface())
+			if err != nil {
+				return nil, err
+			}
+			hash.Set(&object.String{Value: name}, element)
+		}
+		return hash, nil
 	case reflect.Func:
 		return goFunction(v), nil
 	case reflect.Pointer, reflect.Interface:
@@ -228,6 +246,24 @@ func ToValue(value any) (object.Object, error) {
 		return ToValue(v.Elem().Interface())
 	}
 	return nil, fmt.Errorf("cannot give a %T to a script", value)
+}
+
+// fieldName is the property a struct field becomes: its json tag's name
+// when it has one, else its name. Unexported fields and json:"-" are
+// skipped.
+func fieldName(field reflect.StructField) (string, bool) {
+	if !field.IsExported() {
+		return "", true
+	}
+	tag := field.Tag.Get("json")
+	name, _, _ := strings.Cut(tag, ",")
+	switch name {
+	case "-":
+		return "", true
+	case "":
+		return field.Name, false
+	}
+	return name, false
 }
 
 // goFunction wraps a Go function so scripts can call it.

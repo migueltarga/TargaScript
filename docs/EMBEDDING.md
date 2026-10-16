@@ -10,7 +10,7 @@ go get github.com/migueltarga/TargaScript
 import targascript "github.com/migueltarga/TargaScript"
 
 script := targascript.New()
-script.Set("order", order)            // any Go value: maps, slices, structs' fields...
+script.Set("order", order)            // maps, slices, structs, numbers, strings...
 script.Set("shipping", shippingCost)  // Go functions scripts can call
 
 total, err := script.Run(userRule)    // the value of the last expression
@@ -28,6 +28,7 @@ Values cross like JSON:
 | floats | float | `float64` |
 | `string` | string | `string` |
 | slices and arrays | array | `[]any` |
+| structs | object of the exported fields, named by their `json` tags | `map[string]any` |
 | maps | object, keys sorted | `map[string]any` |
 | functions | function | `func(args ...any) (any, error)` |
 

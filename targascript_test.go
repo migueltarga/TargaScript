@@ -105,3 +105,24 @@ func TestAwaitAndCycles(t *testing.T) {
 		t.Errorf("a value inside itself: %#v", result)
 	}
 }
+
+func TestStructs(t *testing.T) {
+	type Item struct {
+		Name     string  `json:"name"`
+		Price    float64 `json:"price"`
+		Internal string  `json:"-"`
+		Stock    int
+		secret   string
+	}
+	script := New()
+	script.Set("item", Item{Name: "Pen", Price: 2.5, Internal: "x", Stock: 3, secret: "y"})
+	script.Set("items", []*Item{{Name: "A"}, nil})
+	result, err := script.Run("[item.name, item.price, item.Stock, item.keys(), items[0].name, items[1]]")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []any{"Pen", 2.5, int64(3), []any{"name", "price", "Stock"}, "A", nil}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %#v, want %#v", result, want)
+	}
+}
