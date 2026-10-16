@@ -15,7 +15,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **One language for scripts and web pages.** The same code runs from a 7 MB command-line binary and in the browser from a WebAssembly runtime of about 200 KB compressed: add `<script type="text/targascript">` to a page, with no build step.
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
-- **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match`, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match` with guards, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
 - **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
@@ -89,14 +89,17 @@ fn describe(n) {
     }
 }
 
-let grade = match true {
-    score >= 90 => "A"
-    score >= 80 => "B"
-    _ => "C"
+fn route(req) {
+    match req.method {
+        "GET" if req.path == "/" => "home"
+        "GET", "HEAD" => "page ${req.path}"
+        _ if req.headers["x-admin"] == "yes" => "admin"
+        _ => "not allowed"
+    }
 }
 ```
 
-An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
+An arm can have a guard, `if ...`, that must also be true for it to be chosen. An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
 
 ## 🧯 Handling Errors
 
@@ -173,7 +176,7 @@ fn minmax(list) { [list.sort().first(), list.last()] }
 let [lowest, highest] = minmax([5, 1, 9])
 ```
 
-Missing elements and properties are null. Patterns also work in loops and parameters, and `{name, age}` is short for `{"name": name, "age": age}`:
+Missing elements and properties are null, unless the name has a default: `let {port = 8080} = config`. Patterns also work in loops and parameters, and `{name, age}` is short for `{"name": name, "age": age}`:
 
 ```
 repeat [x, y] in [[1, 2], [3, 4]] { print(x * y) }
