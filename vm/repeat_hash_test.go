@@ -18,7 +18,7 @@ total`, "30"},
 		{`let h = {1: "one", true: "yes"}
 let out = []
 repeat k in h { out = out.insert(type(k)) }
-out`, `["INTEGER", "BOOLEAN"]`},
+out`, `["integer", "boolean"]`},
 		{`let h = {"a": 1}
 repeat k in h { h[k + "2"] = 2 }
 h`, `{"a": 1, "a2": 2}`},

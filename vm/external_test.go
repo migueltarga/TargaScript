@@ -93,7 +93,7 @@ ext.count`, "2"},
 		{`ext.double = fn(x) { x * 2 }
 ext.double(21)`, "42"},
 		{`"value: ${ext}"`, "value: <fake>"},
-		{`type(ext)`, "EXTERNAL"},
+		{`type(ext)`, "external"},
 	}
 
 	for _, tt := range tests {

@@ -120,7 +120,7 @@ func init() {
 					}
 				}
 
-				return &object.String{Value: string(args[0].Type())}
+				return &object.String{Value: kindName(args[0])}
 			},
 		},
 

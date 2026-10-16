@@ -601,7 +601,7 @@
  },
  "type([])": {
   "output": "",
-  "value": "STRING ARRAY"
+  "value": "STRING array"
  },
  "x": {
   "output": "",
