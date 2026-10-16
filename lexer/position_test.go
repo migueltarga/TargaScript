@@ -18,7 +18,7 @@ func TestTokenPositions(t *testing.T) {
 		{token.IDENT, 1, 5},
 		{token.ASSIGN, 1, 7},
 		{token.INT, 1, 9},
-		{token.PRINT, 2, 3},
+		{token.IDENT, 2, 3},
 		{token.LPAREN, 2, 8},
 		{token.IDENT, 2, 9},
 		{token.RPAREN, 2, 10},

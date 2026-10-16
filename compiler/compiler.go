@@ -346,15 +346,6 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 		c.emit(stmt.Token, code.OpThrow)
 		return nil
 
-	case *ast.PrintStatement:
-		for _, arg := range stmt.Arguments {
-			if err := c.compileExpression(arg); err != nil {
-				return err
-			}
-		}
-		c.emit(stmt.Token, code.OpPrint, len(stmt.Arguments))
-		return nil
-
 	case *ast.BlockStatement:
 		return c.compileBlock(stmt)
 

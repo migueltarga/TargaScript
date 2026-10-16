@@ -19,3 +19,22 @@ func TestPrintQuotesOnlyNestedStrings(t *testing.T) {
 		t.Errorf("got=%q, want=%q", out.String(), expected)
 	}
 }
+
+func TestPrintIsAFunction(t *testing.T) {
+	tests := []struct{ input, expected string }{
+		{`"hi" |> print`, "hi\n"},
+		{`[1, 2].map(print)`, "1\n2\n"},
+		{`let say = print; say("a", 1)`, "a 1\n"},
+		{`let p = print("x"); print(p)`, "x\nnull\n"},
+		{`let print = fn(x) { 1 }; print("hidden")`, ""},
+	}
+	for _, tt := range tests {
+		var out bytes.Buffer
+		evaluator.SetOutput(&out)
+		testEval(tt.input)
+		evaluator.SetOutput(os.Stdout)
+		if out.String() != tt.expected {
+			t.Errorf("%s: printed %q, want %q", tt.input, out.String(), tt.expected)
+		}
+	}
+}

@@ -11,7 +11,7 @@ func TestErrorMessages(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"let x = 1 +\nprint(\"ok\")", `line 1:12: expected a value after "+"`},
+		{"let x = 1 +\nlet y = 2", `line 1:12: expected a value after "+"`},
 		{"let x = 1 +", `line 1:12: expected a value after "+"`},
 		{"let x = 1 + )", `line 1:13: expected a value after "+", found ")"`},
 		{"let = 5", `line 1:5: expected a name, found "="`},

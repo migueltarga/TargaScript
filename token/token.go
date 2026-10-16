@@ -69,7 +69,6 @@ const (
 	RETURN   = "RETURN"
 	LOAD     = "LOAD"
 	AS       = "AS"
-	PRINT    = "PRINT"
 	REPEAT   = "REPEAT"
 	IN       = "IN"
 	NULL     = "NULL"
@@ -101,7 +100,6 @@ var keywords = map[string]TokenType{
 	"return":   RETURN,
 	"load":     LOAD,
 	"as":       AS,
-	"print":    PRINT,
 	"repeat":   REPEAT,
 	"in":       IN,
 	"null":     NULL,

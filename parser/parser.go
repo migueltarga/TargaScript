@@ -241,8 +241,6 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseRepeatStatement()
 	case token.THROW:
 		return p.parseThrowStatement()
-	case token.PRINT:
-		return p.parsePrintStatement()
 	case token.BREAK:
 		return p.parseBreakStatement()
 	case token.CONTINUE:
@@ -1316,25 +1314,6 @@ func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
 	expr.Value = p.parseExpression(LOWEST)
 
 	return expr
-}
-
-func (p *Parser) parsePrintStatement() *ast.PrintStatement {
-	stmt := &ast.PrintStatement{Token: p.curToken}
-
-	if !p.expectPeek(token.LPAREN) {
-		return nil
-	}
-
-	stmt.Arguments = p.parseExpressionList(token.RPAREN)
-	if stmt.Arguments == nil {
-		return nil
-	}
-
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-
-	return stmt
 }
 
 func (p *Parser) parseBreakStatement() *ast.BreakStatement {

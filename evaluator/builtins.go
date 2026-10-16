@@ -53,6 +53,15 @@ func SetHost(h Host) {
 // initBuiltins initializes all built-in functions
 func init() {
 	for name, builtin := range map[string]*object.Builtin{
+		// print - Print values separated by spaces, followed by a newline
+		"print": {
+			Name: "print",
+			Fn: func(args ...object.Object) object.Object {
+				printValues(args)
+				return NULL
+			},
+		},
+
 		// printf - Formatted printing with support for format specifiers
 		"printf": {
 			Name: "printf",
