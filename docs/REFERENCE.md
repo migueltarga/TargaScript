@@ -304,9 +304,11 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `printf(format, ...values)` / `format(format, ...values)` | prints / returns values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`... |
 | `type(value)` | `"integer"`, `"float"`, `"string"`, `"boolean"`, `"null"`, `"array"`, `"object"`, `"function"`, `"promise"` |
 | `toString(v)`, `toInt(v)`, `toFloat(v)` | convert values |
-| `abs`, `sqrt`, `pow`, `round`, `floor`, `ceil`, `min(a, b)`, `max(a, b)` | math |
-| `random()` | a float between 0 and 1 |
-| `range(start, end)` | the array `start..end` |
+| `abs`, `sqrt`, `pow`, `floor`, `ceil` | math |
+| `round(x)`, `round(x, places)` | the nearest integer, or a float with that many decimal places: `round(3.14159, 2)` is `3.14` |
+| `min(a, b, ...)`, `max(a, b, ...)`, `min(list)`, `max(list)` | the smallest or largest number |
+| `random()`, `random(a, b)`, `random(list)` | a float from 0 to 1, an integer from `a` to `b`, or a random element |
+| `range(start, end)`, `range(start, end, step)` | the integers from `start` to `end`, both included: `range(0, 10, 5)` is `[0, 5, 10]` |
 | `now()` | the current Unix time in seconds |
 | `timeFormat(seconds, layout)` | formats a time with `YYYY`, `YY`, `MMMM`, `MMM`, `MM`, `DD`, `dddd`, `ddd`, `HH`, `hh`, `mm`, `ss` and `A` (AM/PM), e.g. `timeFormat(now(), "DD/MM/YYYY HH:mm")` |
 | `clock()` | milliseconds since the program started, for timing code |
