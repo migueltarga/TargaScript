@@ -59,8 +59,9 @@ type (
 
 type Parser struct {
 	l      *lexer.Lexer
-	errors []string
+	errors []Error
 
+	prevToken token.Token
 	curToken  token.Token
 	peekToken token.Token
 
@@ -74,7 +75,7 @@ type Parser struct {
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:      l,
-		errors: []string{},
+		errors: []Error{},
 	}
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
@@ -124,6 +125,7 @@ func New(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) nextToken() {
+	p.prevToken = p.curToken
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
 }
@@ -144,34 +146,6 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		p.peekError(t)
 		return false
 	}
-}
-
-func (p *Parser) Errors() []string {
-	return p.errors
-}
-
-func (p *Parser) peekError(t token.TokenType) {
-	msg := fmt.Sprintf("line %d:%d: expected next token to be %s, got %s instead",
-		p.peekToken.Line, p.peekToken.Column, t, p.peekToken.Type)
-	p.errors = append(p.errors, msg)
-}
-
-func (p *Parser) noPrefixParseFnError(t token.TokenType) {
-	msg := fmt.Sprintf("line %d:%d: no prefix parse function for %s found",
-		p.curToken.Line, p.curToken.Column, t)
-	if t == token.ILLEGAL {
-		if strings.HasPrefix(p.curToken.Literal, "\"") {
-			msg = fmt.Sprintf("line %d:%d: unterminated string",
-				p.curToken.Line, p.curToken.Column)
-		} else if p.curToken.Literal == "/*" {
-			msg = fmt.Sprintf("line %d:%d: unterminated comment",
-				p.curToken.Line, p.curToken.Column)
-		} else {
-			msg = fmt.Sprintf("line %d:%d: unexpected %q",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		}
-	}
-	p.errors = append(p.errors, msg)
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
@@ -261,9 +235,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
 		p.nextToken()
-		msg := fmt.Sprintf("line %d:%d: invalid variable name '%s': variable names cannot start with a digit",
-			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "invalid variable name %q: names can't start with a digit", p.curToken.Literal)
 		return nil
 	}
 
@@ -293,9 +265,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 
 	if p.peekTokenIs(token.ILLEGAL) && isStartingWithDigit(p.peekToken.Literal) {
 		p.nextToken()
-		msg := fmt.Sprintf("line %d:%d: invalid constant name '%s': constant names cannot start with a digit",
-			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "invalid constant name %q: names can't start with a digit", p.curToken.Literal)
 		return nil
 	}
 
@@ -446,9 +416,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 10, 64)
 	if err != nil {
-		msg := fmt.Sprintf("line %d:%d: could not parse %q as integer",
-			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for an integer, the limit is 9223372036854775807", p.curToken.Literal)
 		return nil
 	}
 
@@ -462,9 +430,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 
 	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
 	if err != nil {
-		msg := fmt.Sprintf("line %d:%d: could not parse %q as float",
-			p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for a number", p.curToken.Literal)
 		return nil
 	}
 
@@ -578,6 +544,10 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		p.nextToken()
 	}
 
+	if p.curTokenIs(token.EOF) {
+		p.errorAt(block.Token.Line, block.Token.Column, "this \"{\" is never closed, add a \"}\" to end the block")
+	}
+
 	return block
 }
 
@@ -611,15 +581,11 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 		p.nextToken()
 
 		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
-			msg := fmt.Sprintf("line %d:%d: invalid parameter name '%s': parameter names cannot start with a digit",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-			p.errors = append(p.errors, msg)
+			p.errorAt(p.curToken.Line, p.curToken.Column, "invalid parameter name %q: names can't start with a digit", p.curToken.Literal)
 			return nil
 		}
 		if !p.curTokenIs(token.IDENT) {
-			msg := fmt.Sprintf("line %d:%d: expected parameter name, got %q",
-				p.curToken.Line, p.curToken.Column, p.curToken.Literal)
-			p.errors = append(p.errors, msg)
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a parameter name, found %s", describe(p.curToken))
 			return nil
 		}
 
@@ -666,9 +632,7 @@ func (p *Parser) parseLoadStatement() *ast.LoadStatement {
 	p.nextToken()
 
 	if !p.curTokenIs(token.STRING) {
-		msg := fmt.Sprintf("line %d:%d: expected STRING token after 'load', got %s",
-			p.curToken.Line, p.curToken.Column, p.curToken.Type)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "expected a file name in quotes after \"load\", found %s", describe(p.curToken))
 		return nil
 	}
 
@@ -681,9 +645,7 @@ func (p *Parser) parseLoadStatement() *ast.LoadStatement {
 		p.nextToken()
 
 		if !p.curTokenIs(token.IDENT) {
-			msg := fmt.Sprintf("line %d:%d: expected identifier after 'as', got %s",
-				p.curToken.Line, p.curToken.Column, p.curToken.Type)
-			p.errors = append(p.errors, msg)
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a name after \"as\", found %s", describe(p.curToken))
 			return nil
 		}
 
@@ -713,9 +675,7 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	}
 
 	if !p.peekTokenIs(token.LBRACE) {
-		msg := fmt.Sprintf("line %d:%d: expected '{' after repeat expression, got %s",
-			p.peekToken.Line, p.peekToken.Column, p.peekToken.Type)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected \"{\" to start the repeat body, found %s", describe(p.peekToken))
 		return nil
 	}
 
@@ -828,9 +788,7 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 	p.nextToken()
 
 	if !p.curTokenIs(token.IDENT) {
-		msg := fmt.Sprintf("line %d:%d: expected identifier after '.', got %s",
-			p.curToken.Line, p.curToken.Column, p.curToken.Type)
-		p.errors = append(p.errors, msg)
+		p.errorAt(p.curToken.Line, p.curToken.Column, "expected a property or method name after \".\", found %s", describe(p.curToken))
 		return nil
 	}
 
@@ -915,12 +873,11 @@ func (p *Parser) parseContinueStatement() *ast.ContinueStatement {
 func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 	stmt := &ast.FunctionStatement{Token: p.curToken}
 
-	if !p.expectPeek(token.IDENT) {
-		msg := fmt.Sprintf("line %d:%d: expected identifier after 'function', got %s",
-			p.curToken.Line, p.curToken.Column, p.curToken.Type)
-		p.errors = append(p.errors, msg)
+	if !p.peekTokenIs(token.IDENT) {
+		p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected a function name after \"fn\", found %s", describe(p.peekToken))
 		return nil
 	}
+	p.nextToken()
 
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
@@ -980,25 +937,19 @@ func (p *Parser) parseTemplateLiteral() ast.Expression {
 
 func (p *Parser) parseInterpolation(source string) ast.Expression {
 	if strings.TrimSpace(source) == "" {
-		p.errors = append(p.errors, fmt.Sprintf("line %d:%d: empty ${} in string",
-			p.curToken.Line, p.curToken.Column))
+		p.errorAt(p.curToken.Line, p.curToken.Column, "empty ${} in string")
 		return nil
 	}
 
 	sub := New(lexer.New(source))
 	expr := sub.parseExpression(LOWEST)
 	if len(sub.errors) == 0 && !sub.peekTokenIs(token.EOF) {
-		sub.errors = append(sub.errors, fmt.Sprintf("unexpected %q", sub.peekToken.Literal))
+		sub.errorAt(0, 0, "unexpected %s", describe(sub.peekToken))
 	}
-	for _, msg := range sub.errors {
-		// Positions inside the interpolation are meaningless to the user
-		if strings.HasPrefix(msg, "line ") {
-			if _, rest, found := strings.Cut(msg, ": "); found {
-				msg = rest
-			}
-		}
-		p.errors = append(p.errors, fmt.Sprintf("line %d:%d: in ${%s}: %s",
-			p.curToken.Line, p.curToken.Column, source, msg))
+	// Positions inside the interpolation are meaningless to the user, so
+	// errors point at the string
+	for _, err := range sub.errors {
+		p.errorAt(p.curToken.Line, p.curToken.Column, "in ${%s}: %s", source, err.Message)
 	}
 	if len(sub.errors) > 0 {
 		return nil

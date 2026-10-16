@@ -12,7 +12,7 @@ func TestUnterminatedBlockComment(t *testing.T) {
 	p.ParseProgram()
 
 	errors := strings.Join(p.Errors(), "\n")
-	if !strings.Contains(errors, "line 2:1: unterminated comment") {
-		t.Errorf("expected an unterminated comment error, got:\n%s", errors)
+	if !strings.Contains(errors, "line 2:1: this comment is never closed") {
+		t.Errorf("expected an error for the unclosed comment, got:\n%s", errors)
 	}
 }

@@ -38,11 +38,11 @@ func TestInvalidListSyntax(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"[1,, 2]", "no prefix parse function for ,"},
-		{"[,]", "no prefix parse function for ,"},
-		{"f(1 2)", "expected next token to be )"},
-		{"fn(1 + 2) {}", `expected parameter name, got "1"`},
-		{"fn(a,, b) {}", `expected parameter name, got ","`},
+		{"[1,, 2]", `expected a value after ",", found ","`},
+		{"[,]", `expected a value after "[", found ","`},
+		{"f(1 2)", `expected ")", found "2"`},
+		{"fn(1 + 2) {}", `expected a parameter name, found "1"`},
+		{"fn(a,, b) {}", `expected a parameter name, found ","`},
 	}
 
 	for _, tt := range tests {
