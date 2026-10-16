@@ -40,7 +40,7 @@ func TestPostfixErrors(t *testing.T) {
 		{"missing++", `"missing" is not defined`},
 		{"let s = \"a\"\ns++", `cannot use "++" on a string`},
 		{"let b = true\nb--", `cannot use "--" on a boolean`},
-		{"5++", "invalid assignment target: *ast.IntegerLiteral"},
+		{"5++", "invalid assignment target: 5"},
 	}
 
 	for _, tt := range tests {

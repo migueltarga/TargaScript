@@ -1,11 +1,11 @@
 package evaluator
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -25,18 +25,18 @@ func fetch(args ...object.Object) object.Object {
 
 func fetchWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for fetch. got=%d, want=1 or 2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for fetch. got=%d, want=1 or 2", len(args))}
 	}
 	url, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("first argument to fetch must be a URL string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("first argument to fetch must be a URL string, got %s", typeName(args[0]))}
 	}
 
 	request := FetchRequest{URL: url.Value, Method: "GET", Headers: map[string]string{}}
 	if len(args) == 2 {
 		options, ok := args[1].(*object.Hash)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("options for fetch must be an object, got %s", typeName(args[1]))}
+			return &object.Error{Message: strfmt.Sprintf("options for fetch must be an object, got %s", typeName(args[1]))}
 		}
 		if err := readFetchOptions(options, &request); err != nil {
 			return err
@@ -50,7 +50,7 @@ func fetchWithHost(h Host, args ...object.Object) object.Object {
 	promise := object.NewPromise()
 	h.Fetch(request, func(response FetchResponse, err error) {
 		if err != nil {
-			promise.Reject(&object.Error{Message: fmt.Sprintf("fetch %s failed: %s", request.URL, err)})
+			promise.Reject(&object.Error{Message: strfmt.Sprintf("fetch %s failed: %s", request.URL, err)})
 			return
 		}
 		promise.Resolve(responseObject(response))
@@ -90,7 +90,7 @@ func readFetchOptions(options *object.Hash, request *FetchRequest) *object.Error
 				request.Headers["Content-Type"] = "application/json"
 			}
 		default:
-			return &object.Error{Message: fmt.Sprintf("unknown fetch option %q, expected method, headers or body", key)}
+			return &object.Error{Message: strfmt.Sprintf("unknown fetch option %q, expected method, headers or body", key)}
 		}
 	}
 	return nil

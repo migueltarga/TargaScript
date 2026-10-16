@@ -1,8 +1,9 @@
 package code
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // Register machine code.
@@ -174,14 +175,14 @@ func (op Op) String() string {
 	if int(op) < len(opNames) && opNames[op] != "" {
 		return opNames[op]
 	}
-	return fmt.Sprintf("OP%d", op)
+	return strfmt.Sprintf("OP%d", op)
 }
 
 // WordsString prints register code, one instruction a line.
 func WordsString(code []Word) string {
 	var out strings.Builder
 	for i, w := range code {
-		fmt.Fprintf(&out, "%04d %-12s %d %d %d\n", i, w.Op(), w.A(), int16(w.B()), int16(w.C()))
+		strfmt.Fprintf(&out, "%04d %-12s %d %d %d\n", i, w.Op(), w.A(), int16(w.B()), int16(w.C()))
 	}
 	return out.String()
 }

@@ -1,0 +1,2 @@
+go test fuzz v1
+string("fn bubble_sort(A){repeat range{repeat!A in range(0,0666666){}}}bubble_sort()")

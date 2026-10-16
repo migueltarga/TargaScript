@@ -1,9 +1,10 @@
 package evaluator
 
 import (
-	"fmt"
+	"io"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // System gives programs access to files, the environment and the exit
@@ -105,7 +106,7 @@ func fileChange(name, verb string, change func(FileManager, string) error, args 
 		return noSystem(name)
 	}
 	if changeErr := change(files, values[0]); changeErr != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot %s %q: %s", verb, values[0], changeErr)}
+		return &object.Error{Message: strfmt.Sprintf("cannot %s %q: %s", verb, values[0], changeErr)}
 	}
 	return NULL
 }
@@ -116,11 +117,11 @@ func fileChange(name, verb string, change func(FileManager, string) error, args 
 // program that fails gives its code; only one that can't start is an error.
 func execBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 3 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 to 3", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 to 3", len(args))}
 	}
 	program, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
 	}
 	command := Command{Program: program.Value, Shell: true}
 	rest := args[1:]
@@ -137,7 +138,7 @@ func execBuiltin(args ...object.Object) object.Object {
 	if len(rest) > 0 {
 		options, ok := rest[0].(*object.Hash)
 		if !ok || len(rest) > 1 {
-			return &object.Error{Message: fmt.Sprintf("exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got %s", typeName(rest[0]))}
+			return &object.Error{Message: strfmt.Sprintf("exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got %s", typeName(rest[0]))}
 		}
 		if err := execOptions(options, &command); err != nil {
 			return err
@@ -150,7 +151,7 @@ func execBuiltin(args ...object.Object) object.Object {
 
 	stdout, stderr, code, err := runner.RunCommand(command)
 	if err != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot run %q: %s", program.Value, err)}
+		return &object.Error{Message: strfmt.Sprintf("cannot run %q: %s", program.Value, err)}
 	}
 	result := object.NewHash()
 	result.Set(&object.String{Value: "output"}, &object.String{Value: stdout})
@@ -168,7 +169,7 @@ func execOptions(options *object.Hash, command *Command) *object.Error {
 		case "dir", "input":
 			text, ok := pair.Value.(*object.String)
 			if !ok {
-				return &object.Error{Message: fmt.Sprintf("the %s option of exec must be a string, got %s", name, typeName(pair.Value))}
+				return &object.Error{Message: strfmt.Sprintf("the %s option of exec must be a string, got %s", name, typeName(pair.Value))}
 			}
 			if name == "dir" {
 				command.Dir = text.Value
@@ -178,7 +179,7 @@ func execOptions(options *object.Hash, command *Command) *object.Error {
 		case "show":
 			command.Show = IsTruthy(pair.Value)
 		default:
-			return &object.Error{Message: fmt.Sprintf("exec has no option %q; it has dir, input and show", name)}
+			return &object.Error{Message: strfmt.Sprintf("exec has no option %q; it has dir, input and show", name)}
 		}
 	}
 	return nil
@@ -190,13 +191,13 @@ func noSystem(name string) *object.Error {
 
 func stringArgs(name string, args []object.Object, count int) ([]string, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: fmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), count)}
+		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), count)}
 	}
 	values := make([]string, count)
 	for i, arg := range args {
 		s, ok := arg.(*object.String)
 		if !ok {
-			return nil, &object.Error{Message: fmt.Sprintf("arguments to %s must be strings, got %s", name, typeName(arg))}
+			return nil, &object.Error{Message: strfmt.Sprintf("arguments to %s must be strings, got %s", name, typeName(arg))}
 		}
 		values[i] = s.Value
 	}
@@ -215,7 +216,7 @@ func readFileBuiltin(args ...object.Object) object.Object {
 	}
 	content, readErr := system.ReadFile(values[0])
 	if readErr != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot read %q: %s", values[0], readErr)}
+		return &object.Error{Message: strfmt.Sprintf("cannot read %q: %s", values[0], readErr)}
 	}
 	return &object.String{Value: content}
 }
@@ -231,7 +232,7 @@ func writeFileBuiltin(name string, appendToFile bool, args []object.Object) obje
 		return noSystem(name)
 	}
 	if writeErr := system.WriteFile(values[0], values[1], appendToFile); writeErr != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot write %q: %s", values[0], writeErr)}
+		return &object.Error{Message: strfmt.Sprintf("cannot write %q: %s", values[0], writeErr)}
 	}
 	return NULL
 }
@@ -247,7 +248,7 @@ func listDirBuiltin(args ...object.Object) object.Object {
 	}
 	names, listErr := system.ListDir(values[0])
 	if listErr != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot list %q: %s", values[0], listErr)}
+		return &object.Error{Message: strfmt.Sprintf("cannot list %q: %s", values[0], listErr)}
 	}
 	list := &object.Array{Elements: []object.Object{}}
 	for _, name := range names {
@@ -260,11 +261,11 @@ func listDirBuiltin(args ...object.Object) object.Object {
 // when it isn't set.
 func envBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for env. got=%d, want=1 or 2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for env. got=%d, want=1 or 2", len(args))}
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("name for env must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("name for env must be a string, got %s", typeName(args[0]))}
 	}
 	if system == nil {
 		return noSystem("env")
@@ -282,12 +283,12 @@ func envBuiltin(args ...object.Object) object.Object {
 func exitBuiltin(args ...object.Object) object.Object {
 	code := int64(0)
 	if len(args) > 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for exit. got=%d, want=0 or 1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for exit. got=%d, want=0 or 1", len(args))}
 	}
 	if len(args) == 1 {
 		n, ok := args[0].(*object.Integer)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("exit code must be an integer, got %s", typeName(args[0]))}
+			return &object.Error{Message: strfmt.Sprintf("exit code must be an integer, got %s", typeName(args[0]))}
 		}
 		code = n.Value
 	}
@@ -302,14 +303,14 @@ func exitBuiltin(args ...object.Object) object.Object {
 // types, or null when the input has ended.
 func inputBuiltin(args ...object.Object) object.Object {
 	if len(args) > 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for input. got=%d, want=0 or 1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for input. got=%d, want=0 or 1", len(args))}
 	}
 	reader, ok := system.(LineReader)
 	if !ok {
 		return noSystem("input")
 	}
 	if len(args) == 1 {
-		fmt.Fprint(output, objectToString(args[0]))
+		io.WriteString(output, objectToString(args[0]))
 	}
 	line, ok := reader.ReadLine()
 	if !ok {

@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -9,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 var (
@@ -408,7 +408,7 @@ func isTruthy(obj object.Object) bool {
 
 func newError(line, column int, format string, a ...interface{}) *object.Error {
 	return &object.Error{
-		Message: fmt.Sprintf(format, a...),
+		Message: strfmt.Sprintf(format, a...),
 		Line:    line,
 		Column:  column,
 	}
@@ -554,7 +554,7 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = fmt.Sprintf(". To read it only when there's a value, write ?.%s", propertyName)
+			hint = strfmt.Sprintf(". To read it only when there's a value, write ?.%s", propertyName)
 		}
 		return newError(line, column, "cannot read property %q of %s%s", propertyName, typeName(obj), hint)
 	}
@@ -877,7 +877,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = fmt.Sprintf(". To call it only when there's a value, write ?.%s()", method)
+			hint = strfmt.Sprintf(". To call it only when there's a value, write ?.%s()", method)
 		}
 		return newError(line, column, "cannot call method %q on %s%s", method, typeName(obj), hint)
 	}
@@ -915,7 +915,7 @@ func printValues(args []object.Object) {
 		}
 	}
 
-	fmt.Fprintln(output, strings.Join(values, " "))
+	io.WriteString(output, strings.Join(values, " ")+"\n")
 }
 
 func objectToString(obj object.Object) string {

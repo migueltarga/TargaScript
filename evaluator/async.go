@@ -1,9 +1,8 @@
 package evaluator
 
 import (
-	"fmt"
-
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -19,7 +18,7 @@ func sleep(args ...object.Object) object.Object {
 
 func sleepWithHost(h Host, args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for sleep. got=%d, want=1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for sleep. got=%d, want=1", len(args))}
 	}
 
 	var milliseconds int64
@@ -29,7 +28,7 @@ func sleepWithHost(h Host, args ...object.Object) object.Object {
 	case *object.Float:
 		milliseconds = int64(arg.Value)
 	default:
-		return &object.Error{Message: fmt.Sprintf("argument to sleep must be a number of milliseconds, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("argument to sleep must be a number of milliseconds, got %s", typeName(args[0]))}
 	}
 	if milliseconds < 0 {
 		milliseconds = 0
@@ -48,11 +47,11 @@ func sleepWithHost(h Host, args ...object.Object) object.Object {
 // promises are results already. It's rejected as soon as one is.
 func all(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for all. got=%d, want=1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for all. got=%d, want=1", len(args))}
 	}
 	list, ok := args[0].(*object.Array)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("argument to all must be an array of promises, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("argument to all must be an array of promises, got %s", typeName(args[0]))}
 	}
 
 	promise := object.NewPromise()

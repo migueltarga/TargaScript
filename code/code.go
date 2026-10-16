@@ -5,7 +5,8 @@ package code
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 type Instructions []byte
@@ -191,7 +192,7 @@ var definitions = [...]*Definition{
 // Lookup returns the definition of an opcode.
 func Lookup(op byte) (*Definition, error) {
 	if int(op) >= len(definitions) || definitions[op] == nil {
-		return nil, fmt.Errorf("opcode %d undefined", op)
+		return nil, strfmt.Errorf("opcode %d undefined", op)
 	}
 	return definitions[op], nil
 }
@@ -257,13 +258,13 @@ func (ins Instructions) String() string {
 	for i := 0; i < len(ins); {
 		def, err := Lookup(ins[i])
 		if err != nil {
-			fmt.Fprintf(&out, "ERROR: %s\n", err)
+			strfmt.Fprintf(&out, "ERROR: %s\n", err)
 			i++
 			continue
 		}
 
 		operands, read := ReadOperands(def, ins[i+1:])
-		fmt.Fprintf(&out, "%04d %s\n", i, formatInstruction(def, operands))
+		strfmt.Fprintf(&out, "%04d %s\n", i, formatInstruction(def, operands))
 		i += 1 + read
 	}
 
@@ -272,12 +273,12 @@ func (ins Instructions) String() string {
 
 func formatInstruction(def *Definition, operands []int) string {
 	if len(operands) != len(def.OperandWidths) {
-		return fmt.Sprintf("ERROR: operand len %d does not match defined %d\n", len(operands), len(def.OperandWidths))
+		return strfmt.Sprintf("ERROR: operand len %d does not match defined %d\n", len(operands), len(def.OperandWidths))
 	}
 
 	text := def.Name
 	for _, operand := range operands {
-		text += fmt.Sprintf(" %d", operand)
+		text += strfmt.Sprintf(" %d", operand)
 	}
 	return text
 }

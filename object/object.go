@@ -2,13 +2,13 @@ package object
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unsafe"
 
 	"github.com/migueltarga/TargaScript/ast"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -75,7 +75,7 @@ func (f *Float) Inspect() string {
 	if math.IsInf(f.Value, 1) {
 		return "Inf"
 	}
-	return fmt.Sprintf("%g", f.Value)
+	return strfmt.Sprintf("%g", f.Value)
 }
 
 type Boolean struct {
@@ -121,7 +121,7 @@ type Call struct {
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
 func (e *Error) Inspect() string {
 	if e.Line > 0 && e.Column > 0 {
-		return fmt.Sprintf("ERROR at line %d, column %d: %s", e.Line, e.Column, e.Message)
+		return strfmt.Sprintf("ERROR at line %d, column %d: %s", e.Line, e.Column, e.Message)
 	}
 	return "ERROR: " + e.Message
 }
@@ -195,7 +195,7 @@ type Builtin struct {
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string {
 	if b.Name != "" {
-		return fmt.Sprintf("builtin function: %s", b.Name)
+		return strfmt.Sprintf("builtin function: %s", b.Name)
 	}
 	return "builtin function"
 }
@@ -284,7 +284,7 @@ func (h *Hash) inspect(parents []Object) string {
 
 	pairs := []string{}
 	for _, pair := range h.OrderedPairs() {
-		pairs = append(pairs, fmt.Sprintf("%s: %s",
+		pairs = append(pairs, strfmt.Sprintf("%s: %s",
 			inspectNested(pair.Key, parents), inspectNested(pair.Value, parents)))
 	}
 

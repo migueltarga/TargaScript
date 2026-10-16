@@ -1,11 +1,11 @@
 package evaluator
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // Methods of each type, used to suggest a name when a method doesn't
@@ -206,7 +206,7 @@ func suggestion(name string, candidates []string) string {
 	if best == "" {
 		return ""
 	}
-	return fmt.Sprintf(". Did you mean %q?", best)
+	return strfmt.Sprintf(". Did you mean %q?", best)
 }
 
 // editDistance is the number of letters to insert, delete, replace or swap

@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -16,7 +16,7 @@ func init() {
 // in the second when there is one.
 func assertBuiltin(args ...object.Object) object.Object {
 	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for assert. got=%d, want=1 or 2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for assert. got=%d, want=1 or 2", len(args))}
 	}
 	if isTruthy(args[0]) {
 		return NULL
@@ -31,12 +31,12 @@ func assertBuiltin(args ...object.Object) object.Object {
 // them, showing both.
 func assertEqualBuiltin(args ...object.Object) object.Object {
 	if len(args) < 2 || len(args) > 3 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for assertEqual. got=%d, want=2 or 3", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for assertEqual. got=%d, want=2 or 3", len(args))}
 	}
 	if valuesEqual(args[0], args[1], 0) {
 		return NULL
 	}
-	message := fmt.Sprintf("expected %s, got %s", quoted(args[1]), quoted(args[0]))
+	message := strfmt.Sprintf("expected %s, got %s", quoted(args[1]), quoted(args[0]))
 	if len(args) == 3 {
 		message = objectToString(args[2]) + ": " + message
 	}

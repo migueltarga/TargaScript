@@ -2,7 +2,6 @@
 package compiler
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -10,6 +9,7 @@ import (
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
+	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -260,7 +260,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 
 		words, positions, registers, err := translate(scope.instructions, scope.positions, fn.numLocals, fn.cells, c.constants)
 		if err != nil {
-			return nil, fmt.Errorf("internal error in %s: %w", functionName(name), err)
+			return nil, strfmt.Errorf("internal error in %s: %w", functionName(name), err)
 		}
 		compiled := &object.CompiledFunction{
 			Code:         words,
@@ -428,7 +428,7 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 	case *ast.LoadStatement:
 		return c.compileLoad(stmt)
 	}
-	return fmt.Errorf("cannot compile %T", stmt)
+	return strfmt.Errorf("cannot compile %s", stmt.String())
 }
 
 // compileLet compiles let and const.
@@ -1068,7 +1068,7 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		case "-":
 			c.emit(node.Token, code.OpMinus)
 		default:
-			return fmt.Errorf("unknown prefix operator %s", node.Operator)
+			return strfmt.Errorf("unknown prefix operator %s", node.Operator)
 		}
 
 	case *ast.InfixExpression:
@@ -1127,7 +1127,7 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		c.setFunctionSource(node.Parameters, node.Defaults, node.Rest, node.Body)
 
 	default:
-		return fmt.Errorf("cannot compile %T", node)
+		return strfmt.Errorf("cannot compile %s", node.String())
 	}
 	return nil
 }
@@ -1183,7 +1183,7 @@ func (c *Compiler) compileInfix(node *ast.InfixExpression) error {
 
 	op, ok := infixOpcodes[node.Operator]
 	if !ok {
-		return fmt.Errorf("unknown operator %s", node.Operator)
+		return strfmt.Errorf("unknown operator %s", node.Operator)
 	}
 	if err := c.compileExpression(node.Left); err != nil {
 		return err
@@ -1314,7 +1314,7 @@ func (c *Compiler) compileAssignment(node *ast.AssignmentExpression) error {
 		c.emit(node.Token, code.OpSetProperty, c.addConstant(&object.String{Value: target.Property.Value}), c.cache())
 
 	default:
-		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
+		c.emitError(node.Token, "invalid assignment target: %s", node.Left.String())
 	}
 	return nil
 }
@@ -1354,14 +1354,14 @@ func (c *Compiler) compilePostfix(node *ast.PostfixExpression) error {
 		c.emit(node.Token, code.OpSetProperty, name, c.cache())
 
 	default:
-		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
+		c.emitError(node.Token, "invalid assignment target: %s", node.Left.String())
 	}
 	return nil
 }
 
 // emitError compiles a runtime error, raised when the code runs.
 func (c *Compiler) emitError(tok token.Token, format string, a ...interface{}) {
-	message := fmt.Sprintf(format, a...)
+	message := strfmt.Sprintf(format, a...)
 	c.problems = append(c.problems, Problem{Line: tok.Line, Column: tok.Column, Message: message})
 	c.emit(tok, code.OpError, c.addConstant(&object.String{Value: message}))
 }
@@ -1578,7 +1578,7 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 		below = 1
 		set = func() { c.emit(node.Token, code.OpSetProperty, name, c.cache()) }
 	default:
-		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
+		c.emitError(node.Token, "invalid assignment target: %s", node.Left.String())
 		return nil
 	}
 
@@ -1600,7 +1600,7 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 
 	op, ok := infixOpcodes[node.Operator]
 	if !ok {
-		return fmt.Errorf("unknown operator %s=", node.Operator)
+		return strfmt.Errorf("unknown operator %s=", node.Operator)
 	}
 	if err := c.compileOperand(node.Value); err != nil {
 		return err

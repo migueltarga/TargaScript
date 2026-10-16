@@ -1,9 +1,10 @@
 package ast
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 const (
@@ -48,7 +49,7 @@ func prettyPrintNode(node Node, level int) string {
 		typeColor = Purple // Other nodes are purple
 	}
 
-	result := fmt.Sprintf("%s%s%s%s%s: ", indent, Bold, typeColor, typeName, Reset)
+	result := strfmt.Sprintf("%s%s%s%s%s: ", indent, Bold, typeColor, typeName, Reset)
 
 	switch n := node.(type) {
 	case *Program:
@@ -59,7 +60,7 @@ func prettyPrintNode(node Node, level int) string {
 		result += indent + "}"
 
 	case *LetStatement:
-		result += fmt.Sprintf("let %s = ", bindingString(n.Name, n.Pattern))
+		result += strfmt.Sprintf("let %s = ", bindingString(n.Name, n.Pattern))
 		if n.Value != nil {
 			result += "\n" + prettyPrintNode(n.Value, level+1)
 		} else {
@@ -121,10 +122,10 @@ func prettyPrintNode(node Node, level int) string {
 		result += ")"
 
 	case *PrefixExpression:
-		result += fmt.Sprintf("%s%s", n.Operator, prettyPrintNode(n.Right, level))
+		result += strfmt.Sprintf("%s%s", n.Operator, prettyPrintNode(n.Right, level))
 
 	case *PostfixExpression:
-		result += fmt.Sprintf("%s%s", prettyPrintNode(n.Left, level), n.Operator)
+		result += strfmt.Sprintf("%s%s", prettyPrintNode(n.Left, level), n.Operator)
 
 	case *InfixExpression:
 		result += "("
@@ -134,25 +135,25 @@ func prettyPrintNode(node Node, level int) string {
 		result += ")"
 
 	case *IntegerLiteral:
-		result += fmt.Sprintf("%s%d%s", Red, n.Value, Reset)
+		result += strfmt.Sprintf("%s%d%s", Red, n.Value, Reset)
 
 	case *FloatLiteral:
-		result += fmt.Sprintf("%s%f%s", Red, n.Value, Reset)
+		result += strfmt.Sprintf("%s%f%s", Red, n.Value, Reset)
 
 	case *StringLiteral:
-		result += fmt.Sprintf("%s\"%s\"%s", Red, n.Value, Reset)
+		result += strfmt.Sprintf("%s\"%s\"%s", Red, n.Value, Reset)
 
 	case *TemplateLiteral:
-		result += fmt.Sprintf("%s%s%s", Red, n.String(), Reset)
+		result += strfmt.Sprintf("%s%s%s", Red, n.String(), Reset)
 
 	case *Boolean:
-		result += fmt.Sprintf("%s%v%s", Red, n.Value, Reset)
+		result += strfmt.Sprintf("%s%v%s", Red, n.Value, Reset)
 
 	case *NullLiteral:
-		result += fmt.Sprintf("%snull%s", Red, Reset)
+		result += strfmt.Sprintf("%snull%s", Red, Reset)
 
 	case *Identifier:
-		result += fmt.Sprintf("%s%s%s", Red, n.Value, Reset)
+		result += strfmt.Sprintf("%s%s%s", Red, n.Value, Reset)
 
 	case *ArrayLiteral:
 		result += "["
@@ -204,7 +205,7 @@ func prettyPrintNode(node Node, level int) string {
 		}
 
 	default:
-		result += fmt.Sprintf("%s (using default String method)", node.String())
+		result += strfmt.Sprintf("%s (using default String method)", node.String())
 	}
 
 	return result
@@ -213,7 +214,7 @@ func prettyPrintNode(node Node, level int) string {
 func prettyPrintNodeWithoutParens(node Node, level int) string {
 	if _, isInfix := node.(*InfixExpression); isInfix {
 		n := node.(*InfixExpression)
-		return fmt.Sprintf("%s %s %s",
+		return strfmt.Sprintf("%s %s %s",
 			prettyPrintNode(n.Left, 0),
 			n.Operator,
 			prettyPrintNode(n.Right, 0))
@@ -236,8 +237,4 @@ func NoColorPrettyPrint(node Node) string {
 	s = strings.ReplaceAll(s, Cyan, "")
 	s = strings.ReplaceAll(s, White, "")
 	return s
-}
-
-func PrettyPrintToTerminal(node Node) {
-	fmt.Println(PrettyPrint(node))
 }

@@ -2,12 +2,12 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/lexer"
+	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -1533,7 +1533,7 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		}
 
 		if spread, ok := key.(*ast.SpreadExpression); ok {
-			name := fmt.Sprintf("\x00spread%d", len(hash.Order))
+			name := strfmt.Sprintf("\x00spread%d", len(hash.Order))
 			hash.Order = append(hash.Order, name)
 			hash.Pairs[name] = ast.HashPair{Key: spread}
 			if !p.peekTokenIs(token.COMMA) {
@@ -1579,7 +1579,7 @@ func hashKeyName(key ast.Expression, index int) string {
 	case *ast.StringLiteral:
 		return key.Value
 	default:
-		return fmt.Sprintf("\x00%d", index)
+		return strfmt.Sprintf("\x00%d", index)
 	}
 }
 
