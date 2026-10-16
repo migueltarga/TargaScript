@@ -238,20 +238,15 @@ Then run a script with `targascript script.tg`, or start the REPL with `targascr
 
 ## 🚀 Running TargaScript
 
-To run the TargaScript REPL:
 ```sh
-go run ./cmd/targascript
+targascript                       # start the REPL
+targascript script.tg a b         # run a file; it sees ["a", "b"] in args
+targascript -e 'print(pow(2, 10))' # run code from the command line
+cat script.tg | targascript -     # run code from standard input
+targascript --debug script.tg     # print the syntax tree before running
 ```
 
-To run a TargaScript (`.tg`) file:
-```sh
-go run ./cmd/targascript path/to/script.tg
-```
-
-Debug mode with AST visualization:
-```sh
-go run ./cmd/targascript --debug path/to/script.tg
-```
+In the REPL, code that isn't finished, like a function whose body isn't closed, continues on the next line. From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
 
 ## 🌐 TargaScript in the Browser
 

@@ -27,6 +27,15 @@ const CONTINUE = ".. "
 // mainDir is the directory load paths are relative to in the main program.
 var mainDir string
 
+// args are the command-line arguments after the script, which programs see
+// as the global args.
+var args = []string{}
+
+// SetArgs sets the arguments programs see in args.
+func SetArgs(values []string) {
+	args = values
+}
+
 // loop runs the asynchronous work of builtins like sleep.
 var loop = eventloop.New()
 
@@ -56,6 +65,11 @@ func newSession() *session {
 	c.Dir = mainDir
 	s := &session{compiler: c, machine: vm.New(c.Globals())}
 	s.machine.SetGlobal("NULL", evaluator.NULL)
+	list := &object.Array{Elements: []object.Object{}}
+	for _, arg := range args {
+		list.Elements = append(list.Elements, &object.String{Value: arg})
+	}
+	s.machine.SetGlobal("args", list)
 	return s
 }
 
