@@ -58,6 +58,10 @@ type translation struct {
 	// writes its result to register A, for an assignment after it to make
 	// it write the local instead
 	lastWrite int
+	// iterNext is the index of the instruction just emitted that takes
+	// the next value of an iterator, for an assignment of it to make it
+	// write the variable instead, or -1
+	iterNext int
 	// straight is where the code that runs straight to the end starts,
 	// with no jumps from or to it
 	straight int
@@ -81,7 +85,7 @@ func translate(ins code.Instructions, positions []object.Position, numLocals int
 	}
 	t := &translation{
 		in: ins, flow: flow, numLocals: numLocals, cells: cells, constants: constants,
-		targets: jumpTargets(ins), oldPos: positions, newAt: make([]int, len(ins)+1), lastWrite: -1,
+		targets: jumpTargets(ins), oldPos: positions, newAt: make([]int, len(ins)+1), lastWrite: -1, iterNext: -1,
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -130,7 +134,7 @@ func (t *translation) emit(old int, op code.Op, a, b, c int) int {
 	if n := len(t.positions); n == 0 || t.positions[n-1].Line != line || t.positions[n-1].Column != column {
 		t.positions = append(t.positions, object.Position{Offset: at, Line: line, Column: column})
 	}
-	t.lastWrite = -1
+	t.lastWrite, t.iterNext = -1, -1
 	return at
 }
 
@@ -364,6 +368,22 @@ func (t *translation) run() {
 		t.out[f.at] = code.MakeWord(w.Op(), a, b, c)
 	}
 	t.shortenReturns()
+	t.loopAtEnd()
+}
+
+// loopAtEnd makes the jump back to the start of a loop over an iterator,
+// right before the loop's end, take the next value itself and go on with
+// the body.
+func (t *translation) loopAtEnd() {
+	for i, w := range t.out {
+		if w.Op() != code.RJump || w.A() >= i {
+			continue
+		}
+		next := t.out[w.A()]
+		if next.Op() == code.RIterNext && next.C() == i+1 {
+			t.out[i] = code.MakeWord(code.RIterLoop, next.A(), next.B(), w.A()+1)
+		}
+	}
 }
 
 // shortenReturns returns values where they are: a jump to a return
@@ -516,6 +536,16 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 			t.push(inRegister(r))
 			break
 		}
+		if it := t.iterNext; it >= 0 {
+			t.iterNext = -1
+			if value.constant < 0 && value.register == t.out[it].B() && !t.referenced(x) {
+				// The iterator writes x itself
+				w := t.out[it]
+				t.out[it] = code.MakeWord(w.Op(), w.A(), x, w.C())
+				t.push(inRegister(x))
+				break
+			}
+		}
 		// The values noted as in x keep the value x had; with none, the
 		// instruction that made the value can write x itself
 		if t.lastWrite >= 0 && value.constant < 0 && value.register == t.own(d-1) &&
@@ -646,6 +676,8 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(inRegister(t.own(d)))
 		if rop == code.RIterNextPair {
 			t.push(inRegister(t.own(d + 1)))
+		} else if t.fused(next, code.OpSetLocal) {
+			t.iterNext = len(t.out) - 1
 		}
 
 	case code.OpArray, code.OpTemplate:
