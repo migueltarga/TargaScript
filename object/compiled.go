@@ -96,6 +96,9 @@ type ClosureRunner interface {
 	// CallClosureAsync is like CallClosure, but the closure can pause at
 	// an await, and then the result is a promise of what it returns.
 	CallClosureAsync(closure *Closure, args []Object) Object
+
+	// CallMethod is like CallClosure, with this for the closure's this.
+	CallMethod(closure *Closure, this Object, args []Object) Object
 }
 
 // Closure is a compiled function with the variables it captured. Scripts see

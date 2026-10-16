@@ -174,7 +174,7 @@ func valuesEqual(a, b object.Object, depth int) bool {
 
 	case *object.Hash:
 		b, ok := b.(*object.Hash)
-		if !ok || a.Len() != b.Len() {
+		if !ok || a.Len() != b.Len() || a.Struct() != b.Struct() {
 			return false
 		}
 		for i := range a.Len() {

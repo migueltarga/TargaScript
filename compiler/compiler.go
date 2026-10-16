@@ -168,6 +168,8 @@ func declaredNames(stmt ast.Statement) []string {
 		return bindingNames(stmt.Name, stmt.Pattern)
 	case *ast.FunctionStatement:
 		return []string{stmt.Name.Value}
+	case *ast.StructStatement:
+		return []string{stmt.Name.Value}
 	}
 	return nil
 }
@@ -397,6 +399,9 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 
 	case *ast.FunctionStatement:
 		return c.compileFunctionStatement(stmt)
+
+	case *ast.StructStatement:
+		return c.compileStruct(stmt)
 
 	case *ast.ReturnStatement:
 		if stmt.ReturnValue == nil {
@@ -1686,5 +1691,51 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 	}
 	c.emit(node.Token, op)
 	set()
+	return nil
+}
+
+// compileStruct compiles a struct statement: a function that makes its
+// values, which gets the struct as this and a value for each field, with
+// the defaults of parameters; its methods; and the struct, a constant named
+// like it.
+func (c *Compiler) compileStruct(stmt *ast.StructStatement) error {
+	name := stmt.Name.Value
+	existing, inScope := c.lookupCurrentScope(name)
+	if inScope && !c.hoisted[existing] {
+		c.emitError(stmt.Token, "identifier already declared: %s", name)
+		return nil
+	}
+	target := existing
+	if !inScope {
+		// Defined first so its methods can make values of it
+		target = c.define(name, true)
+		c.emitCellBeforeClosure(target)
+	}
+	spec := &object.StructSpec{Name: name}
+	for _, field := range stmt.Fields {
+		spec.Fields = append(spec.Fields, field.Value)
+	}
+	if _, err := c.compileFunction(stmt, stmt.Name.Value, stmt.Fields, stmt.Defaults, make([]*ast.Pattern, len(stmt.Fields)), func() error {
+		for _, field := range stmt.Fields {
+			c.compileGet(field.Token, field.Value)
+		}
+		c.compileGet(stmt.Token, "this")
+		c.emit(stmt.Token, code.OpStructNew, len(stmt.Fields))
+		return nil
+	}); err != nil {
+		return err
+	}
+	for _, m := range stmt.Methods {
+		spec.Methods = append(spec.Methods, m.Name.Value)
+		if _, err := c.compileFunction(m, m.Name.Value, m.Parameters, m.Defaults, m.Patterns, func() error {
+			return c.compileStatements(m.Body.Statements)
+		}); err != nil {
+			return err
+		}
+		c.setFunctionSource(m.Parameters, m.Defaults, m.Rest, m.Body)
+	}
+	c.emit(stmt.Token, code.OpStruct, c.addConstant(spec), len(stmt.Methods))
+	delete(c.hoisted, target)
+	c.emitAssignDefined(target)
 	return nil
 }

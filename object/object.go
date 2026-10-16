@@ -288,6 +288,9 @@ func (h *Hash) inspect(parents []Object) string {
 			inspectNested(pair.Key, parents), inspectNested(pair.Value, parents)))
 	}
 
+	if typ := h.Struct(); typ != nil {
+		out.WriteString(typ.Name + " ")
+	}
 	out.WriteString("{")
 	out.WriteString(strings.Join(pairs, ", "))
 	out.WriteString("}")

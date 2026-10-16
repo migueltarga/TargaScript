@@ -600,7 +600,7 @@ func (vm *VM) loopWords(base int) object.Object {
 					r[w.A()] = value
 					continue
 				}
-				if name.Value != "length" {
+				if name.Value != "length" && hash.Struct() == nil {
 					r[w.A()] = NULL
 					continue
 				}
@@ -822,6 +822,24 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		if err, ok := result.(*object.Error); ok {
 			return vm.positioned(f, ip, err)
 		}
+
+	case code.RStruct:
+		spec := vm.constants[w.B()].(*object.StructSpec)
+		typ := &object.StructType{Name: spec.Name, Fields: spec.Fields, Constructor: r(w.A()).(*object.Closure), Methods: map[string]*object.Closure{}}
+		for i, name := range spec.Methods {
+			typ.Methods[name] = r(w.A() + 1 + i).(*object.Closure)
+		}
+		set(w.A(), typ)
+
+	case code.RStructNew:
+		n := w.C()
+		typ, ok := r(w.A() + n).(*object.StructType)
+		if !ok {
+			return vm.errorAt(f, ip, "a struct makes its values when called, as in Point(1, 2)")
+		}
+		values := make([]object.Object, n)
+		copy(values, vm.stack[regs+w.A():regs+w.A()+n])
+		set(w.A(), typ.New(values))
 
 	case code.RClosure:
 		fn := vm.constants[w.B()].(*object.CompiledFunction)

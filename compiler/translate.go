@@ -919,6 +919,21 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		value := t.pop()
 		t.emit(at, code.RReturn, t.register(at, value, t.own(d-1)), 0, 0)
 
+	case code.OpStruct, code.OpStructNew:
+		// The values are in a row, from the constructor or the first field
+		n := t.u16(at, 1)
+		spec := t.u16(at, 0)
+		rop := code.RStruct
+		if op == code.OpStructNew {
+			n, spec, rop = t.u16(at, 0), 0, code.RStructNew
+		}
+		first := d - n - 1
+		t.keepBelow(at, first, t.own(first))
+		t.place(at, first)
+		t.stack = t.stack[:first]
+		t.emit(at, rop, t.own(first), spec, n)
+		t.push(inRegister(t.own(first)))
+
 	case code.OpClosure:
 		n := t.u16(at, 1)
 		t.keepBelow(at, d-n, t.own(d-n))

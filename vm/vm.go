@@ -158,6 +158,11 @@ var MaxNestedRuns int
 // CallClosure runs a closure for code outside the VM, such as a builtin that
 // takes a function, and returns its result.
 func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Object {
+	return vm.CallMethod(cl, nil, args)
+}
+
+// CallMethod is CallClosure with this for the closure's this.
+func (vm *VM) CallMethod(cl *object.Closure, this object.Object, args []object.Object) object.Object {
 	if MaxNestedRuns > 0 && vm.nestedRuns >= MaxNestedRuns {
 		return evaluator.NewError(0, 0, "maximum call depth exceeded")
 	}
@@ -175,7 +180,9 @@ func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Objec
 	for _, arg := range args {
 		vm.push(arg)
 	}
+	vm.receiver = this
 	if err := vm.callClosure(cl, len(args)); err != nil {
+		vm.receiver = nil
 		vm.sp -= len(args) + 1
 		return err
 	}
@@ -224,6 +231,12 @@ func (vm *VM) ownMethod(obj object.Object, name *object.String, cache *object.Pr
 	}
 	value, ok := hash.Lookup(name.HashKey(), cache)
 	if !ok {
+		// The methods of its struct come after its own properties
+		if typ := hash.Struct(); typ != nil {
+			if cl := typ.Methods[name.Value]; cl != nil && cl.Runner == vm {
+				return cl
+			}
+		}
 		return nil
 	}
 	if cl, ok := value.(*object.Closure); ok && cl.Runner == vm {
