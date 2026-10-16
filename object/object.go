@@ -138,10 +138,10 @@ func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.E
 type String struct {
 	Value string
 
-	// The hash of Value, computed the first time it's needed. Strings are
-	// never changed in place, so it stays valid.
-	hash   uint64
-	hashed bool
+	// The hash of Value, computed the first time it's needed, or 0 before.
+	// Strings are never changed in place, so it stays valid. A hash that
+	// is 0 is computed every time, which keeps String small.
+	hash uint64
 
 	// buffer holds Value, and room after it, when the string was made by
 	// Concat; see there
@@ -175,14 +175,14 @@ func Concat(s *String, more string) *String {
 func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) HashKey() HashKey {
-	if !s.hashed {
+	if s.hash == 0 {
 		// FNV-1a, inline to avoid allocating a hasher and a byte slice
 		h := uint64(14695981039346656037)
 		for i := 0; i < len(s.Value); i++ {
 			h ^= uint64(s.Value[i])
 			h *= 1099511628211
 		}
-		s.hash, s.hashed = h, true
+		s.hash = h
 	}
 	return HashKey{Kind: StringKey, Value: s.hash}
 }
