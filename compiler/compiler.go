@@ -94,6 +94,7 @@ func (c *Compiler) Problems() []Problem {
 // compilation is the code of the function being compiled.
 type compilation struct {
 	instructions instructions
+	flow         *emitFlow
 	positions    []object.Position
 	caches       int // property caches given out
 	outer        *compilation
@@ -210,7 +211,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 		if lit, ok := node.(*ast.FunctionLiteral); ok {
 			c.fn.implicitIt = lit.ImplicitIt
 		}
-		c.scope = &compilation{outer: c.scope}
+		c.scope = &compilation{outer: c.scope, flow: newEmitFlow()}
 
 		for _, p := range params {
 			s := c.fn.defineLocal(p.Value, false)
@@ -259,7 +260,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			continue
 		}
 
-		words, positions, registers, err := translate(scope.instructions, scope.positions, fn.numLocals, fn.cells, c.constants)
+		words, positions, registers, err := translate(scope.instructions, scope.flow, scope.positions, fn.numLocals, fn.cells, c.constants)
 		if err != nil {
 			return nil, strfmt.Errorf("internal error in %s: %w", functionName(name), err)
 		}
@@ -775,9 +776,12 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 	// The jump back counts a step, which errors point at the loop for
 	c.emit(stmt.Token, code.OpJump, next)
 
-	end := c.emit(token.Token{}, code.OpLoopExit)
+	// The jumps to the end are known before it's made
+	end := len(c.scope.instructions)
 	c.changeOperands(enter, end, next)
 	c.changeOperands(next, end, pairs)
+	c.scope.flow.endLoop(end, next)
+	c.emit(token.Token{}, code.OpLoopExit)
 	c.emit(token.Token{}, code.OpPop) // the iterator
 	c.emit(token.Token{}, code.OpNull)
 	return nil
@@ -915,9 +919,11 @@ func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 	c.emit(token.Token{}, code.OpPop)
 	c.emit(stmt.Token, code.OpJump, start)
 
-	end := c.emit(token.Token{}, code.OpLoopExit)
+	end := len(c.scope.instructions)
 	c.changeOperands(enter, end, start)
 	c.changeOperands(exit, end)
+	c.scope.flow.endLoop(end, start)
+	c.emit(token.Token{}, code.OpLoopExit)
 	c.emit(token.Token{}, code.OpNull)
 	return nil
 }
@@ -1437,6 +1443,7 @@ func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
 	ins := instruction{op: op}
 	copy(ins.args[:], operands)
 	pos := len(c.scope.instructions)
+	c.scope.flow.add(pos, ins)
 	if tok.Line > 0 {
 		c.scope.positions = append(c.scope.positions, object.Position{Offset: pos, Line: tok.Line, Column: tok.Column})
 	} else if n := len(c.scope.positions); n > 0 && c.scope.positions[n-1].Line != 0 {
@@ -1451,6 +1458,11 @@ func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
 // jump at a target known only later.
 func (c *Compiler) changeOperands(pos int, operands ...int) {
 	copy(c.scope.instructions[pos].args[:], operands)
+	switch c.scope.instructions[pos].op {
+	case code.OpLoopEnter:
+	default:
+		c.scope.flow.retarget(pos, operands[0])
+	}
 }
 
 func hasSpread(expressions []ast.Expression) bool {
