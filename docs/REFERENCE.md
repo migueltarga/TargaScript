@@ -303,6 +303,14 @@ let created = await fetch(url, {"method": "POST", "headers": {"X-Token": token},
 
 A response has `status`, `ok`, `url`, `headers`, `text` and `json()`. A `body` that isn't a string is sent as JSON.
 
+`all(promises)` waits for several promises at once and gives their results in the same order, or fails as soon as one fails. Calling `fetch` without `await` starts the request and gives its promise, so requests can run side by side:
+
+```
+let repos = ["golang/go", "rust-lang/rust"]
+let responses = await all(repos.map(r => fetch("https://api.github.com/repos/${r}")))
+print(responses.map(r => r.json().stargazers_count))
+```
+
 ## Loading files
 
 ```
@@ -330,7 +338,7 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `clock()` | milliseconds since the program started, for timing code |
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
-| `sleep(ms)`, `fetch(url, options)` | promises for `await` |
+| `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response` | [command line](#command-line) only |
 
 ## Testing
