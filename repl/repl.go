@@ -2,10 +2,12 @@ package repl
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/migueltarga/TargaScript/ast"
+	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
@@ -30,8 +32,15 @@ func evalSource(source string, env *object.Environment, out io.Writer, noColor b
 	program := p.ParseProgram()
 
 	if len(p.Errors()) != 0 {
-		printParserErrors(out, p.Errors())
-		return fmt.Errorf("parser errors")
+		diagnostics := []diag.Diagnostic{}
+		for _, e := range p.Diagnostics() {
+			diagnostics = append(diagnostics, diag.Diagnostic{Line: e.Line, Column: e.Column, Message: e.Message})
+		}
+		err := errors.New(diag.FormatAll(source, diagnostics))
+		if isRepl {
+			printError(out, err, noColor)
+		}
+		return err
 	}
 
 	if debug {
@@ -50,26 +59,11 @@ func evalSource(source string, env *object.Environment, out io.Writer, noColor b
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				errMsg := fmt.Sprintf("Runtime panic: %v", r)
-				if isRepl {
-					fmt.Fprintf(out, "\033[31m%s\033[0m\n", errMsg)
-				}
-				evaluated = &object.Error{
-					Message: errMsg,
-					Line:    0,
-					Column:  0,
-				}
+				evaluated = &object.Error{Message: fmt.Sprintf("internal error: %v", r)}
 			}
 		}()
 
 		evaluated = evaluator.Eval(program, env)
-
-		// Check if we got an error and print it only in REPL mode
-		if isRepl && evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-			errObj := evaluated.(*object.Error)
-			fmt.Fprintf(out, "\033[31mRuntime Error: %s (line %d, column %d)\033[0m\n",
-				errObj.Message, errObj.Line, errObj.Column)
-		}
 	}()
 
 	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ &&
@@ -79,10 +73,14 @@ func evalSource(source string, env *object.Environment, out io.Writer, noColor b
 	}
 
 	// If the evaluation resulted in an error, return it
-	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-		errObj := evaluated.(*object.Error)
-		return fmt.Errorf("%s (line %d, column %d)",
-			errObj.Message, errObj.Line, errObj.Column)
+	if errObj, ok := evaluated.(*object.Error); ok {
+		err := errors.New(diag.Format(source, diag.Diagnostic{
+			Line: errObj.Line, Column: errObj.Column, Message: errObj.Message,
+		}))
+		if isRepl {
+			printError(out, err, noColor)
+		}
+		return err
 	}
 
 	return nil
@@ -104,9 +102,11 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 	}
 }
 
-func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, "Parser errors:\n")
-	for _, msg := range errors {
-		io.WriteString(out, "\t"+msg+"\n")
+// printError writes an error, in red unless noColor is set.
+func printError(out io.Writer, err error, noColor bool) {
+	if noColor {
+		fmt.Fprintln(out, err)
+		return
 	}
+	fmt.Fprintf(out, "\033[31m%s\033[0m\n", err)
 }

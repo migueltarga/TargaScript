@@ -249,6 +249,7 @@ func (l *Lexer) isStartingWithDigitFollowedByLetter() bool {
 	pos := l.position
 	readPos := l.readPosition
 	ch := l.ch
+	column := l.column
 
 	for isDigit(l.ch) {
 		l.readChar()
@@ -259,6 +260,7 @@ func (l *Lexer) isStartingWithDigitFollowedByLetter() bool {
 	l.position = pos
 	l.readPosition = readPos
 	l.ch = ch
+	l.column = column
 
 	return isInvalidIdent
 }

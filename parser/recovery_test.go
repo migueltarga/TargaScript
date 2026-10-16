@@ -20,7 +20,7 @@ func TestErrorRecovery(t *testing.T) {
 		},
 		{
 			input:  `print("abc`,
-			errors: []string{"unterminated string"},
+			errors: []string{"this string is never closed"},
 		},
 		{
 			input:      "fn f() {\n  let = 1\n  return 2\n}\nlet x = 1 @ 2\nlet y = 3",
@@ -34,7 +34,7 @@ func TestErrorRecovery(t *testing.T) {
 		},
 		{
 			input:      "let 1a = 2\nlet ok = 1",
-			errors:     []string{"invalid variable name '1a'"},
+			errors:     []string{`invalid variable name "1a"`},
 			statements: []string{"let ok = 1"},
 		},
 	}

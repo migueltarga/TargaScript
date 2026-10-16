@@ -1667,8 +1667,8 @@ func TestInvalidVariableNames(t *testing.T) {
 		input         string
 		expectedError string
 	}{
-		{"let 123abc = 5;", "invalid variable name '123abc': variable names cannot start with a digit"},
-		{"fn(5var) {}", "invalid parameter name '5var': parameter names cannot start with a digit"},
+		{"let 123abc = 5;", "invalid variable name \"123abc\": names can't start with a digit"},
+		{"fn(5var) {}", "invalid parameter name \"5var\": names can't start with a digit"},
 	}
 
 	for _, tt := range tests {

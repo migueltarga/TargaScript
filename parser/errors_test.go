@@ -12,7 +12,7 @@ func TestIllegalTokenErrors(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{`let s = "abc`, "unterminated string"},
+		{`let s = "abc`, "this string is never closed"},
 		{`let a = 1 @ 2`, `unexpected "@"`},
 	}
 
