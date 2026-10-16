@@ -12,6 +12,22 @@ var started = time.Now()
 
 func init() {
 	builtins["clock"] = &object.Builtin{Name: "clock", Fn: clockBuiltin}
+	builtins["parseTime"] = &object.Builtin{Name: "parseTime", Fn: parseTimeBuiltin}
+}
+
+// parseTimeBuiltin reads a time written with a layout like timeFormat's and
+// returns its Unix time in seconds, in the local time zone unless the
+// layout has one.
+func parseTimeBuiltin(args ...object.Object) object.Object {
+	values, err := stringArgs("parseTime", args, 2)
+	if err != nil {
+		return err
+	}
+	t, parseErr := time.ParseInLocation(dateLayout(values[1]), values[0], time.Local)
+	if parseErr != nil {
+		return &object.Error{Message: fmt.Sprintf("cannot read %q as a time in the layout %q", values[0], values[1])}
+	}
+	return &object.Integer{Value: t.Unix()}
 }
 
 // clockBuiltin returns the milliseconds since the program started, for

@@ -361,6 +361,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `range(start, end)`, `range(start, end, step)` | the integers from `start` to `end`, both included: `range(0, 10, 5)` is `[0, 5, 10]` |
 | `now()` | the current Unix time in seconds |
 | `timeFormat(seconds, layout)` | formats a time with `YYYY`, `YY`, `MMMM`, `MMM`, `MM`, `DD`, `dddd`, `ddd`, `HH`, `hh`, `mm`, `ss` and `A` (AM/PM), e.g. `timeFormat(now(), "DD/MM/YYYY HH:mm")` |
+| `parseTime(text, layout)` | the opposite of `timeFormat`: `parseTime("16/10/2026", "DD/MM/YYYY")` is that day's Unix time |
 | `clock()` | milliseconds since the program started, for timing code |
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `escapeHTML(text)` | text safe to put in HTML: `<`, `>`, `&` and quotes become entities |
