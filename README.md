@@ -329,7 +329,7 @@ serve(8080, fn(req) {
 })
 ```
 
-Strings are sent as text or HTML, objects and arrays as JSON. `response(body, {status, headers})` sets the rest. See the [reference](docs/REFERENCE.md#web-servers) for the request object.
+Strings are sent as text or HTML, objects and arrays as JSON. `response(body, {status, headers})` sets the rest, and `staticFile("public", req.path)` serves the files of a directory. See the [reference](docs/REFERENCE.md#web-servers) for the request object.
 
 ## 🌐 TargaScript in the Browser
 

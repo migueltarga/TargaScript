@@ -349,7 +349,7 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
-| `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response` | [command line](#command-line) only |
+| `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing
 
@@ -415,6 +415,17 @@ serve(8080, fn(req) {
         }
         _ => response("Not found", {status: 404})
     }
+})
+```
+
+`staticFile(dir, path)` answers with a file from a directory, with its content type, or a 404. A directory gives its `index.html`. The path can't leave the directory, and hidden files like `.env` aren't served. A whole site with an API is a few lines:
+
+```text
+serve(8080, fn(req) {
+    if req.path.startsWith("/api/") {
+        return {time: timeFormat(now(), "HH:mm:ss")}
+    }
+    staticFile("public", req.path)
 })
 ```
 
