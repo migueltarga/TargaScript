@@ -332,6 +332,11 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - Shows how constants behave with different data types
    - Tests reassignment protection for constants
 
+11. **sales_report.tg** - A sales report from CSV data
+   - Destructuring with rest, `zip` and `toObject` to read rows
+   - `groupBy`, sorting by several keys, `match` with guards
+   - `${total:10,.2f}` for aligned numbers with thousands separators
+
 10. **expression_parser.tg** - A calculator for expressions like `2 * (3 + 4)`
    - A tokenizer and a recursive-descent parser in nested functions that call each other
    - `match` with guards, `throw` where a value goes, `in` and the pipe operator
