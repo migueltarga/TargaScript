@@ -433,6 +433,7 @@ targascript test                  # run the *_test.tg files, see Testing
 targascript check                 # find problems in the .tg files without running them
 targascript build app.tg -o app   # make an executable that runs app.tg, see below
 targascript lsp                   # a language server, for editors other than VS Code
+targascript fmt                   # indent the .tg files; --check only lists the ones that need it
 cat script.tg | targascript -     # run code from standard input
 ```
 
