@@ -22,7 +22,7 @@ func TestErrorSuggestions(t *testing.T) {
 		{`[1].lenght`, `arrays have no property "lenght". Did you mean "length"?`},
 		{`"abc".uper()`, `strings have no method "uper". Did you mean "upper"?`},
 		{`[1, 2].fliter(fn(x) { x })`, `arrays have no method "fliter". Did you mean "filter"?`},
-		{`[1, 2].sum()`, `arrays have no method "sum"`},
+		{`[1, 2].total()`, `arrays have no method "total"`},
 		{`let h = {"greet": fn() { 1 }}` + "\nh.gret()", `object has no method "gret". Did you mean "greet"?`},
 		{`let h = {"name": "x"}` + "\nh.name()", `property "name" is a string, not a function`},
 		{"let n = 5\nn.upper()", `cannot call method "upper" on an integer`},
