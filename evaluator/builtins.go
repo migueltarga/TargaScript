@@ -5,7 +5,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/migueltarga/TargaScript/object"
 )
@@ -381,7 +380,7 @@ func init() {
 					}
 				}
 
-				return &object.Integer{Value: time.Now().Unix()}
+				return &object.Integer{Value: int64(timeHost.Now())}
 			},
 		},
 
@@ -409,7 +408,7 @@ func init() {
 					}
 				}
 
-				return &object.String{Value: formatTime(time.Unix(timestamp.Value, 0), format.Value)}
+				return &object.String{Value: formatTime(timestamp.Value, format.Value)}
 			},
 		},
 	} {
