@@ -17,6 +17,10 @@ func TestHintsForOtherLanguagesSyntax(t *testing.T) {
 		{"def add(a, b): return a + b", "functions are declared with fn"},
 		{"var x = 5", "variables are declared with let"},
 		{`print "hi"`, "calls need parentheses: print(...)"},
+		{"fn f() { retur 1 }", `"retur" isn't a keyword. Did you mean return?`},
+		{"fn f() { retrun x + 1 }", "Did you mean return?"},
+		{`throww "x"`, "Did you mean throw?"},
+		{"Return 5", "Did you mean return?"},
 		{"if a === b { }", "TargaScript compares with =="},
 		{"if a !== b { }", "TargaScript compares with !="},
 	}
@@ -45,6 +49,27 @@ func TestOtherLanguagesWordsAsNames(t *testing.T) {
 		p.ParseProgram()
 		if len(p.Errors()) > 0 {
 			t.Errorf("%q: unexpected errors %v", input, p.Errors())
+		}
+	}
+}
+
+func TestOneTypoApart(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"return", "return", true},
+		{"retur", "return", true},
+		{"returnn", "return", true},
+		{"retrun", "return", true},
+		{"rexurn", "return", true},
+		{"rturen", "return", false},
+		{"ret", "return", false},
+		{"x", "return", false},
+	}
+	for _, tt := range tests {
+		if got := oneTypoApart(tt.a, tt.b); got != tt.want {
+			t.Errorf("oneTypoApart(%q, %q) = %t, want %t", tt.a, tt.b, got, tt.want)
 		}
 	}
 }

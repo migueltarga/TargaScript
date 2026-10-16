@@ -269,6 +269,50 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+// valueKeywords are the keywords a value follows, which a name just before
+// a value was probably meant to be.
+var valueKeywords = []string{"return", "throw", "await", "repeat"}
+
+// misspelledKeyword returns the keyword of valueKeywords that name is one
+// typo away from, or "".
+func misspelledKeyword(name string) string {
+	for _, keyword := range valueKeywords {
+		if oneTypoApart(strings.ToLower(name), keyword) {
+			return keyword
+		}
+	}
+	return ""
+}
+
+// oneTypoApart reports whether a and b differ by one letter added, removed,
+// replaced or swapped with its neighbor.
+func oneTypoApart(a, b string) bool {
+	if a == b {
+		return true
+	}
+	if len(a) > len(b) {
+		a, b = b, a
+	}
+	switch len(b) - len(a) {
+	case 0:
+		diff := []int{}
+		for i := range a {
+			if a[i] != b[i] {
+				diff = append(diff, i)
+			}
+		}
+		return len(diff) == 1 ||
+			len(diff) == 2 && diff[1] == diff[0]+1 && a[diff[0]] == b[diff[1]] && a[diff[1]] == b[diff[0]]
+	case 1:
+		i := 0
+		for i < len(a) && a[i] == b[i] {
+			i++
+		}
+		return a[i:] == b[i+1:]
+	}
+	return false
+}
+
 // otherLanguageStatements are the words other languages start statements
 // with, and how TargaScript says the same.
 var otherLanguageStatements = map[string]string{
@@ -548,8 +592,20 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	if ident, ok := stmt.Expression.(*ast.Identifier); ok && p.peekToken.Line == p.curToken.Line {
 		switch p.peekToken.Type {
 		case token.STRING, token.TEMPLATE, token.INT, token.FLOAT:
+			// retur 1 is a typo, not a call
+			if keyword := misspelledKeyword(ident.Value); keyword != "" {
+				p.errorAt(ident.Token.Line, ident.Token.Column, "%q isn't a keyword. Did you mean %s?", ident.Value, keyword)
+				return nil
+			}
 			p.errorAt(p.peekToken.Line, p.peekToken.Column, "calls need parentheses: %s(...)", ident.Value)
 			return nil
+		case token.IDENT:
+			// retrun x: two names in a row are only a typo when the first
+			// is close to a keyword
+			if keyword := misspelledKeyword(ident.Value); keyword != "" {
+				p.errorAt(ident.Token.Line, ident.Token.Column, "%q isn't a keyword. Did you mean %s?", ident.Value, keyword)
+				return nil
+			}
 		}
 	}
 
