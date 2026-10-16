@@ -246,7 +246,7 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - Truthy/falsy values across different types
    - Short-circuit evaluation and operator precedence
 
-5. **format_test.tg** - Demonstrates printf and format specifiers
+5. **formatting.tg** - Demonstrates printf and format specifiers
    - Basic format specifiers for all data types
    - Multiple values and expressions
    - Advanced formatting techniques and practical examples
@@ -317,12 +317,12 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - Bubble sort implementation
    - Algorithm benchmarking
 
-7. **function_scoping_test.tg** - Test cases for function parameter scoping
+7. **function_scoping.tg** - Test cases for function parameter scoping
    - Demonstrates how function parameters shadow outer variables
    - Shows scope isolation between function calls
    - Tests nested function scoping behavior
 
-8. **if_scoping_test.tg** - Test cases for block scoping in if statements
+8. **if_scoping.tg** - Test cases for block scoping in if statements
    - Demonstrates variable shadowing in if blocks
    - Shows block-level variable scope isolation
    - Tests nested block scoping behavior
