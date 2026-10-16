@@ -33,6 +33,11 @@ TargaScript provides a rich set of built-in functions for common operations:
 - `max(a, b)` - Return the larger of two numbers
 - `random()` - Generate a random number between 0 and 1
 
+#### JSON
+
+- `parseJSON(text)` - Convert JSON text to values. Objects keep the order of their keys, and numbers without a fraction or exponent become integers
+- `toJSON(value)` / `toJSON(value, indent)` - Convert a value to JSON text, indented by a number of spaces or a string
+
 #### Time Functions
 
 - `now()` - Return the current Unix timestamp (seconds since Jan 1, 1970)
