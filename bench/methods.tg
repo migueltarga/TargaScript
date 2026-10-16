@@ -1,0 +1,6 @@
+fn makeCounter() {
+    {count: 0, add: fn(n) { this.count += n }}
+}
+let c = makeCounter()
+repeat i in 1..1000000 { c.add(i) }
+print(c.count)

@@ -23,7 +23,7 @@ TargaScript is a small, modern scripting language that runs in your terminal, in
 - **The tools are included.** `targascript fmt`, `check`, `test` and `build`, `--watch` to run again on every save, a REPL with history and Tab completion, a VS Code extension, and a language server for Neovim, Helix and other editors.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
-- **As fast as Python.** Programs compile to bytecode for a VM that runs about as fast as CPython on [these benchmarks](bench/), and allows 10,000 nested calls, in the browser too.
+- **Faster than Python.** Programs compile to bytecode for a VM that beats CPython on 8 of [these 9 benchmarks](bench/) and ties on the last, and allows 10,000 nested calls, in the browser too.
 
 ## ⚖️ Compared with Python and JavaScript
 

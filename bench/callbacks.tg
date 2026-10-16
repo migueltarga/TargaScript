@@ -1,0 +1,7 @@
+let items = range(1, 300000)
+let total = 0
+repeat r in 1..5 {
+    let doubled = items.map(x => x * 2).filter(x => x % 3 == 0)
+    total += doubled.reduce((a, b) => a + b, 0)
+}
+print(total)
