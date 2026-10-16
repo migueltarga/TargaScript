@@ -13,8 +13,12 @@ import "sync"
 type Hash struct {
 	shape  *Shape   // nil for a dictionary
 	values []Object // values[i] belongs to shape.keys[i]
+	dict   *dictionary
+}
 
-	// A dictionary's pairs
+// dictionary is the pairs of a hash without a shape. It is apart from Hash
+// so objects with a shape, the usual ones, are small.
+type dictionary struct {
 	keys  []HashKey
 	pairs []HashPair
 	index map[HashKey]int
@@ -91,9 +95,47 @@ func NewHash() *Hash {
 // NewHashOfSize returns an empty hash with room for n pairs.
 func NewHashOfSize(n int) *Hash {
 	if n > shapedUpTo {
-		return &Hash{}
+		return &Hash{dict: &dictionary{}}
 	}
-	return &Hash{shape: emptyShape, values: make([]Object, 0, n)}
+	h := shapedHash(n)
+	h.shape = emptyShape
+	return h
+}
+
+// shapedHash returns a hash with room for n values, which for small
+// objects come in the same allocation as the hash.
+func shapedHash(n int) *Hash {
+	switch n {
+	case 1:
+		b := &struct {
+			h Hash
+			v [1]Object
+		}{}
+		b.h.values = b.v[:0]
+		return &b.h
+	case 2:
+		b := &struct {
+			h Hash
+			v [2]Object
+		}{}
+		b.h.values = b.v[:0]
+		return &b.h
+	case 3:
+		b := &struct {
+			h Hash
+			v [3]Object
+		}{}
+		b.h.values = b.v[:0]
+		return &b.h
+	case 4:
+		b := &struct {
+			h Hash
+			v [4]Object
+		}{}
+		b.h.values = b.v[:0]
+		return &b.h
+	}
+	return &Hash{values: make([]Object, 0, n)}
 }
 
 // find returns the position of a key, or -1.
@@ -101,14 +143,17 @@ func (h *Hash) find(key HashKey) int {
 	if h.shape != nil {
 		return h.shape.Find(key)
 	}
-	if h.index != nil {
-		if i, ok := h.index[key]; ok {
+	if h.dict == nil {
+		return -1
+	}
+	if h.dict.index != nil {
+		if i, ok := h.dict.index[key]; ok {
 			return i
 		}
 		return -1
 	}
-	for i := range h.keys {
-		if h.keys[i] == key {
+	for i := range h.dict.keys {
+		if h.dict.keys[i] == key {
 			return i
 		}
 	}
@@ -135,7 +180,7 @@ func (h *Hash) At(i int) (HashKey, HashPair) {
 	if h.shape != nil {
 		return h.shape.keys[i], HashPair{Key: h.shape.names[i], Value: h.values[i]}
 	}
-	return h.keys[i], h.pairs[i]
+	return h.dict.keys[i], h.dict.pairs[i]
 }
 
 // Len returns the number of pairs.
@@ -143,7 +188,10 @@ func (h *Hash) Len() int {
 	if h.shape != nil {
 		return len(h.values)
 	}
-	return len(h.pairs)
+	if h.dict == nil {
+		return 0
+	}
+	return len(h.dict.pairs)
 }
 
 // Set adds or updates a pair, keeping the original position of existing keys.
@@ -153,7 +201,7 @@ func (h *Hash) Set(key Hashable, value Object) {
 		if h.shape != nil {
 			h.values[i] = value
 		} else {
-			h.pairs[i].Value = value
+			h.dict.pairs[i].Value = value
 		}
 		return
 	}
@@ -167,11 +215,14 @@ func (h *Hash) Set(key Hashable, value Object) {
 		}
 		h.toDictionary()
 	}
-	h.keys = append(h.keys, hashKey)
-	h.pairs = append(h.pairs, HashPair{Key: key.(Object), Value: value})
-	if h.index != nil {
-		h.index[hashKey] = len(h.keys) - 1
-	} else if len(h.keys) > indexAbove {
+	if h.dict == nil {
+		h.dict = &dictionary{}
+	}
+	h.dict.keys = append(h.dict.keys, hashKey)
+	h.dict.pairs = append(h.dict.pairs, HashPair{Key: key.(Object), Value: value})
+	if h.dict.index != nil {
+		h.dict.index[hashKey] = len(h.dict.keys) - 1
+	} else if len(h.dict.keys) > indexAbove {
 		h.reindex()
 	}
 }
@@ -183,9 +234,9 @@ func (h *Hash) Delete(key Hashable) bool {
 		return false
 	}
 	h.toDictionary()
-	h.keys = append(h.keys[:i], h.keys[i+1:]...)
-	h.pairs = append(h.pairs[:i], h.pairs[i+1:]...)
-	if h.index != nil {
+	h.dict.keys = append(h.dict.keys[:i], h.dict.keys[i+1:]...)
+	h.dict.pairs = append(h.dict.pairs[:i], h.dict.pairs[i+1:]...)
+	if h.dict.index != nil {
 		h.reindex()
 	}
 	return true
@@ -197,10 +248,11 @@ func (h *Hash) toDictionary() {
 		return
 	}
 	n := len(h.values)
-	h.keys = make([]HashKey, n, n+1)
-	h.pairs = make([]HashPair, n, n+1)
+	h.dict = &dictionary{}
+	h.dict.keys = make([]HashKey, n, n+1)
+	h.dict.pairs = make([]HashPair, n, n+1)
 	for i := range h.values {
-		h.keys[i], h.pairs[i] = h.At(i)
+		h.dict.keys[i], h.dict.pairs[i] = h.At(i)
 	}
 	h.shape, h.values = nil, nil
 	if n > indexAbove {
@@ -209,9 +261,9 @@ func (h *Hash) toDictionary() {
 }
 
 func (h *Hash) reindex() {
-	h.index = make(map[HashKey]int, len(h.keys))
-	for i, key := range h.keys {
-		h.index[key] = i
+	h.dict.index = make(map[HashKey]int, len(h.dict.keys))
+	for i, key := range h.dict.keys {
+		h.dict.index[key] = i
 	}
 }
 
@@ -264,7 +316,7 @@ func (h *Hash) Update(key HashKey, cache *PropertyCache, value Object) bool {
 		return false
 	}
 	if i := h.find(key); i >= 0 {
-		h.pairs[i].Value = value
+		h.dict.pairs[i].Value = value
 		return true
 	}
 	return false
@@ -278,15 +330,18 @@ func (h *Hash) Update(key HashKey, cache *PropertyCache, value Object) bool {
 func NewHashFromPairs(pairs []Object, cache *PropertyCache) (*Hash, int) {
 	n := len(pairs) / 2
 	if s := cache.shape; s != nil && len(s.keys) == n {
-		values := make([]Object, n)
 		same := true
 		for i := 0; i < n && same; i++ {
 			key, ok := pairs[2*i].(Hashable)
 			same = ok && key.HashKey() == s.keys[i]
-			values[i] = pairs[2*i+1]
 		}
 		if same {
-			return &Hash{shape: s, values: values}, -1
+			h := shapedHash(n)
+			h.shape = s
+			for i := 0; i < n; i++ {
+				h.values = append(h.values, pairs[2*i+1])
+			}
+			return h, -1
 		}
 	}
 

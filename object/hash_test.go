@@ -120,3 +120,42 @@ func TestNewHashFromPairs(t *testing.T) {
 		t.Errorf("bad key at %d, want 2", bad)
 	}
 }
+
+// Small objects keep their values with them, and still grow, become
+// dictionaries and lose keys like any other
+func TestSmallHashes(t *testing.T) {
+	for n := 0; n <= 6; n++ {
+		var cache PropertyCache
+		for round := 0; round < 2; round++ {
+			pairs := []Object{}
+			for i := 0; i < n; i++ {
+				pairs = append(pairs, &String{Value: string(rune('a' + i))}, &Integer{Value: int64(i)})
+			}
+			h, bad := NewHashFromPairs(pairs, &cache)
+			if bad >= 0 || h.Len() != n {
+				t.Fatalf("%d keys: got %d, bad %d", n, h.Len(), bad)
+			}
+			for i := n; i < 20; i++ {
+				h.Set(&String{Value: string(rune('a' + i))}, &Integer{Value: int64(i)})
+			}
+			h.Delete(&String{Value: "a"})
+			if h.Len() != 19 {
+				t.Fatalf("%d keys: got %d after adding and removing", n, h.Len())
+			}
+			for i := 1; i < 20; i++ {
+				pair, ok := h.Get((&String{Value: string(rune('a' + i))}).HashKey())
+				if !ok || pair.Value.(*Integer).Value != int64(i) {
+					t.Fatalf("%d keys: %c is %v", n, 'a'+i, pair.Value)
+				}
+			}
+		}
+	}
+	var empty Hash
+	if empty.Len() != 0 || empty.Has((&String{Value: "x"}).HashKey()) {
+		t.Error("the zero hash should be empty")
+	}
+	empty.Set(&String{Value: "x"}, &Integer{Value: 1})
+	if empty.Len() != 1 {
+		t.Error("the zero hash should take keys")
+	}
+}
