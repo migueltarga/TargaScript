@@ -551,7 +551,7 @@ func (vm *VM) loop(base int) object.Object {
 			f.ip += 2
 			// Fast path for objects, with the hash of the name computed once
 			if hash, ok := vm.stack[vm.sp-1].(*object.Hash); ok && name != "length" {
-				if pair, ok := hash.Pairs[nameObj.HashKey()]; ok {
+				if pair, ok := hash.Get(nameObj.HashKey()); ok {
 					vm.stack[vm.sp-1] = pair.Value
 				} else {
 					vm.stack[vm.sp-1] = NULL

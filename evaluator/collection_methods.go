@@ -34,7 +34,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 		if !ok {
 			return &object.Error{Message: fmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
 		}
-		if pair, ok := h.Pairs[key.HashKey()]; ok {
+		if pair, ok := h.Get(key.HashKey()); ok {
 			return pair.Value
 		}
 		if len(args) == 2 {
@@ -51,7 +51,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 			return &object.Error{Message: fmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
 		}
 		var value object.Object = NULL
-		if pair, ok := h.Pairs[key.HashKey()]; ok {
+		if pair, ok := h.Get(key.HashKey()); ok {
 			value = pair.Value
 		}
 		h.Delete(key)

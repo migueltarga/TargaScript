@@ -149,7 +149,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 				return newError(line, column, "array.groupBy() function must return a string, number or boolean, got %s", typeName(key)), true
 			}
 			var group object.Object = NULL
-			if pair, ok := groups.Pairs[hashable.HashKey()]; ok {
+			if pair, ok := groups.Get(hashable.HashKey()); ok {
 				group = pair.Value
 			}
 			if group == NULL {

@@ -381,7 +381,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		newline(depth)
 		out.WriteByte(']')
 	case *object.Hash:
-		if len(obj.Pairs) == 0 {
+		if obj.Len() == 0 {
 			out.WriteString("{}")
 			break
 		}

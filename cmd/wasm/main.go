@@ -99,7 +99,7 @@ func outcome(source string, result object.Object) object.Object {
 // runs another program in a fresh environment, as the playground does in a
 // worker, and returns the error message or null.
 func targascriptObject() *object.Hash {
-	hash := &object.Hash{Pairs: map[object.HashKey]object.HashPair{}}
+	hash := object.NewHash()
 	hash.Set(&object.String{Value: "run"}, &object.Builtin{
 		Name: "run",
 		Fn: func(args ...object.Object) object.Object {

@@ -183,47 +183,102 @@ type HashPair struct {
 	Value Object
 }
 
+// Hash is an object: pairs in insertion order. Small objects, the usual
+// kind, find keys by looking through them, which is faster than a map and
+// takes far less memory; larger ones also keep an index.
 type Hash struct {
-	Pairs map[HashKey]HashPair
-	Order []HashKey // keys of Pairs in insertion order
+	keys  []HashKey  // in insertion order
+	pairs []HashPair // pairs[i] has the key keys[i]
+	index map[HashKey]int
 }
 
+// indexAbove is the size above which a hash keeps an index of its keys.
+const indexAbove = 8
+
 func NewHash() *Hash {
-	return &Hash{Pairs: make(map[HashKey]HashPair)}
+	return &Hash{}
+}
+
+// find returns the position of a key, or -1.
+func (h *Hash) find(key HashKey) int {
+	if h.index != nil {
+		if i, ok := h.index[key]; ok {
+			return i
+		}
+		return -1
+	}
+	for i := range h.keys {
+		if h.keys[i] == key {
+			return i
+		}
+	}
+	return -1
+}
+
+// Get returns the pair with the given key.
+func (h *Hash) Get(key HashKey) (HashPair, bool) {
+	if i := h.find(key); i >= 0 {
+		return h.pairs[i], true
+	}
+	return HashPair{}, false
+}
+
+// Has reports whether the hash has the key.
+func (h *Hash) Has(key HashKey) bool {
+	return h.find(key) >= 0
+}
+
+// At returns the key and the pair at position i, in insertion order, for
+// going through a hash without copying its pairs.
+func (h *Hash) At(i int) (HashKey, HashPair) {
+	return h.keys[i], h.pairs[i]
+}
+
+// Len returns the number of pairs.
+func (h *Hash) Len() int {
+	return len(h.pairs)
 }
 
 // Set adds or updates a pair, keeping the original position of existing keys.
 func (h *Hash) Set(key Hashable, value Object) {
 	hashKey := key.HashKey()
-	if _, exists := h.Pairs[hashKey]; !exists {
-		h.Order = append(h.Order, hashKey)
+	if i := h.find(hashKey); i >= 0 {
+		h.pairs[i].Value = value
+		return
 	}
-	h.Pairs[hashKey] = HashPair{Key: key.(Object), Value: value}
+	h.keys = append(h.keys, hashKey)
+	h.pairs = append(h.pairs, HashPair{Key: key.(Object), Value: value})
+	if h.index != nil {
+		h.index[hashKey] = len(h.keys) - 1
+	} else if len(h.keys) > indexAbove {
+		h.reindex()
+	}
 }
 
 // Delete removes a key, reporting whether it was there.
 func (h *Hash) Delete(key Hashable) bool {
-	hashKey := key.HashKey()
-	if _, exists := h.Pairs[hashKey]; !exists {
+	i := h.find(key.HashKey())
+	if i < 0 {
 		return false
 	}
-	delete(h.Pairs, hashKey)
-	for i, k := range h.Order {
-		if k == hashKey {
-			h.Order = append(h.Order[:i], h.Order[i+1:]...)
-			break
-		}
+	h.keys = append(h.keys[:i], h.keys[i+1:]...)
+	h.pairs = append(h.pairs[:i], h.pairs[i+1:]...)
+	if h.index != nil {
+		h.reindex()
 	}
 	return true
 }
 
-// OrderedPairs returns the pairs in insertion order.
-func (h *Hash) OrderedPairs() []HashPair {
-	pairs := make([]HashPair, 0, len(h.Order))
-	for _, hashKey := range h.Order {
-		pairs = append(pairs, h.Pairs[hashKey])
+func (h *Hash) reindex() {
+	h.index = make(map[HashKey]int, len(h.keys))
+	for i, key := range h.keys {
+		h.index[key] = i
 	}
-	return pairs
+}
+
+// OrderedPairs returns a copy of the pairs in insertion order.
+func (h *Hash) OrderedPairs() []HashPair {
+	return append([]HashPair(nil), h.pairs...)
 }
 
 func (h *Hash) Type() ObjectType { return HASH_OBJ }

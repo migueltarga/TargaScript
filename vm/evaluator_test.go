@@ -527,12 +527,12 @@ func TestHashLiterals(t *testing.T) {
 		FALSE.HashKey():                            6,
 	}
 
-	if len(result.Pairs) != len(expected) {
-		t.Fatalf("Hash has wrong num of pairs. got=%d", len(result.Pairs))
+	if result.Len() != len(expected) {
+		t.Fatalf("Hash has wrong num of pairs. got=%d", result.Len())
 	}
 
 	for expectedKey, expectedValue := range expected {
-		pair, ok := result.Pairs[expectedKey]
+		pair, ok := result.Get(expectedKey)
 		if !ok {
 			t.Errorf("no pair for given key in Pairs")
 		}

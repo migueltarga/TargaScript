@@ -115,8 +115,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 	if !ok {
 		return &object.Error{Message: fmt.Sprintf("the options of response must be an object, got %s", typeName(args[1]))}
 	}
-	for _, key := range options.Order {
-		pair := options.Pairs[key]
+	for _, pair := range options.OrderedPairs() {
 		name := objectToString(pair.Key)
 		switch name {
 		case "status":
@@ -130,8 +129,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 			if !ok {
 				return &object.Error{Message: fmt.Sprintf("the headers of a response must be an object, got %s", typeName(pair.Value))}
 			}
-			for _, headerKey := range headers.Order {
-				header := headers.Pairs[headerKey]
+			for _, header := range headers.OrderedPairs() {
 				r.Headers[objectToString(header.Key)] = objectToString(header.Value)
 			}
 		default:
