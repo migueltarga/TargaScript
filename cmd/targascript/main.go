@@ -115,7 +115,7 @@ func main() {
 	fmt.Println("Type commands and press Enter to execute")
 	fmt.Println("Type help for help, exit or Ctrl+D to leave")
 
-	repl.Start(os.Stdin, os.Stdout, noColor, debugEnabled)
+	repl.StartTerminal(noColor, debugEnabled)
 }
 
 func executeFile(input string, debug bool, noColor bool) (err error) {
