@@ -8,6 +8,8 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 
 **[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
 
+📖 The [language reference](docs/REFERENCE.md) covers everything in one page.
+
 ## 🌟 Why TargaScript
 
 - **One language for scripts and web pages.** The same code runs from a 6 MB command-line binary and in the browser from a WebAssembly runtime under 200 KB: add `<script type="text/targascript">` to a page, with no build step.
