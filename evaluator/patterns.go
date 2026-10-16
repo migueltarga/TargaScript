@@ -21,6 +21,9 @@ type Regex interface {
 	FindAllStringSubmatch(s string) [][]string
 	// ReplaceAllString replaces every match, with $1 for groups
 	ReplaceAllString(s, replacement string) string
+	// ReplaceAllFunc replaces every match with what replace returns for
+	// the match and its groups; a group that didn't take part is ""
+	ReplaceAllFunc(s string, replace func(groups []string) string) string
 	Split(s string) []string
 }
 
@@ -70,9 +73,33 @@ func init() {
 		if err != nil {
 			return err
 		}
+		// A function gets the match and its groups and returns the text
+		// to put in its place
+		if isCallable(args[1]) {
+			var failed object.Object
+			result := re.ReplaceAllFunc(s, func(groups []string) string {
+				if failed != nil {
+					return ""
+				}
+				values := make([]object.Object, len(groups))
+				for i, group := range groups {
+					values[i] = &object.String{Value: group}
+				}
+				replaced := applyFunction(args[1], values)
+				if isError(replaced) {
+					failed = replaced
+					return ""
+				}
+				return objectToString(replaced)
+			})
+			if failed != nil {
+				return failed
+			}
+			return &object.String{Value: result}
+		}
 		replacement, ok := args[1].(*object.String)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("replacement for string.replacePattern() must be a string, got %s", typeName(args[1]))}
+			return &object.Error{Message: fmt.Sprintf("replacement for string.replacePattern() must be a string or a function, got %s", typeName(args[1]))}
 		}
 		return &object.String{Value: re.ReplaceAllString(s, replacement.Value)}
 	}

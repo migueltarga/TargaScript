@@ -119,7 +119,7 @@ print(text.replacePattern("(\w+) (\d+)", "$2:$1"))       // → 31:Ana, 25:Bia
 print("a1b22c".splitPattern("\d+"))                       // → ["a", "b", "c"]
 ```
 
-`match` gives the match and its groups, or `null`. The command line uses Go's regular expressions and the browser JavaScript's; their common syntax (classes like `\d` and `\w`, groups, `*`, `+`, `?`, `{n,m}`, `^`, `$`, `|`) works the same in both.
+`replacePattern` also takes a function, which gets the match and its groups and returns the text to put in its place: `"{{name}}".replacePattern("\{\{(\w+)\}\}", (whole, key) => data[key])`. `match` gives the match and its groups, or `null`. The command line uses Go's regular expressions and the browser JavaScript's; their common syntax (classes like `\d` and `\w`, groups, `*`, `+`, `?`, `{n,m}`, `^`, `$`, `|`) works the same in both.
 
 String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`, and with patterns `matches`, `match`, `matchAll`, `replacePattern` and `splitPattern`. Positions count characters, and `str[i]` is `null` outside the string.
 
