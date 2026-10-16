@@ -42,7 +42,6 @@ func inRegister(r int) where { return where{register: r, constant: -1} }
 type translation struct {
 	in        instructions
 	flow      *emitFlow
-	numLocals int
 	cells     []bool
 	constants []object.Object
 	targets   map[int]bool
@@ -89,7 +88,7 @@ func translate(ins instructions, flow *emitFlow, positions []object.Position, nu
 		return nil, nil, 0, flow.err
 	}
 	t := &translation{
-		in: ins, flow: flow, numLocals: numLocals, cells: cells, constants: constants,
+		in: ins, flow: flow, cells: cells, constants: constants,
 		targets: jumpTargets(ins), oldPos: positions, newAt: make([]int, len(ins)+1), lastWrite: -1, iterNext: -1,
 		jumps: jumpList(ins), layouts: map[int][]where{},
 	}
@@ -103,6 +102,7 @@ func translate(ins instructions, flow *emitFlow, positions []object.Position, nu
 		}
 	}()
 	t.run()
+	relocate(t.out, numLocals)
 	return t.out, t.positions, numLocals + maxDepth(flow.depths) + 2, nil
 }
 
@@ -119,7 +119,7 @@ func (t *translation) fail(message string, at int) {
 }
 
 // own is the register of the value at depth i.
-func (t *translation) own(i int) int { return t.numLocals + i }
+func (t *translation) own(i int) int { return tempBase + i }
 
 func (t *translation) push(w where) { t.stack = append(t.stack, w) }
 
@@ -216,7 +216,7 @@ func (t *translation) keepBelow(old int, from, r int) {
 // secure moves a value taken off the stack to spare, its own place, when
 // it is noted as in the place of a value below it, which place may change.
 func (t *translation) secure(old int, w where, spare int) where {
-	if w.constant < 0 && w.register >= t.numLocals && w.register < spare {
+	if w.constant < 0 && w.register >= tempBase && w.register < spare {
 		t.keep(old, spare)
 		t.load(old, spare, w)
 		return inRegister(spare)
@@ -492,7 +492,7 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 		switch {
 		case w.constant >= 0:
 			layout[i] = w
-		case w.register < t.numLocals && !written[w.register] && !(w.register < len(t.cells) && t.cells[w.register]):
+		case w.register < tempBase && !written[w.register] && !(w.register < len(t.cells) && t.cells[w.register]):
 			layout[i] = w
 		}
 	}
@@ -952,4 +952,28 @@ func (t *translation) binary(at int, op code.Opcode, next int, d int) int {
 // positionAt is object.CompiledFunction.PositionAt on a list of positions.
 func positionAt(positions []object.Position, offset int) (int, int) {
 	return (&object.CompiledFunction{Positions: positions}).PositionAt(offset)
+}
+
+// tempBase is the first register of the values on the stack while a
+// function is translated, before its number of locals is known. relocate
+// moves them after the locals.
+const tempBase = 1 << 15
+
+// relocate moves the registers of the stack values in code from tempBase to
+// right after the locals.
+func relocate(words []code.Word, numLocals int) {
+	for i, w := range words {
+		mask := code.Registers(w.Op())
+		a, b, c := w.A(), w.B(), w.C()
+		if mask&1 != 0 && a >= tempBase {
+			a += numLocals - tempBase
+		}
+		if mask&2 != 0 && b >= tempBase {
+			b += numLocals - tempBase
+		}
+		if mask&4 != 0 && c >= tempBase {
+			c += numLocals - tempBase
+		}
+		words[i] = code.MakeWord(w.Op(), a, b, c)
+	}
 }
