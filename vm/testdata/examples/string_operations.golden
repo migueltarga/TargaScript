@@ -35,38 +35,26 @@ TargaScript String Operations
 5. String Formatting with printf:
   Basic formatting:
   Integer: 42, Float: 3.141590, String: Hello
-
   Number formatting:
   Default float: 3.141590
-
   Rounded to 2 decimal places: 3.14
-
   Padded integer:    42
-
   Zero-padded integer: 00042
-
   Width and alignment:
   Right-aligned:      right
-
   Left-aligned: left      
-
   Multiple values:
   Alice is 30 years old
-
 
 6. Complex String Operations:
   Formatting data in columns:
   Name       | Age | City
   -----------|-----|------------
   Alice      |  30 | New York  
-
   Bob        |  25 | Boston    
-
   Charlie    |  35 | Chicago   
-
   Creating formatted strings with variables:
   Product: Laptop, Price: $999.99, Status: In Stock
-
 
 7. Practical Examples:
   Email validation (simple check):
