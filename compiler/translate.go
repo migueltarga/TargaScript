@@ -40,7 +40,7 @@ func inRegister(r int) where { return where{register: r, constant: -1} }
 
 // translation is the state of translating one function.
 type translation struct {
-	in        code.Instructions
+	in        instructions
 	flow      *flow
 	numLocals int
 	cells     []bool
@@ -84,7 +84,7 @@ type translationError struct{ message string }
 
 // translate returns the register code of a function's stack code, its
 // positions, and how many registers it needs.
-func translate(ins code.Instructions, positions []object.Position, numLocals int, cells []bool, constants []object.Object) (out []code.Word, pos []object.Position, registers int, err error) {
+func translate(ins instructions, positions []object.Position, numLocals int, cells []bool, constants []object.Object) (out []code.Word, pos []object.Position, registers int, err error) {
 	flow, err := analyze(ins)
 	if err != nil {
 		return nil, nil, 0, err
@@ -235,7 +235,7 @@ func (t *translation) referenced(r int) bool {
 	return false
 }
 
-func (t *translation) u16(at, offset int) int { return int(code.ReadUint16(t.in[at+offset:])) }
+func (t *translation) u16(at, n int) int { return t.in.arg(at, n) }
 
 func (t *translation) jump(old int, op code.Op, a, b, c, operand, target int) {
 	at := t.emit(old, op, a, b, c)
@@ -315,8 +315,8 @@ func jumpOps(op code.Opcode) ([3]code.Op, bool) {
 func (t *translation) run() {
 	in := t.in
 	for at := 0; at < len(in); {
-		op := code.Opcode(in[at])
-		next := at + instructionWidth(in, at)
+		op := in[at].op
+		next := at + 1
 		d := t.flow.depths[at]
 		if d < 0 {
 			// Nothing reaches this code
@@ -482,10 +482,10 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 		}
 	}
 	written := map[int]bool{}
-	for i := next; i < target; i += instructionWidth(t.in, i) {
-		switch code.Opcode(t.in[i]) {
+	for i := next; i < target; i++ {
+		switch t.in[i].op {
 		case code.OpSetLocal, code.OpNewCell:
-			written[t.u16(i, 1)] = true
+			written[t.u16(i, 0)] = true
 		}
 	}
 	for i := 0; i < d-1 && i < len(t.stack); i++ {
@@ -505,7 +505,7 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 // right away needs no place; a target of -1 has no such value.
 func (t *translation) placeFor(old int, layout []where, target int) {
 	n := len(t.stack)
-	if target >= 0 && target < len(t.in) && code.Opcode(t.in[target]) == code.OpPop && t.flow.depths[target] == n {
+	if target >= 0 && target < len(t.in) && t.in[target].op == code.OpPop && t.flow.depths[target] == n {
 		n--
 	}
 	for i := 0; i < n; i++ {
@@ -525,7 +525,7 @@ func (t *translation) placeFor(old int, layout []where, target int) {
 // fused reports whether the instruction at next is op and nothing jumps
 // to it, so the one before can do its work.
 func (t *translation) fused(next int, op code.Opcode) bool {
-	return next < len(t.in) && !t.targets[next] && code.Opcode(t.in[next]) == op
+	return next < len(t.in) && !t.targets[next] && t.in[next].op == op
 }
 
 // instruction translates the stack instruction at at, and returns where
@@ -533,10 +533,10 @@ func (t *translation) fused(next int, op code.Opcode) bool {
 func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 	switch op {
 	case code.OpConstant:
-		t.push(where{constant: t.u16(at, 1)})
+		t.push(where{constant: t.u16(at, 0)})
 
 	case code.OpGetLocal:
-		x := t.u16(at, 1)
+		x := t.u16(at, 0)
 		if x < len(t.cells) && t.cells[x] {
 			t.keep(at, t.own(d))
 			t.emitWrite(at, code.RGetCell, t.own(d), x, 0)
@@ -558,9 +558,9 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 
 	case code.OpGetGlobal, code.OpGetBuiltin, code.OpGetFree, code.OpGetFreeCell:
 		t.keep(at, t.own(d))
-		operand := t.u16(at, 1)
+		operand := t.u16(at, 0)
 		if op == code.OpGetFree || op == code.OpGetFreeCell {
-			operand = int(t.in[at+1])
+			operand = t.u16(at, 0)
 		}
 		rop := code.RGetGlobal
 		switch op {
@@ -577,7 +577,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 	case code.OpGetLocalCell:
 		// The cell itself, to capture it
 		t.keep(at, t.own(d))
-		t.emitWrite(at, code.RLocalCell, t.own(d), t.u16(at, 1), 0)
+		t.emitWrite(at, code.RLocalCell, t.own(d), t.u16(at, 0), 0)
 		t.push(inRegister(t.own(d)))
 
 	case code.OpPop:
@@ -594,13 +594,13 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(b)
 
 	case code.OpSlide:
-		n := int(t.in[at+1])
+		n := t.u16(at, 0)
 		top := t.pop()
 		t.stack = t.stack[:len(t.stack)-n]
 		t.push(top)
 
 	case code.OpSetLocal:
-		x := t.u16(at, 1)
+		x := t.u16(at, 0)
 		value := t.pop()
 		if x < len(t.cells) && t.cells[x] {
 			r := t.register(at, value, t.own(d-1))
@@ -633,7 +633,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(inRegister(x))
 
 	case code.OpNewCell:
-		x := t.u16(at, 1)
+		x := t.u16(at, 0)
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))
 		t.emit(at, code.RNewCell, x, r, 0)
@@ -642,10 +642,10 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 	case code.OpSetGlobal, code.OpSetFree:
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))
-		operand := t.u16(at, 1)
+		operand := t.u16(at, 0)
 		rop := code.RSetGlobal
 		if op == code.OpSetFree {
-			operand, rop = int(t.in[at+1]), code.RSetFree
+			operand, rop = t.u16(at, 0), code.RSetFree
 		}
 		t.emit(at, rop, r, operand, 0)
 		t.push(inRegister(r))
@@ -672,25 +672,25 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		case code.OpBang:
 			rop = code.RNot
 		case code.OpIncrement:
-			rop, c = code.RIncr, int(t.in[at+1])
+			rop, c = code.RIncr, t.u16(at, 0)
 		}
 		t.emitWrite(at, rop, t.own(d-1), r, c)
 		t.push(inRegister(t.own(d - 1)))
 
 	case code.OpJump:
-		t.placeFor(at, nil, t.u16(at, 1))
-		t.jump(at, code.RJump, 0, 0, 0, 0, t.u16(at, 1))
+		t.placeFor(at, nil, t.u16(at, 0))
+		t.jump(at, code.RJump, 0, 0, 0, 0, t.u16(at, 0))
 
 	case code.OpJumpNotTruthy:
 		value := t.secure(at, t.pop(), t.own(d-1))
-		t.placeFor(at, nil, t.u16(at, 1))
+		t.placeFor(at, nil, t.u16(at, 0))
 		r := t.register(at, value, t.own(d-1))
-		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, t.u16(at, 1))
+		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, t.u16(at, 0))
 
 	case code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep, code.OpJumpNotNullKeep, code.OpJumpNullKeep:
 		// The value goes with the jump, in its own place; the ones below
 		// it can stay where they are
-		target := t.u16(at, 1)
+		target := t.u16(at, 0)
 		layout := t.layouts[target]
 		if layout == nil && t.flow.depths[target] == d {
 			layout = t.keptLayout(at, next, target, d)
@@ -707,7 +707,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		case code.OpJumpNullKeep:
 			rop = code.RJumpNull
 		}
-		t.jump(at, rop, t.own(d-1), 0, 0, 1, t.u16(at, 1))
+		t.jump(at, rop, t.own(d-1), 0, 0, 1, t.u16(at, 0))
 		if op != code.OpJumpNullKeep {
 			t.pop()
 		}
@@ -722,7 +722,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 			t.emit(at, code.RTryEnd, open, 0, 0)
 		}
 		target := loop.breakTo
-		if t.in[at+1] == 1 {
+		if t.u16(at, 0) == 1 {
 			target = loop.continueTo
 		}
 		// The values the loop started with are in their places already,
@@ -749,10 +749,10 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 	case code.OpIterNext:
 		// The loop's start, so every value is in its place
 		rop := code.RIterNext
-		if t.in[at+3] == 1 {
+		if t.u16(at, 1) == 1 {
 			rop = code.RIterNextPair
 		}
-		t.jump(at, rop, t.own(d-1), t.own(d), 0, 2, t.u16(at, 1))
+		t.jump(at, rop, t.own(d-1), t.own(d), 0, 2, t.u16(at, 0))
 		t.push(inRegister(t.own(d)))
 		if rop == code.RIterNextPair {
 			t.push(inRegister(t.own(d + 1)))
@@ -761,7 +761,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		}
 
 	case code.OpArray, code.OpTemplate:
-		n := t.u16(at, 1)
+		n := t.u16(at, 0)
 		t.keepBelow(at, d-n, t.own(d-n))
 		t.place(at, d-n)
 		t.stack = t.stack[:d-n]
@@ -773,7 +773,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(inRegister(t.own(d - n)))
 
 	case code.OpHash:
-		n := t.u16(at, 1)
+		n := t.u16(at, 0)
 		t.keepBelow(at, d-2*n, t.own(d-2*n))
 		t.place(at, d-2*n)
 		t.stack = t.stack[:d-2*n]
@@ -784,7 +784,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))
 		array := t.register(at, t.stack[d-2], t.own(d-2))
-		t.emit(at, code.RAppend, array, r, int(t.in[at+1]))
+		t.emit(at, code.RAppend, array, r, t.u16(at, 0))
 
 	case code.OpHashSet:
 		t.place(at, d-2)
@@ -802,7 +802,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))
 		t.keep(at, t.own(d-1))
-		t.emitWrite(at, code.RWithout, t.own(d-1), r, t.u16(at, 1))
+		t.emitWrite(at, code.RWithout, t.own(d-1), r, t.u16(at, 0))
 		t.push(inRegister(t.own(d - 1)))
 
 	case code.OpIndex:
@@ -825,22 +825,22 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		obj := t.pop()
 		r := t.register(at, obj, t.own(d-1))
 		t.keep(at, t.own(d-1))
-		t.emitWrite(at, code.RGetProp, t.own(d-1), r, t.u16(at, 1))
+		t.emitWrite(at, code.RGetProp, t.own(d-1), r, t.u16(at, 0))
 		t.push(inRegister(t.own(d - 1)))
 
 	case code.OpSetProperty:
 		value, obj := t.pop(), t.pop()
 		ro := t.register(at, obj, t.own(d-2))
 		rv := t.register(at, value, t.own(d-1))
-		t.emit(at, code.RSetProp, ro, t.u16(at, 1), rv)
+		t.emit(at, code.RSetProp, ro, t.u16(at, 0), rv)
 		t.push(inRegister(rv))
 
 	case code.OpCall, code.OpCallMethod:
-		argc := int(t.in[at+1])
+		argc := t.u16(at, 0)
 		name := 0
 		rop := code.RCall
 		if op == code.OpCallMethod {
-			name, argc, rop = t.u16(at, 1), int(t.in[at+3]), code.RCallMethod
+			name, argc, rop = t.u16(at, 0), t.u16(at, 1), code.RCallMethod
 		}
 		fn := d - 1 - argc
 		// The call uses the registers from the function's up
@@ -858,7 +858,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		name := 0
 		rop := code.RCallSpread
 		if op == code.OpCallMethodArray {
-			name, rop = t.u16(at, 1), code.RCallMethodSpread
+			name, rop = t.u16(at, 0), code.RCallMethodSpread
 		}
 		t.keepBelow(at, d-2, t.own(d-2))
 		t.place(at, d-2)
@@ -871,17 +871,17 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.emit(at, code.RReturn, t.register(at, value, t.own(d-1)), 0, 0)
 
 	case code.OpClosure:
-		n := int(t.in[at+3])
+		n := t.u16(at, 1)
 		t.keepBelow(at, d-n, t.own(d-n))
 		t.place(at, d-n)
 		t.stack = t.stack[:d-n]
 		// It reads its cells from A, so it can't write elsewhere
-		t.emit(at, code.RClosure, t.own(d-n), t.u16(at, 1), n)
+		t.emit(at, code.RClosure, t.own(d-n), t.u16(at, 0), n)
 		t.push(inRegister(t.own(d - n)))
 
 	case code.OpLoad:
 		t.keep(at, t.own(d))
-		t.emitWrite(at, code.RLoad, t.own(d), t.u16(at, 1), t.u16(at, 3))
+		t.emitWrite(at, code.RLoad, t.own(d), t.u16(at, 0), t.u16(at, 1))
 		t.push(inRegister(t.own(d)))
 
 	case code.OpAwait:
@@ -895,7 +895,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		// The catch block is a place jumps go to, with the error after the
 		// values the try started with
 		t.place(at, 0)
-		t.jump(at, code.RTry, t.own(d), 0, 0, 1, t.u16(at, 1))
+		t.jump(at, code.RTry, t.own(d), 0, 0, 1, t.u16(at, 0))
 
 	case code.OpTryEnd:
 		t.emit(at, code.RTryEnd, 1, 0, 0)
@@ -905,7 +905,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.emit(at, code.RThrow, t.register(at, value, t.own(d-1)), 0, 0)
 
 	case code.OpError:
-		t.emit(at, code.RError, t.u16(at, 1), 0, 0)
+		t.emit(at, code.RError, t.u16(at, 0), 0, 0)
 
 	default:
 		t.fail("no translation for "+definitionName(op)+" at", at)
@@ -920,7 +920,7 @@ func (t *translation) binary(at int, op code.Opcode, next int, d int) int {
 	p := d - 2
 
 	if forms, ok := jumpOps(op); ok && t.fused(next, code.OpJumpNotTruthy) {
-		target := t.u16(next, 1)
+		target := t.u16(next, 0)
 		left, right = t.secure(at, left, t.own(p)), t.secure(at, right, t.own(p+1))
 		t.place(at, 0)
 		l := t.register(at, left, t.own(p))
@@ -933,7 +933,7 @@ func (t *translation) binary(at int, op code.Opcode, next int, d int) int {
 			r := t.register(at, right, t.own(p+1))
 			t.jump(at, forms[0], l, r, 0, 2, target)
 		}
-		return next + 3
+		return next + 1
 	}
 
 	l := t.register(at, left, t.own(p))

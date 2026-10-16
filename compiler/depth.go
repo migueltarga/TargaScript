@@ -15,7 +15,7 @@ import (
 //
 // The depths let instructions name the slot they read and write instead of
 // taking them from the top of the stack.
-func stackDepths(ins code.Instructions) ([]int, error) {
+func stackDepths(ins instructions) ([]int, error) {
 	flow, err := analyze(ins)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ type flow struct {
 
 // analyze follows every way the code of a function can go, as stackDepths
 // does, and also counts the try blocks open at each instruction.
-func analyze(ins code.Instructions) (*flow, error) {
+func analyze(ins instructions) (*flow, error) {
 	depths := make([]int, len(ins))
 	for i := range depths {
 		depths[i] = -1
@@ -80,9 +80,9 @@ func analyze(ins code.Instructions) (*flow, error) {
 		work = work[:len(work)-1]
 		var i, d int
 		i, d, open, openTries = s.at, s.depth, s.loops, s.tries
-		op := code.Opcode(ins[i])
-		next := i + instructionWidth(ins, i)
-		u16 := func(offset int) int { return int(code.ReadUint16(ins[i+offset:])) }
+		op := ins[i].op
+		next := i + 1
+		arg := func(n int) int { return ins[i].args[n] }
 
 		var err error
 		follow := func(at, depth int) {
@@ -95,19 +95,19 @@ func analyze(ins code.Instructions) (*flow, error) {
 			// The function ends
 
 		case code.OpJump:
-			follow(u16(1), d)
+			follow(arg(0), d)
 		case code.OpJumpNotTruthy:
-			follow(u16(1), d-1)
+			follow(arg(0), d-1)
 			follow(next, d-1)
 		case code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep, code.OpJumpNotNullKeep:
-			follow(u16(1), d)
+			follow(arg(0), d)
 			follow(next, d-1)
 		case code.OpJumpNullKeep:
-			follow(u16(1), d)
+			follow(arg(0), d)
 			follow(next, d)
 
 		case code.OpLoopEnter:
-			loop := loopDepth{depth: d, tries: openTries, breakTo: u16(1), continueTo: u16(3)}
+			loop := loopDepth{depth: d, tries: openTries, breakTo: arg(0), continueTo: arg(1)}
 			open = append(open[:len(open):len(open)], loop)
 			follow(next, d)
 		case code.OpLoopExit:
@@ -123,14 +123,14 @@ func analyze(ins code.Instructions) (*flow, error) {
 			loop := open[len(open)-1]
 			// break closes the try blocks opened in the loop
 			openTries = loop.tries
-			if ins[i+1] == 1 {
+			if ins[i].args[0] == 1 {
 				follow(loop.continueTo, loop.depth)
 			} else {
 				follow(loop.breakTo, loop.depth)
 			}
 		case code.OpIterNext:
-			follow(u16(1), d)
-			if ins[i+3] == 1 {
+			follow(arg(0), d)
+			if ins[i].args[1] == 1 {
 				follow(next, d+2)
 			} else {
 				follow(next, d+1)
@@ -138,7 +138,7 @@ func analyze(ins code.Instructions) (*flow, error) {
 		case code.OpTry:
 			// The catch block starts with the error on the stack, and its
 			// try block closed
-			follow(u16(1), d+1)
+			follow(arg(0), d+1)
 			openTries++
 			follow(next, d)
 		case code.OpTryEnd:
@@ -149,7 +149,7 @@ func analyze(ins code.Instructions) (*flow, error) {
 			follow(next, d)
 
 		default:
-			effect, ok := stackEffect(op, ins[i+1:])
+			effect, ok := stackEffect(op, ins[i].args)
 			if !ok {
 				return nil, flowError("no stack effect for "+definitionName(op)+" at", i)
 			}
@@ -172,8 +172,7 @@ type loopDepth struct {
 
 // stackEffect returns how many values an instruction that always goes on to
 // the next one adds to the stack, or removes when negative.
-func stackEffect(op code.Opcode, operands []byte) (int, bool) {
-	u16 := func(offset int) int { return int(code.ReadUint16(operands[offset:])) }
+func stackEffect(op code.Opcode, args [3]int) (int, bool) {
 	switch op {
 	case code.OpConstant, code.OpTrue, code.OpFalse, code.OpNull, code.OpDup,
 		code.OpGetGlobal, code.OpGetLocal, code.OpGetLocalCell, code.OpGetFree,
@@ -194,25 +193,22 @@ func stackEffect(op code.Opcode, operands []byte) (int, bool) {
 	case code.OpHashSet, code.OpInRange, code.OpSetIndex:
 		return -2, true
 	case code.OpArray, code.OpTemplate:
-		return 1 - u16(0), true
+		return 1 - args[0], true
 	case code.OpHash:
-		return 1 - 2*u16(0), true
+		return 1 - 2*args[0], true
 	case code.OpSlide:
-		return -int(operands[0]), true
+		return -args[0], true
 	case code.OpCall:
-		return -int(operands[0]), true
+		return -args[0], true
 	case code.OpCallMethod:
-		return -int(operands[2]), true
+		return -args[1], true
 	case code.OpClosure:
-		return 1 - int(operands[2]), true
+		return 1 - args[1], true
 	}
 	return 0, false
 }
 
 func definitionName(op code.Opcode) string {
-	if def, err := code.Lookup(byte(op)); err == nil {
-		return def.Name
-	}
 	return "opcode " + strconv.Itoa(int(op))
 }
 
@@ -225,31 +221,19 @@ func functionName(name string) string {
 }
 
 // jumpTargets returns the offsets that jumps, loops and try blocks go to.
-func jumpTargets(ins code.Instructions) map[int]bool {
+func jumpTargets(ins instructions) map[int]bool {
 	targets := map[int]bool{}
-	for i := 0; i < len(ins); i += instructionWidth(ins, i) {
-		switch code.Opcode(ins[i]) {
+	for i := range ins {
+		switch ins[i].op {
 		case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
 			code.OpJumpNotNullKeep, code.OpJumpNullKeep, code.OpIterNext, code.OpTry:
-			targets[int(code.ReadUint16(ins[i+1:]))] = true
+			targets[ins[i].args[0]] = true
 		case code.OpLoopEnter:
-			targets[int(code.ReadUint16(ins[i+1:]))] = true
-			targets[int(code.ReadUint16(ins[i+3:]))] = true
+			targets[ins[i].args[0]] = true
+			targets[ins[i].args[1]] = true
 		}
 	}
 	return targets
-}
-
-func instructionWidth(ins code.Instructions, i int) int {
-	def, err := code.Lookup(ins[i])
-	if err != nil {
-		return 1
-	}
-	width := 1
-	for _, w := range def.OperandWidths {
-		width += w
-	}
-	return width
 }
 
 // flowError is an error of analyze, about the instruction at an offset: a
@@ -261,15 +245,15 @@ func flowError(message string, at int) error {
 
 // jumpList returns the jumps of stack code, as their offset and their
 // target's.
-func jumpList(ins code.Instructions) [][2]int {
+func jumpList(ins instructions) [][2]int {
 	jumps := [][2]int{}
-	for i := 0; i < len(ins); i += instructionWidth(ins, i) {
-		switch code.Opcode(ins[i]) {
+	for i := range ins {
+		switch ins[i].op {
 		case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
 			code.OpJumpNotNullKeep, code.OpJumpNullKeep, code.OpIterNext, code.OpTry:
-			jumps = append(jumps, [2]int{i, int(code.ReadUint16(ins[i+1:]))})
+			jumps = append(jumps, [2]int{i, ins[i].args[0]})
 		case code.OpLoopEnter:
-			jumps = append(jumps, [2]int{i, int(code.ReadUint16(ins[i+1:]))}, [2]int{i, int(code.ReadUint16(ins[i+3:]))})
+			jumps = append(jumps, [2]int{i, ins[i].args[0]}, [2]int{i, ins[i].args[1]})
 		}
 	}
 	return jumps
