@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/repl"
@@ -19,6 +20,14 @@ func main() {
 	// argument is the program's
 	if b, ok := readBundle(); ok {
 		os.Exit(runBundle(b))
+	}
+
+	// TARGASCRIPT_CPUPROFILE=file writes a CPU profile of the run, for
+	// bench/pgo.sh and for finding what makes a program slow
+	if path := os.Getenv("TARGASCRIPT_CPUPROFILE"); path != "" {
+		if file, err := os.Create(path); err == nil && pprof.StartCPUProfile(file) == nil {
+			defer pprof.StopCPUProfile()
+		}
 	}
 
 	showVersion := flag.Bool("version", false, "Print the version and exit")
