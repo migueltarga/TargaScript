@@ -45,6 +45,10 @@ type VM struct {
 	frames []*frame
 
 	modules *modules
+
+	// pendingError stops a resumed run right away, when the promise it
+	// awaited was rejected
+	pendingError *object.Error
 }
 
 func New(globals *compiler.GlobalTable) *VM {
@@ -121,7 +125,20 @@ func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Objec
 // run executes instructions until the frame at index base returns, and
 // returns its value. On an error it unwinds back to base.
 func (vm *VM) run(base int) object.Object {
+	return vm.runFiber(base, nil)
+}
+
+// runFiber is run for a fiber being resumed, or for a new run when fb is nil.
+// When the run pauses at an await it returns the promise of its fiber.
+func (vm *VM) runFiber(base int, fb *fiber) object.Object {
 	result := vm.loop(base)
+	if s, ok := result.(*suspension); ok {
+		if fb == nil {
+			fb = &fiber{promise: object.NewPromise()}
+		}
+		vm.suspend(base, fb, s)
+		return fb.promise
+	}
 	if err, ok := result.(*object.Error); ok {
 		f := vm.frames[len(vm.frames)-1]
 		if err.Line == 0 {
@@ -136,6 +153,11 @@ func (vm *VM) run(base int) object.Object {
 }
 
 func (vm *VM) loop(base int) object.Object {
+	if err := vm.pendingError; err != nil {
+		vm.pendingError = nil
+		return err
+	}
+
 	f := vm.frames[len(vm.frames)-1]
 	ins := f.cl.Fn.Instructions
 
@@ -504,6 +526,21 @@ func (vm *VM) loop(base int) object.Object {
 				return err
 			}
 			vm.push(module)
+
+		case code.OpAwait:
+			value := vm.pop()
+			awaitable, ok := value.(object.Awaitable)
+			if !ok || !awaitable.IsAwaitable() {
+				vm.push(value)
+				continue
+			}
+			line, column := f.cl.Fn.PositionAt(ip)
+			if base != 0 {
+				// Go code called this function, and its stack can't be saved
+				return evaluator.NewError(line, column,
+					"await can't pause here: this function was called by a builtin such as map or sort")
+			}
+			return &suspension{awaited: awaitable, line: line, column: column}
 
 		case code.OpError:
 			message := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value

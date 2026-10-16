@@ -83,6 +83,7 @@ const (
 	OpPrint   // pop n values and print them
 	OpLoad    // run the file at constants[path] once and push an object of its top-level names
 	OpError   // stop with the error message in constants[index]
+	OpAwait   // pop a value; if it's a promise, pause until it settles and push its value
 )
 
 // Definition describes an opcode: its name and the width in bytes of each
@@ -156,6 +157,7 @@ var definitions = map[Opcode]*Definition{
 	OpPrint:       {"OpPrint", []int{1}},
 	OpLoad:        {"OpLoad", []int{2, 2}},
 	OpError:       {"OpError", []int{2}},
+	OpAwait:       {"OpAwait", []int{}},
 }
 
 // Lookup returns the definition of an opcode.

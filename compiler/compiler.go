@@ -633,6 +633,12 @@ func (c *Compiler) compileExpression(node ast.Expression) error {
 		}
 		c.emit(node.Token, code.OpCall, len(node.Arguments))
 
+	case *ast.AwaitExpression:
+		if err := c.compileExpression(node.Value); err != nil {
+			return err
+		}
+		c.emit(node.Token, code.OpAwait)
+
 	case *ast.FunctionLiteral:
 		name := ""
 		if node.Name != nil {
