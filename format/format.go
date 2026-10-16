@@ -18,8 +18,19 @@ type lineInfo struct {
 
 // Source returns code laid out.
 func Source(code string) string {
-	lines := strings.Split(strings.ReplaceAll(code, "\r\n", "\n"), "\n")
-	infos := scan(lines)
+	// The lexer stops at a NUL byte, which text files don't have
+	if strings.IndexByte(code, 0) >= 0 {
+		return code
+	}
+	// Line breaks become \n, except inside strings, where \r\n is text:
+	// the \r of other lines goes with the spaces at their end
+	lines := strings.Split(code, "\n")
+	infos, unclosed := scan(lines)
+	// A string or a comment that never ends would take in what formatting
+	// adds, so code that broken is left as it is
+	if unclosed {
+		return code
+	}
 
 	var out []string
 	blank := 0
@@ -30,9 +41,9 @@ func Source(code string) string {
 			blank = 0
 			continue
 		}
-		text := strings.TrimLeft(line, " \t")
+		text := strings.TrimLeft(line, " \t\r")
 		if !info.open {
-			text = strings.TrimRight(text, " \t")
+			text = strings.TrimRight(text, " \t\r")
 		}
 		if text == "" {
 			blank++
@@ -74,26 +85,32 @@ const (
 	doubleQuoted
 	backticked
 	blockComment
+	// The code of a ${...}, read the way the lexer skips it: only braces
+	// and double-quoted strings count there
+	interpolation
+	quotedInInterpolation
 )
 
 // scan goes through the lines once, tracking strings with the code in
-// their ${...}, comments and brackets. A line is indented one level more
-// than the line that opened the innermost bracket still open, however many
-// it opened: test("x", fn() { gives its body one level. A line that starts
-// by closing a bracket gets the level of the line that opened it.
-func scan(lines []string) []lineInfo {
-	infos := make([]lineInfo, len(lines))
+// their ${...}, comments and brackets, the way the lexer reads them. A line
+// is indented one level more than the line that opened the innermost
+// bracket still open, however many it opened: test("x", fn() { gives its
+// body one level. A line that starts by closing a bracket gets the level of
+// the line that opened it. unclosed reports a string or a comment that
+// never ends.
+func scan(lines []string) (infos []lineInfo, unclosed bool) {
+	infos = make([]lineInfo, len(lines))
 	// The levels of the lines that opened the brackets still open
 	opened := []int{}
-	// The modes entered, innermost last; braces inside ${...} are counted
-	// per interpolation so they don't end it early
+	// The modes entered, innermost last, and the braces open in each
+	// interpolation
 	stack := []mode{code}
-	braces := []int{0}
+	braces := []int{}
 
 	for i, line := range lines {
-		current := stack[len(stack)-1]
-		info := lineInfo{protected: current != code}
-		text := strings.TrimLeft(line, " \t")
+		// Inside a string, even in its ${...}, a line is part of the string
+		info := lineInfo{protected: len(stack) > 1}
+		text := strings.TrimLeft(line, " \t\r")
 
 		indent := 0
 		if n := len(opened); n > 0 {
@@ -112,7 +129,8 @@ func scan(lines []string) []lineInfo {
 			if j+1 < len(line) {
 				next = line[j+1]
 			}
-			switch stack[len(stack)-1] {
+			top := stack[len(stack)-1]
+			switch top {
 			case code:
 				switch {
 				case c == '/' && next == '/':
@@ -125,38 +143,48 @@ func scan(lines []string) []lineInfo {
 				case c == '`':
 					stack = append(stack, backticked)
 				case c == '{' || c == '(' || c == '[':
-					if len(stack) > 1 {
-						braces[len(braces)-1]++
-					} else {
-						opened = append(opened, indent)
-					}
+					opened = append(opened, indent)
 				case c == '}' || c == ')' || c == ']':
-					if len(stack) > 1 {
-						// The } that ends a ${...}
-						if c == '}' && braces[len(braces)-1] == 0 {
-							stack = stack[:len(stack)-1]
-							braces = braces[:len(braces)-1]
-							continue
-						}
-						braces[len(braces)-1]--
-					} else if len(opened) > 0 {
+					if len(opened) > 0 {
 						opened = opened[:len(opened)-1]
 					}
 				}
 			case doubleQuoted, backticked:
 				quote := byte('"')
-				if stack[len(stack)-1] == backticked {
+				if top == backticked {
 					quote = '`'
 				}
 				switch {
-				case c == '\\':
+				// In backticks only \` and \$ are escapes, as in the lexer
+				case c == '\\' && (quote == '"' || next == '`' || next == '$'):
 					j++
 				case c == quote:
 					stack = stack[:len(stack)-1]
 				case c == '$' && next == '{':
-					stack = append(stack, code)
+					stack = append(stack, interpolation)
 					braces = append(braces, 0)
 					j++
+				}
+			case interpolation:
+				switch c {
+				case '{':
+					braces[len(braces)-1]++
+				case '}':
+					if braces[len(braces)-1] == 0 {
+						stack = stack[:len(stack)-1]
+						braces = braces[:len(braces)-1]
+					} else {
+						braces[len(braces)-1]--
+					}
+				case '"':
+					stack = append(stack, quotedInInterpolation)
+				}
+			case quotedInInterpolation:
+				switch c {
+				case '\\':
+					j++
+				case '"':
+					stack = stack[:len(stack)-1]
 				}
 			case blockComment:
 				if c == '*' && next == '/' {
@@ -166,8 +194,8 @@ func scan(lines []string) []lineInfo {
 			}
 		}
 		top := stack[len(stack)-1]
-		info.open = top == doubleQuoted || top == backticked
+		info.open = top != code && top != blockComment
 		infos[i] = info
 	}
-	return infos
+	return infos, len(stack) > 1
 }
