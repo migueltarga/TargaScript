@@ -26,7 +26,7 @@ print("after")
 	if out.String() != want {
 		t.Errorf("printed:\n%s\nwant:\n%s", out.String(), want)
 	}
-	if passed, failed := evaluator.TestResults(); passed != 2 || failed != 1 {
+	if passed, failed, _ := evaluator.TestResults(); passed != 2 || failed != 1 {
 		t.Errorf("results: %d passed, %d failed", passed, failed)
 	}
 }

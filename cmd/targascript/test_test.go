@@ -62,6 +62,26 @@ func TestRunTestsExitCode(t *testing.T) {
 	evaluator.ResetTests()
 }
 
+func TestRunTestsFilter(t *testing.T) {
+	evaluator.ResetTests()
+	defer evaluator.ResetTests()
+	dir := writeFiles(t, map[string]string{
+		"a_test.tg": `test("parses numbers", fn() { assert(true) })
+test("fails", fn() { assert(false) })`,
+	})
+	if code := runTests([]string{"-run", "Parse", dir}, true); code != 0 {
+		t.Errorf("exit code %d, want 0", code)
+	}
+	if passed, failed, skipped := evaluator.TestResults(); passed != 1 || failed != 0 || skipped != 1 {
+		t.Errorf("got %d passed, %d failed, %d skipped", passed, failed, skipped)
+	}
+
+	evaluator.ResetTests()
+	if code := runTests([]string{"-run=nothing", dir}, true); code != 1 {
+		t.Errorf("no test run: exit code %d, want 1", code)
+	}
+}
+
 // The tests in tests/ are written in TargaScript and check the language
 // itself.
 func TestRepositoryTests(t *testing.T) {

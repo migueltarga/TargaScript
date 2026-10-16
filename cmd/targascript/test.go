@@ -12,10 +12,31 @@ import (
 	"github.com/migueltarga/TargaScript/repl"
 )
 
-// runTests runs the test files in paths, or under the current directory
+// runTests runs the test files in args, or under the current directory
 // when there are none, and returns the exit code: 1 when a test or a file
-// failed, or when there were no tests.
-func runTests(paths []string, noColor bool) int {
+// failed, or when there were no tests. -run text runs only the tests whose
+// name contains text.
+func runTests(args []string, noColor bool) int {
+	var paths []string
+	filter := ""
+	for i := 0; i < len(args); i++ {
+		switch arg := args[i]; {
+		case arg == "-run" || arg == "--run":
+			if i+1 == len(args) {
+				fmt.Fprintln(os.Stderr, "-run needs the text to look for in test names")
+				return 1
+			}
+			i++
+			filter = args[i]
+		case strings.HasPrefix(arg, "-run=") || strings.HasPrefix(arg, "--run="):
+			filter = arg[strings.Index(arg, "=")+1:]
+		default:
+			paths = append(paths, arg)
+		}
+	}
+	evaluator.SetTestFilter(filter)
+	defer evaluator.SetTestFilter("")
+
 	if len(paths) == 0 {
 		paths = []string{"."}
 	}
@@ -48,8 +69,11 @@ func runTests(paths []string, noColor bool) int {
 		fmt.Println()
 	}
 
-	passed, failed := evaluator.TestResults()
+	passed, failed, skipped := evaluator.TestResults()
 	summary := fmt.Sprintf("%d passed, %d failed", passed, failed)
+	if skipped > 0 {
+		summary += fmt.Sprintf(", %d skipped", skipped)
+	}
 	if failedFiles > 0 {
 		summary += fmt.Sprintf(", %d file(s) with errors", failedFiles)
 	}

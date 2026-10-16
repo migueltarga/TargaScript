@@ -2,12 +2,22 @@ package evaluator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
 )
 
 // Counts of the tests run with test since the last ResetTests
-var testsPassed, testsFailed int
+var testsPassed, testsFailed, testsSkipped int
+
+// testFilter, when set, is text a test's name must contain for it to run
+var testFilter string
+
+// SetTestFilter makes test run only the tests whose name contains text,
+// ignoring case. An empty text runs them all.
+func SetTestFilter(text string) {
+	testFilter = strings.ToLower(text)
+}
 
 func init() {
 	builtins["test"] = &object.Builtin{Name: "test", Fn: testBuiltin}
@@ -25,6 +35,11 @@ func testBuiltin(args ...object.Object) object.Object {
 	}
 	if !isCallable(args[1]) {
 		return &object.Error{Message: fmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
+	}
+
+	if testFilter != "" && !strings.Contains(strings.ToLower(name.Value), testFilter) {
+		testsSkipped++
+		return NULL
 	}
 
 	// A test that awaits gives a promise; the program waits for the one
@@ -66,13 +81,13 @@ func reportTest(name string, err *object.Error) {
 	fmt.Fprintf(output, "✗ %s\n    %s%s\n", name, err.Message, where)
 }
 
-// TestResults returns how many tests passed and failed since the last
-// ResetTests.
-func TestResults() (passed, failed int) {
-	return testsPassed, testsFailed
+// TestResults returns how many tests passed, failed and were left out by
+// the filter since the last ResetTests.
+func TestResults() (passed, failed, skipped int) {
+	return testsPassed, testsFailed, testsSkipped
 }
 
 // ResetTests sets the counts of TestResults back to zero.
 func ResetTests() {
-	testsPassed, testsFailed = 0, 0
+	testsPassed, testsFailed, testsSkipped = 0, 0, 0
 }
