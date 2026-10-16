@@ -1,0 +1,3 @@
+let s = ""
+repeat i in 1..200000 { s += "x" }
+print(s.length)
