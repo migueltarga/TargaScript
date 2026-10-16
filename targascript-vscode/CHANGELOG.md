@@ -5,6 +5,8 @@ All notable changes to the "TargaScript" extension will be documented in this fi
 ## [0.6.0] - 2026-10-16
 
 - Snippets for functions, `if`, `repeat`, `match`, `try`, `fetch`, tests and `serve`
+- Hover over a builtin to see its signature and what it does
+- Completion of builtins, with their docs, and keywords
 - Highlight the pipe operator `|>`
 - Highlight hex, binary and octal numbers and digits separated by `_`, like `0xff` and `1_000_000`
 
