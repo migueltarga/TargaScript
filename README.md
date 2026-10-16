@@ -307,7 +307,7 @@ From a clone of the repository, use `go run ./cmd/targascript` in place of `targ
 serve(8080, fn(req) {
     match req.path {
         "/" => "<h1>Hello from TargaScript</h1>"
-        "/api/time" => ({now: timeFormat(now(), "HH:mm:ss")})
+        "/api/time" => {now: timeFormat(now(), "HH:mm:ss")}
         _ => response("Not found", {status: 404})
     }
 })
