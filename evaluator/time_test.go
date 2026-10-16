@@ -7,7 +7,7 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
-func TestDateLayout(t *testing.T) {
+func TestFormatTime(t *testing.T) {
 	stamp := time.Date(2026, time.March, 5, 14, 7, 9, 0, time.UTC)
 	tests := []struct{ format, want string }{
 		{"YYYY-MM-DD", "2026-03-05"},
@@ -15,10 +15,11 @@ func TestDateLayout(t *testing.T) {
 		{"hh:mm A", "02:07 PM"},
 		{"dddd, MMMM DD", "Thursday, March 05"},
 		{"ddd MMM", "Thu Mar"},
-		{"2006-01-02 15:04", "2026-03-05 14:07"},
+		{"Report 2 of DD", "Report 2 of 05"},
+		{"hh A", "02 PM"},
 	}
 	for _, tt := range tests {
-		if got := stamp.Format(dateLayout(tt.format)); got != tt.want {
+		if got := formatTime(stamp, tt.format); got != tt.want {
 			t.Errorf("%q: got %q, want %q", tt.format, got, tt.want)
 		}
 	}
@@ -69,7 +70,7 @@ func TestParseTime(t *testing.T) {
 
 	// timeFormat and parseTime are opposites
 	stamp := int64(1_760_000_000)
-	formatted := time.Unix(stamp, 0).Format(dateLayout("YYYY-MM-DD HH:mm:ss"))
+	formatted := formatTime(time.Unix(stamp, 0), "YYYY-MM-DD HH:mm:ss")
 	if n := parseTimeBuiltin(&object.String{Value: formatted}, &object.String{Value: "YYYY-MM-DD HH:mm:ss"}).(*object.Integer); n.Value != stamp {
 		t.Errorf("round trip: got %d, want %d", n.Value, stamp)
 	}

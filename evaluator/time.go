@@ -66,8 +66,8 @@ func readTime(text, layout string) (time.Time, bool) {
 	for len(layout) > 0 {
 		token := ""
 		for _, t := range dateTokens {
-			if strings.HasPrefix(layout, t.token) {
-				token = t.token
+			if strings.HasPrefix(layout, t) {
+				token = t
 				break
 			}
 		}
@@ -159,42 +159,65 @@ func clockBuiltin(args ...object.Object) object.Object {
 	return &object.Float{Value: float64(time.Since(started).Microseconds()) / 1000}
 }
 
-// dateTokens maps the tokens timeFormat understands to Go layout parts,
-// longest first so "YYYY" wins over "YY".
-var dateTokens = []struct{ token, layout string }{
-	{"YYYY", "2006"},
-	{"YY", "06"},
-	{"MMMM", "January"},
-	{"MMM", "Jan"},
-	{"MM", "01"},
-	{"DD", "02"},
-	{"dddd", "Monday"},
-	{"ddd", "Mon"},
-	{"HH", "15"},
-	{"hh", "03"},
-	{"mm", "04"},
-	{"ss", "05"},
-	{"A", "PM"},
-}
+// dateTokens are the parts of a layout that timeFormat and parseTime
+// understand, longest first so "YYYY" wins over "YY".
+var dateTokens = []string{"YYYY", "YY", "MMMM", "MMM", "MM", "DD", "dddd", "ddd", "HH", "hh", "mm", "ss", "A"}
 
-// dateLayout turns a layout like "YYYY-MM-DD HH:mm" into the Go layout.
-// Text without tokens is kept, so Go layouts like "2006-01-02" still work.
-func dateLayout(format string) string {
+// formatTime writes t in a layout like "YYYY-MM-DD HH:mm", keeping the text
+// between the tokens. It doesn't use time.Format, which would add 10 KB to
+// the WebAssembly build.
+func formatTime(t time.Time, layout string) string {
 	var out strings.Builder
-	for i := 0; i < len(format); {
-		matched := false
-		for _, t := range dateTokens {
-			if strings.HasPrefix(format[i:], t.token) {
-				out.WriteString(t.layout)
-				i += len(t.token)
-				matched = true
+	two := func(n int) {
+		out.WriteByte(byte('0' + n/10%10))
+		out.WriteByte(byte('0' + n%10))
+	}
+	for len(layout) > 0 {
+		token := ""
+		for _, tok := range dateTokens {
+			if strings.HasPrefix(layout, tok) {
+				token = tok
 				break
 			}
 		}
-		if !matched {
-			out.WriteByte(format[i])
-			i++
+		switch token {
+		case "":
+			out.WriteByte(layout[0])
+			layout = layout[1:]
+			continue
+		case "YYYY":
+			two(t.Year() / 100)
+			two(t.Year())
+		case "YY":
+			two(t.Year())
+		case "MMMM":
+			out.WriteString(monthNames[t.Month()-1])
+		case "MMM":
+			out.WriteString(shortMonthNames[t.Month()-1])
+		case "MM":
+			two(int(t.Month()))
+		case "DD":
+			two(t.Day())
+		case "dddd":
+			out.WriteString(dayNames[t.Weekday()])
+		case "ddd":
+			out.WriteString(shortDayNames[t.Weekday()])
+		case "HH":
+			two(t.Hour())
+		case "hh":
+			two((t.Hour()+11)%12 + 1)
+		case "mm":
+			two(t.Minute())
+		case "ss":
+			two(t.Second())
+		case "A":
+			if t.Hour() < 12 {
+				out.WriteString("AM")
+			} else {
+				out.WriteString("PM")
+			}
 		}
+		layout = layout[len(token):]
 	}
 	return out.String()
 }
