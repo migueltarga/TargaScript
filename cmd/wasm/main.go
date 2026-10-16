@@ -15,8 +15,9 @@ import (
 )
 
 // maxNesting keeps recursion within the browser's native stack, allowing
-// about 400 nested calls of a simple recursive function. Measured in Node,
-// whose stack is the size of Chrome's, failures started near 1850.
+// about 300 nested calls of a simple recursive function. Workers have a
+// smaller stack than pages: in a Chrome worker, a function whose body is
+// just a recursive call failed at about 540 calls with no limit.
 const maxNesting = 1200
 
 // Environment shared by the scripts of a page

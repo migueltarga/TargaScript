@@ -725,8 +725,17 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		if callDepth >= maxCallDepth {
 			return newError(0, 0, "maximum call depth exceeded (%d)", maxCallDepth)
 		}
+		// A call uses more native stack than other evaluation, so it also
+		// counts towards the nesting limit
+		if maxNesting > 0 && nesting >= maxNesting {
+			return newError(0, 0, "maximum call depth exceeded")
+		}
 		callDepth++
-		defer func() { callDepth-- }()
+		nesting++
+		defer func() {
+			callDepth--
+			nesting--
+		}()
 
 		extendedEnv := extendFunctionEnv(fn, args)
 

@@ -127,7 +127,7 @@ Build it with [TinyGo](https://tinygo.org) 0.39:
 ./web/build.sh build
 ```
 
-and serve `build/targascript.js` and `build/targascript.wasm` (about 260 KB, 120 KB compressed) next to your page. In the browser, recursion is limited to about 400 nested calls, because the browser's stack is much smaller than a native one.
+and serve `build/targascript.js` and `build/targascript.wasm` (about 260 KB, 120 KB compressed) next to your page. In the browser, recursion is limited to about 300 nested calls, because the browser's stack is much smaller than a native one.
 
 ## 🤔 Why TargaScript?
 
