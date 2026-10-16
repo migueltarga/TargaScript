@@ -61,3 +61,13 @@ func TestRunTestsExitCode(t *testing.T) {
 	}
 	evaluator.ResetTests()
 }
+
+// The tests in tests/ are written in TargaScript and check the language
+// itself.
+func TestRepositoryTests(t *testing.T) {
+	evaluator.ResetTests()
+	defer evaluator.ResetTests()
+	if code := runTests([]string{"../../tests"}, true); code != 0 {
+		t.Errorf("targascript test tests exited with %d", code)
+	}
+}

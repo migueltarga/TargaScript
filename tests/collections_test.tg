@@ -1,0 +1,39 @@
+// Array and object methods
+
+test("map, filter and reduce", fn() {
+    let numbers = [5, 3, 8, 1]
+    assertEqual(numbers.map(n => n * 2), [10, 6, 16, 2])
+    assertEqual(numbers.filter(n => n > 4), [5, 8])
+    assertEqual(numbers.reduce((a, b) => a + b, 0), 17)
+})
+
+test("chunk, zip and toObject", fn() {
+    assertEqual([1, 2, 3].chunk(2), [[1, 2], [3]])
+    assertEqual(["a", "b"].zip([1, 2]), [["a", 1], ["b", 2]])
+    assertEqual([["a", 1]].toObject(), {a: 1})
+})
+
+test("entries and toObject round trip", fn() {
+    let prices = {apple: 2, kiwi: 3}
+    let doubled = prices.entries().map(([k, v]) => [k, v * 2]).toObject()
+    assertEqual(doubled, {apple: 4, kiwi: 6})
+})
+
+test("groupBy keeps the order of first appearance", fn() {
+    let groups = ["apple", "kiwi", "avocado"].groupBy(w => w[0])
+    assertEqual(groups.keys(), ["a", "k"])
+})
+
+test("min, max and round", fn() {
+    assertEqual(max([4, 9, 2]), 9)
+    assertEqual(min(3, -1, 2), -1)
+    assertEqual(round(3.14159, 2), 3.14)
+})
+
+test("destructuring with rest", fn() {
+    let [first, ...rest] = [1, 2, 3]
+    let {a, ...others} = {a: 1, b: 2}
+    assertEqual(first, 1)
+    assertEqual(rest, [2, 3])
+    assertEqual(others, {b: 2})
+})

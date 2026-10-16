@@ -1,0 +1,29 @@
+// Errors, as values a program can catch
+
+fn messageOf(f) {
+    try { f(); null } catch e { e.message }
+}
+
+test("throw and catch", fn() {
+    assertEqual(messageOf(() => { throw "boom" }), "boom")
+})
+
+test("assertions are catchable errors", fn() {
+    assertEqual(messageOf(() => assertEqual(1, 2)), "assertion failed: expected 2, got 1")
+})
+
+test("names from other languages get a hint", fn() {
+    let message = messageOf(() => [1].push(2))
+    assert("use insert(value)" in message, message)
+})
+
+test("match picks the first arm that fits", fn() {
+    fn size(n) {
+        match n {
+            0 => "none"
+            1..9 => "small"
+            _ => "big"
+        }
+    }
+    assertEqual([0, 5, 50].map(size), ["none", "small", "big"])
+})
