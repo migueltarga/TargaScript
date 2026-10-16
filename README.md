@@ -16,6 +16,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
 - **Small, modern syntax.** Arrow functions, `match`, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **A bytecode VM.** Programs compile to bytecode, which runs several times faster than the original tree-walking interpreter and allows 10,000 nested calls, in the browser too.
 
@@ -95,6 +96,34 @@ let age = try {
 ```
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
+
+## 🧪 Testing
+
+Tests need no library. `test` runs a function and reports it, and `targascript test` runs every file ending in `_test.tg`:
+
+```
+// cart_test.tg
+fn total(items) { items.map(i => i.price * i.qty).sum() }
+
+test("adds up the items", fn() {
+    assertEqual(total([{price: 2, qty: 3}, {price: 1, qty: 1}]), 7)
+})
+
+test("is zero when empty", fn() {
+    assertEqual(total([]), 0)
+})
+```
+
+```
+$ targascript test
+cart_test.tg
+✓ adds up the items
+✓ is zero when empty
+
+2 passed, 0 failed
+```
+
+A failing test shows the error and its line, and the command exits with 1, so it can run in CI. `test` works in the playground too.
 
 ## 🎛️ Default Parameters
 
@@ -245,6 +274,7 @@ targascript                       # start the REPL
 targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(pow(2, 10))' # run code from the command line
 cat script.tg | targascript -     # run code from standard input
+targascript test                  # run the *_test.tg files
 targascript --debug script.tg     # print the syntax tree before running
 ```
 
@@ -261,7 +291,9 @@ if args.length == 0 {
 repeat file in args {
     print(readFile(file).lines().length, file)
 }
-``` From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
+```
+
+From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
 
 ## 🌐 TargaScript in the Browser
 
