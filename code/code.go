@@ -98,21 +98,6 @@ const (
 	OpTry     // start a try block whose catch block starts at the operand
 	OpTryEnd  // end the innermost try block
 	OpThrow   // pop a value and raise an error with it
-
-	// Superinstructions, which do the work of a common pair of instructions
-	// in one step. Each takes the same bytes as the pair, so the compiler
-	// puts them in after the jumps are known; see compiler/fuse.go.
-	OpBinaryConst      // the operator in operand 1 with the top and constants[operand 2]: OpConstant, then the operator
-	OpCompareJump      // pop two values, compare them with the operator in operand 1 and jump to operand 2 if false: a comparison, then OpJumpNotTruthy
-	OpSetLocalPop      // pop the top into a local: OpSetLocal, then OpPop; the second operand is unused
-	OpSetGlobalPop     // pop the top into a global: OpSetGlobal, then OpPop; the second operand is unused
-	OpCompareConstJump // pop a value, compare it with constants[operand 2] by the operator in operand 1 and jump to operand 3 if false: OpConstant, a comparison, OpJumpNotTruthy; the last operand is unused
-
-	// Superinstructions that take a value from a local instead of the
-	// stack, in the second pass of compiler/fuse.go
-	OpLocalBinaryConst      // push the operator in operand 2 with local operand 1 and constants[operand 3]: OpGetLocal, OpBinaryConst
-	OpLocalCompareConstJump // compare local operand 1 with constants[operand 3] by the operator in operand 2, jump to operand 4 if false: OpGetLocal, OpCompareConstJump
-	OpLocalLocalBinary      // push the operator in operand 3 with locals operand 1 and operand 2: OpGetLocal, OpGetLocal, an operator
 )
 
 // Definition describes an opcode: its name and the width in bytes of each
@@ -122,7 +107,7 @@ type Definition struct {
 	OperandWidths []int
 }
 
-var definitions = map[Opcode]*Definition{
+var definitions = [...]*Definition{
 	OpConstant:  {"OpConstant", []int{2}},
 	OpTrue:      {"OpTrue", []int{}},
 	OpFalse:     {"OpFalse", []int{}},
@@ -201,34 +186,22 @@ var definitions = map[Opcode]*Definition{
 	OpTry:             {"OpTry", []int{2}},
 	OpTryEnd:          {"OpTryEnd", []int{}},
 	OpThrow:           {"OpThrow", []int{}},
-
-	OpBinaryConst:  {"OpBinaryConst", []int{1, 2}},
-	OpCompareJump:  {"OpCompareJump", []int{1, 2}},
-	OpSetLocalPop:  {"OpSetLocalPop", []int{2, 1}},
-	OpSetGlobalPop: {"OpSetGlobalPop", []int{2, 1}},
-
-	OpCompareConstJump: {"OpCompareConstJump", []int{1, 2, 2, 1}},
-
-	OpLocalBinaryConst:      {"OpLocalBinaryConst", []int{2, 1, 2, 1}},
-	OpLocalCompareConstJump: {"OpLocalCompareConstJump", []int{2, 1, 2, 2, 2}},
-	OpLocalLocalBinary:      {"OpLocalLocalBinary", []int{2, 2, 1, 1}},
 }
 
 // Lookup returns the definition of an opcode.
 func Lookup(op byte) (*Definition, error) {
-	def, ok := definitions[Opcode(op)]
-	if !ok {
+	if int(op) >= len(definitions) || definitions[op] == nil {
 		return nil, fmt.Errorf("opcode %d undefined", op)
 	}
-	return def, nil
+	return definitions[op], nil
 }
 
 // Make encodes an instruction.
 func Make(op Opcode, operands ...int) []byte {
-	def, ok := definitions[op]
-	if !ok {
+	if int(op) >= len(definitions) || definitions[op] == nil {
 		return []byte{}
 	}
+	def := definitions[op]
 
 	length := 1
 	for _, w := range def.OperandWidths {

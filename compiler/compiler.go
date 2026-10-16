@@ -246,15 +246,19 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			continue
 		}
 
-		fuse(scope.instructions)
+		words, positions, registers, err := translate(scope.instructions, scope.positions, fn.numLocals, fn.cells, c.constants)
+		if err != nil {
+			return nil, fmt.Errorf("internal error in %s: %w", functionName(name), err)
+		}
 		compiled := &object.CompiledFunction{
-			Instructions: scope.instructions,
-			Caches:       make([]object.PropertyCache, scope.caches),
+			Code:         words,
+			Positions:    positions,
+			Caches:       make([]object.PropertyCache, len(words)),
+			NumRegisters: registers,
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
 			HasThis:      hasThis && fn.usesThis,
 			Name:         name,
-			Positions:    scope.positions,
 			LocalNames:   fn.localNames,
 		}
 		for _, s := range fn.free {

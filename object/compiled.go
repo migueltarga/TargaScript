@@ -20,10 +20,22 @@ type Position struct {
 	Column int
 }
 
-// CompiledFunction is a function compiled to bytecode. It is a constant;
-// running code works with closures of it.
+// CompiledFunction is a function compiled to register code. It is a
+// constant; running code works with closures of it.
 type CompiledFunction struct {
-	Instructions code.Instructions
+	// Code is what the VM runs, and Positions, sorted by instruction, are
+	// where in the source its instructions come from, for errors
+	Code      []code.Word
+	Positions []Position
+
+	// Caches has, for each instruction that reads or writes properties,
+	// where it found them last. A VM runs one instruction at a time, so
+	// they need no lock.
+	Caches []PropertyCache
+
+	// NumRegisters is how many registers the function uses: its locals,
+	// then the values it works on
+	NumRegisters int
 	NumLocals    int
 	NumParams    int
 	Name         string
@@ -32,20 +44,12 @@ type CompiledFunction struct {
 	// in an array
 	Variadic bool
 
-	// HasThis is set for functions other than arrow functions, which have
-	// a local, just after the parameters, for this: the object a method
-	// was called on, or null
+	// HasThis is set for functions that use this, which have a local, just
+	// after the parameters, for it: the object a method was called on, or
+	// null
 	HasThis bool
 
-	// Caches for the instructions that read and write properties, which
-	// have the index of theirs as an operand. A VM runs one instruction at a
-	// time, so they need no lock.
-	Caches []PropertyCache
-
-	// Positions, sorted by offset, for error messages
-	Positions []Position
-
-	// Names of the local slots and captured variables, for error messages
+	// Names of the locals and captured variables, for error messages
 	LocalNames []string
 	FreeNames  []string
 
@@ -64,11 +68,12 @@ func (cf *CompiledFunction) Inspect() string {
 // PositionAt returns the line and column of the instruction at offset, or
 // zeros if unknown.
 func (cf *CompiledFunction) PositionAt(offset int) (int, int) {
-	i := sort.Search(len(cf.Positions), func(i int) bool { return cf.Positions[i].Offset > offset })
+	positions := cf.Positions
+	i := sort.Search(len(positions), func(i int) bool { return positions[i].Offset > offset })
 	if i == 0 {
 		return 0, 0
 	}
-	p := cf.Positions[i-1]
+	p := positions[i-1]
 	return p.Line, p.Column
 }
 

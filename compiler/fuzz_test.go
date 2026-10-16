@@ -3,6 +3,7 @@ package compiler
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/migueltarga/TargaScript/lexer"
@@ -36,7 +37,9 @@ func FuzzCompile(f *testing.F) {
 		}
 		_ = program.String()
 		c := New()
-		c.Compile(program)
+		if _, err := c.Compile(program); err != nil && strings.Contains(err.Error(), "internal error") {
+			t.Fatal(err)
+		}
 		c.Problems()
 	})
 }

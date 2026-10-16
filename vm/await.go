@@ -19,12 +19,16 @@ type fiber struct {
 
 	// Position of the await, for the error when the promise is rejected
 	line, column int
+	// target is, in register code, the register the result goes in
+	target int
 }
 
 // suspension is what loop returns to pause at an await.
 type suspension struct {
 	awaited      object.Awaitable
 	line, column int
+	// target is, in register code, the register the result goes in
+	target int
 }
 
 func (s *suspension) Type() object.ObjectType { return "SUSPENSION" }
@@ -39,19 +43,17 @@ func (vm *VM) suspend(base int, fb *fiber, s *suspension) {
 	fb.frames = append([]*frame{}, vm.frames[base:]...)
 	for _, f := range fb.frames {
 		f.base -= bottom
-		for i := range f.loops {
-			f.loops[i].sp -= bottom
-		}
-		for i := range f.handlers {
-			f.handlers[i].sp -= bottom
-		}
 	}
-	fb.line, fb.column = s.line, s.column
+	fb.line, fb.column, fb.target = s.line, s.column, s.target
 
 	for i := bottom; i < vm.sp; i++ {
 		vm.stack[i] = nil
 	}
 	vm.sp = bottom
+	// The paused run owns its frames now, so they can't be reused
+	for i := base; i < len(vm.frames); i++ {
+		vm.frames[i] = nil
+	}
 	vm.frames = vm.frames[:base]
 
 	s.awaited.Then(
@@ -71,12 +73,6 @@ func (vm *VM) resume(fb *fiber, value, reason object.Object) {
 	vm.sp = start + len(fb.stack)
 	for _, f := range fb.frames {
 		f.base += start
-		for i := range f.loops {
-			f.loops[i].sp += start
-		}
-		for i := range f.handlers {
-			f.handlers[i].sp += start
-		}
 	}
 	vm.frames = append(vm.frames, fb.frames...)
 	fb.frames, fb.stack = nil, nil
@@ -84,7 +80,8 @@ func (vm *VM) resume(fb *fiber, value, reason object.Object) {
 	if reason != nil {
 		vm.pendingError = evaluator.NewError(fb.line, fb.column, "%s", rejectionMessage(reason))
 	} else {
-		vm.push(value)
+		top := vm.frames[len(vm.frames)-1]
+		vm.stack[top.base+fb.target] = value
 	}
 
 	vm.asyncBases = append(vm.asyncBases, base)
