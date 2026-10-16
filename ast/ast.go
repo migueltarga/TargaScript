@@ -413,6 +413,9 @@ type IndexExpression struct {
 	Token token.Token
 	Left  Expression
 	Index Expression
+
+	// Optional is set for list?.[i], which is null when list is null
+	Optional bool
 }
 
 func (ie *IndexExpression) expressionNode()      {}
@@ -422,6 +425,9 @@ func (ie *IndexExpression) String() string {
 
 	out.WriteString("(")
 	out.WriteString(ie.Left.String())
+	if ie.Optional {
+		out.WriteString("?.")
+	}
 	out.WriteString("[")
 	out.WriteString(ie.Index.String())
 	out.WriteString("])")

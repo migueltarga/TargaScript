@@ -816,6 +816,7 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 		if err := c.compileExpression(node.Left); err != nil {
 			return err
 		}
+		c.optionalJump(node.Optional)
 		if err := c.compileOperand(node.Index); err != nil {
 			return err
 		}
