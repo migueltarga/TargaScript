@@ -414,7 +414,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `exists(path)`, `deleteFile(path)`, `makeDir(path)` | whether a file or directory exists; delete a file or an empty directory; make a directory and the ones it is in. Command line only |
-| `exec(command)`, `exec(program, args)` | runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`: `exec("git", ["log", "-1"]).output`. A program that fails gives its exit code in `code`; one that can't start is an error. Command line only |
+| `exec(command)`, `exec(program, args)` | runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`: `exec("git", ["log", "-1"]).output`. Options come last: `{"dir": "src"}` runs it in another directory, `{"input": text}` gives it text to read, and `{"show": true}` shows its output as it comes instead of keeping it. A program that fails gives its exit code in `code`; one that can't start is an error. Command line only |
 | `input`, `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing

@@ -35,11 +35,22 @@ type FileManager interface {
 
 // CommandRunner is a System that can run other programs, for exec.
 type CommandRunner interface {
-	// RunCommand runs a program with its arguments, or with shell set, a
-	// command line in the system's shell. It returns what the program wrote
-	// to its output and its errors, and its exit code; err is set when it
-	// couldn't start.
-	RunCommand(program string, args []string, shell bool) (stdout, stderr string, code int, err error)
+	// RunCommand runs a command and returns what it wrote to its output and
+	// its errors, and its exit code; err is set when it couldn't start.
+	RunCommand(command Command) (stdout, stderr string, code int, err error)
+}
+
+// Command is a program for exec to run.
+type Command struct {
+	// Program runs with Args, or with Shell set, is a command line for the
+	// system's shell
+	Program string
+	Args    []string
+	Shell   bool
+
+	Dir   string  // the working directory, or the script's when empty
+	Input *string // what the program reads, or the script's input when nil
+	Show  bool    // the output goes to the terminal as it comes instead
 }
 
 // SetSystem sets what readFile, writeFile, listDir, env and exit use.
@@ -101,25 +112,35 @@ func fileChange(name, verb string, change func(FileManager, string) error, args 
 
 // execBuiltin runs a command line in the shell, exec("ls -l"), or a
 // program with a list of arguments, exec("git", ["log", "-1"]), and returns
-// {output, errors, code, ok}. A program that fails gives its code; only one
-// that can't start is an error.
+// {output, errors, code, ok}. Options come last: {dir, input, show}. A
+// program that fails gives its code; only one that can't start is an error.
 func execBuiltin(args ...object.Object) object.Object {
-	if len(args) < 1 || len(args) > 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 or 2", len(args))}
+	if len(args) < 1 || len(args) > 3 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 to 3", len(args))}
 	}
-	command, ok := args[0].(*object.String)
+	program, ok := args[0].(*object.String)
 	if !ok {
 		return &object.Error{Message: fmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
 	}
-	var programArgs []string
-	if len(args) == 2 {
-		list, ok := args[1].(*object.Array)
-		if !ok {
-			return &object.Error{Message: fmt.Sprintf("second argument to `exec` must be an array of arguments, got %s", typeName(args[1]))}
+	command := Command{Program: program.Value, Shell: true}
+	rest := args[1:]
+	if len(rest) > 0 {
+		if list, ok := rest[0].(*object.Array); ok {
+			command.Shell = false
+			command.Args = make([]string, len(list.Elements))
+			for i, arg := range list.Elements {
+				command.Args[i] = objectToString(arg)
+			}
+			rest = rest[1:]
 		}
-		programArgs = make([]string, len(list.Elements))
-		for i, arg := range list.Elements {
-			programArgs[i] = objectToString(arg)
+	}
+	if len(rest) > 0 {
+		options, ok := rest[0].(*object.Hash)
+		if !ok || len(rest) > 1 {
+			return &object.Error{Message: fmt.Sprintf("exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got %s", typeName(rest[0]))}
+		}
+		if err := execOptions(options, &command); err != nil {
+			return err
 		}
 	}
 	runner, ok := system.(CommandRunner)
@@ -127,9 +148,9 @@ func execBuiltin(args ...object.Object) object.Object {
 		return noSystem("exec")
 	}
 
-	stdout, stderr, code, err := runner.RunCommand(command.Value, programArgs, len(args) == 1)
+	stdout, stderr, code, err := runner.RunCommand(command)
 	if err != nil {
-		return &object.Error{Message: fmt.Sprintf("cannot run %q: %s", command.Value, err)}
+		return &object.Error{Message: fmt.Sprintf("cannot run %q: %s", program.Value, err)}
 	}
 	result := object.NewHash()
 	result.Set(&object.String{Value: "output"}, &object.String{Value: stdout})
@@ -137,6 +158,30 @@ func execBuiltin(args ...object.Object) object.Object {
 	result.Set(&object.String{Value: "code"}, &object.Integer{Value: int64(code)})
 	result.Set(&object.String{Value: "ok"}, nativeBoolToBooleanObject(code == 0))
 	return result
+}
+
+// execOptions reads the options of exec into a command.
+func execOptions(options *object.Hash, command *Command) *object.Error {
+	for _, pair := range options.OrderedPairs() {
+		name := objectToString(pair.Key)
+		switch name {
+		case "dir", "input":
+			text, ok := pair.Value.(*object.String)
+			if !ok {
+				return &object.Error{Message: fmt.Sprintf("the %s option of exec must be a string, got %s", name, typeName(pair.Value))}
+			}
+			if name == "dir" {
+				command.Dir = text.Value
+			} else {
+				command.Input = &text.Value
+			}
+		case "show":
+			command.Show = IsTruthy(pair.Value)
+		default:
+			return &object.Error{Message: fmt.Sprintf("exec has no option %q; it has dir, input and show", name)}
+		}
+	}
+	return nil
 }
 
 func noSystem(name string) *object.Error {

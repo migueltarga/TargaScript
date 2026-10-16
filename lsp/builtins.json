@@ -50,7 +50,7 @@
   "exists": ["exists(path)", "Whether a file or directory exists. Command line only."],
   "deleteFile": ["deleteFile(path)", "Deletes a file or an empty directory. Command line only."],
   "makeDir": ["makeDir(path)", "Makes a directory, and the directories it is in when they are missing. Command line only."],
-  "exec": ["exec(command), exec(program, args)", "Runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`. Command line only."],
+  "exec": ["exec(command, options?), exec(program, args, options?)", "Runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`. Options: `dir`, `input`, and `show` to show the output as it comes. Command line only."],
   "describe": ["describe(name, fn)", "Groups the tests that `fn` defines under a name, printed above them."],
   "test": ["test(name, fn)", "Runs a function as a test and prints ✓ or ✗. `targascript test` runs every `*_test.tg` file."],
   "timeFormat": ["timeFormat(seconds, layout)", "Formats a Unix time with `YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`, `dddd`, `MMMM`, `A`..."],
