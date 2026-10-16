@@ -39,7 +39,7 @@ func TestStackDepths(t *testing.T) {
 		code.Make(code.OpNull),             // 6
 		code.Make(code.OpReturnValue),      // 7
 	)
-	if _, err := stackDepths(bad); err == nil || !strings.Contains(err.Error(), "reached with") {
+	if _, err := stackDepths(bad); err == nil || !strings.Contains(err.Error(), "different stack depths") {
 		t.Errorf("got %v, want an error about different depths", err)
 	}
 }

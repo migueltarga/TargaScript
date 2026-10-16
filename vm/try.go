@@ -21,10 +21,9 @@ func (vm *VM) catch(base int, err *object.Error) bool {
 
 		h := f.handlers[len(f.handlers)-1]
 		f.handlers = f.handlers[:len(f.handlers)-1]
-		f.loops = f.loops[:h.loops]
 		vm.frames = vm.frames[:i+1]
-		vm.sp = h.sp
-		vm.push(errorValue(err))
+		vm.sp = f.base + f.cl.Fn.NumRegisters
+		vm.stack[f.base+h.reg] = errorValue(err)
 		f.ip = h.catch
 		return true
 	}

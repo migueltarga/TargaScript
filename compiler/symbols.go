@@ -70,6 +70,7 @@ type functionScope struct {
 
 	numLocals  int
 	localNames []string
+	cells      []bool // cells[i] is set when local i is captured, in a cell
 	decls      int
 
 	free []*Symbol // symbols of the enclosing function, in capture order
@@ -114,6 +115,7 @@ func (f *functionScope) defineLocal(name string, isConst bool) *Symbol {
 	f.decls++
 	f.numLocals++
 	f.localNames = append(f.localNames, name)
+	f.cells = append(f.cells, s.Cell)
 	f.currentBlock()[name] = s
 	return s
 }

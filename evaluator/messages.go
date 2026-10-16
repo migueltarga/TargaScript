@@ -20,67 +20,67 @@ var (
 
 // The names other languages use, with what to write instead
 var (
-	otherLanguageNames = map[string]string{
-		"len":        "use .length, as in list.length",
-		"int":        "use toInt(value)",
-		"parseInt":   "use toInt(value)",
-		"float":      "use toFloat(value)",
-		"parseFloat": "use toFloat(value)",
-		"str":        "use toString(value)",
-		"String":     "use toString(value)",
-		"console":    "use print(...)",
-		"println":    "use print(...)",
-		"puts":       "use print(...)",
-		"echo":       "use print(...)",
-		"typeof":     "use type(value)",
-		"require":    `use load("file.tg")`,
-		"include":    `use load("file.tg")`,
-		"nil":        "use null",
-		"None":       "use null",
-		"undefined":  "use null",
-		"True":       "use true",
-		"False":      "use false",
-		"Math":       "math functions are builtins: abs, sqrt, pow, round, floor, ceil, min, max, random",
-		"JSON":       "use parseJSON(text) and toJSON(value)",
+	otherLanguageNames = [][2]string{
+		{"len", "use .length, as in list.length"},
+		{"int", "use toInt(value)"},
+		{"parseInt", "use toInt(value)"},
+		{"float", "use toFloat(value)"},
+		{"parseFloat", "use toFloat(value)"},
+		{"str", "use toString(value)"},
+		{"String", "use toString(value)"},
+		{"console", "use print(...)"},
+		{"println", "use print(...)"},
+		{"puts", "use print(...)"},
+		{"echo", "use print(...)"},
+		{"typeof", "use type(value)"},
+		{"require", `use load("file.tg")`},
+		{"include", `use load("file.tg")`},
+		{"nil", "use null"},
+		{"None", "use null"},
+		{"undefined", "use null"},
+		{"True", "use true"},
+		{"False", "use false"},
+		{"Math", "math functions are builtins: abs, sqrt, pow, round, floor, ceil, min, max, random"},
+		{"JSON", "use parseJSON(text) and toJSON(value)"},
 	}
-	otherLanguageStringMethods = map[string]string{
-		"length":      "length is a property: write .length, without ()",
-		"toUpperCase": "use upper()",
-		"toUpper":     "use upper()",
-		"toLowerCase": "use lower()",
-		"toLower":     "use lower()",
-		"strip":       "use trim()",
-		"includes":    "use contains(text) or the in operator",
-		"substring":   "use slice(start, end)",
-		"substr":      "use slice(start, end)",
-		"charAt":      "use text[index]",
-		"size":        "use .length",
-		"len":         "use .length",
+	otherLanguageStringMethods = [][2]string{
+		{"length", "length is a property: write .length, without ()"},
+		{"toUpperCase", "use upper()"},
+		{"toUpper", "use upper()"},
+		{"toLowerCase", "use lower()"},
+		{"toLower", "use lower()"},
+		{"strip", "use trim()"},
+		{"includes", "use contains(text) or the in operator"},
+		{"substring", "use slice(start, end)"},
+		{"substr", "use slice(start, end)"},
+		{"charAt", "use text[index]"},
+		{"size", "use .length"},
+		{"len", "use .length"},
 	}
-	otherLanguageArrayMethods = map[string]string{
-		"length":   "length is a property: write .length, without ()",
-		"push":     "use insert(value)",
-		"append":   "use insert(value)",
-		"add":      "use insert(value)",
-		"includes": "use contains(value) or the in operator",
-		"forEach":  "use repeat item in list { ... }",
-		"each":     "use repeat item in list { ... }",
-		"flat":     "use flatten()",
-		"concat":   "use list + other",
-		"any":      "use some(fn)",
-		"all":      "use every(fn)",
-		"distinct": "use unique()",
-		"uniq":     "use unique()",
-		"size":     "use .length",
-		"len":      "use .length",
+	otherLanguageArrayMethods = [][2]string{
+		{"length", "length is a property: write .length, without ()"},
+		{"push", "use insert(value)"},
+		{"append", "use insert(value)"},
+		{"add", "use insert(value)"},
+		{"includes", "use contains(value) or the in operator"},
+		{"forEach", "use repeat item in list { ... }"},
+		{"each", "use repeat item in list { ... }"},
+		{"flat", "use flatten()"},
+		{"concat", "use list + other"},
+		{"any", "use some(fn)"},
+		{"all", "use every(fn)"},
+		{"distinct", "use unique()"},
+		{"uniq", "use unique()"},
+		{"size", "use .length"},
+		{"len", "use .length"},
 	}
-	otherLanguageHashMethods = map[string]string{
-		"hasOwnProperty": `use has(key) or "key" in object`,
-		"containsKey":    `use has(key) or "key" in object`,
-		"hasKey":         `use has(key) or "key" in object`,
-		"items":          "use entries()",
-		"size":           "use .length",
-		"len":            "use .length",
+	otherLanguageHashMethods = [][2]string{
+		{"hasOwnProperty", `use has(key) or "key" in object`},
+		{"containsKey", `use has(key) or "key" in object`},
+		{"hasKey", `use has(key) or "key" in object`},
+		{"items", "use entries()"},
+		{"size", "use .length"},
+		{"len", "use .length"},
 	}
 )
 
@@ -95,11 +95,22 @@ func init() {
 
 // hint returns what to write instead of name when another language uses
 // it, else a similar name from candidates.
-func hint(name string, otherLanguages map[string]string, candidates []string) string {
-	if instead, ok := otherLanguages[name]; ok {
+func hint(name string, otherLanguages [][2]string, candidates []string) string {
+	if instead, ok := lookup(otherLanguages, name); ok {
 		return ". In TargaScript, " + instead
 	}
 	return suggestion(name, candidates)
+}
+
+// lookup finds the value of a key in a list of pairs. The lists of hints
+// are short, and a list takes less room than a map in the WebAssembly build.
+func lookup(pairs [][2]string, key string) (string, bool) {
+	for _, pair := range pairs {
+		if pair[0] == key {
+			return pair[1], true
+		}
+	}
+	return "", false
 }
 
 // typeName describes the type of a value for error messages, with an
