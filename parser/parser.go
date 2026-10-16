@@ -333,8 +333,16 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 				continue
 			}
 			key, ok := pair.Key.(*ast.Identifier)
+			if !ok {
+				return nil
+			}
+			if def, ok := patternDefault(pair); ok {
+				pattern.Names = append(pattern.Names, key)
+				setDefault(pattern, len(pattern.Names)-1, def)
+				continue
+			}
 			value, isIdent := pair.Value.(*ast.Identifier)
-			if !ok || !isIdent || key != value {
+			if !isIdent || key != value {
 				return nil
 			}
 			pattern.Names = append(pattern.Names, key)
@@ -342,6 +350,23 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 		return pattern
 	}
 	return nil
+}
+
+// patternDefault returns the default of a pair written {name = value} in an
+// object literal, which is only valid as a pattern.
+func patternDefault(pair ast.HashPair) (ast.Expression, bool) {
+	assign, ok := pair.Value.(*ast.AssignmentExpression)
+	if !ok || assign.Left != pair.Key {
+		return nil, false
+	}
+	return assign.Value, true
+}
+
+// PatternOnly reports whether an object literal pair is {name = value},
+// which only works as a pattern.
+func PatternOnly(pair ast.HashPair) bool {
+	_, ok := patternDefault(pair)
+	return ok
 }
 
 // setDefault sets the default value of the name at i in a pattern.
@@ -1259,6 +1284,23 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 			}
 			p.nextToken()
 			continue
+		}
+
+		// {port = 80} is only a pattern, for parameters like
+		// ({port = 80}) => ...; the compiler refuses it as an object
+		if assign, ok := key.(*ast.AssignmentExpression); ok && assign.Operator == "" && (p.peekTokenIs(token.COMMA) || p.peekTokenIs(token.RBRACE)) {
+			if ident, ok := assign.Left.(*ast.Identifier); ok {
+				name := hashKeyName(ident, len(hash.Order))
+				if _, exists := hash.Pairs[name]; !exists {
+					hash.Order = append(hash.Order, name)
+				}
+				hash.Pairs[name] = ast.HashPair{Key: ident, Value: assign}
+				if !p.peekTokenIs(token.COMMA) {
+					break
+				}
+				p.nextToken()
+				continue
+			}
 		}
 
 		if spread, ok := key.(*ast.SpreadExpression); ok {
