@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/migueltarga/TargaScript/ast"
 )
@@ -130,6 +131,34 @@ type String struct {
 	// never changed in place, so it stays valid.
 	hash   uint64
 	hashed bool
+
+	// buffer holds Value, and room after it, when the string was made by
+	// Concat; see there
+	buffer *[]byte
+}
+
+// Concat returns s followed by more. A string built by adding to it again
+// and again, like html += "...", would copy everything each time, so the
+// result keeps its text in a buffer with room to spare: adding to the
+// newest string of a buffer writes after its end, and only the bytes
+// added are copied. Existing strings never change, since each one only
+// sees its own part of the buffer.
+func Concat(s *String, more string) *String {
+	if more == "" {
+		return s
+	}
+	if s.buffer != nil && len(*s.buffer) == len(s.Value) && cap(*s.buffer)-len(*s.buffer) >= len(more) {
+		buffer := append(*s.buffer, more...)
+		*s.buffer = buffer
+		return &String{Value: unsafe.String(&buffer[0], len(buffer)), buffer: s.buffer}
+	}
+	// Small strings are copied as usual; a buffer pays off for long ones
+	if len(s.Value)+len(more) < 64 {
+		return &String{Value: s.Value + more}
+	}
+	buffer := make([]byte, 0, 2*(len(s.Value)+len(more)))
+	buffer = append(append(buffer, s.Value...), more...)
+	return &String{Value: unsafe.String(&buffer[0], len(buffer)), buffer: &buffer}
 }
 
 func (s *String) Type() ObjectType { return STRING_OBJ }

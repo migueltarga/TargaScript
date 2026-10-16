@@ -155,9 +155,7 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right, line, column)
 	case left.Type() == object.STRING_OBJ && operator == "+":
-		leftVal := left.(*object.String).Value
-		rightVal := objectToString(right)
-		return &object.String{Value: leftVal + rightVal}
+		return object.Concat(left.(*object.String), objectToString(right))
 	case left.Type() == object.STRING_OBJ && right.Type() == object.INTEGER_OBJ && operator == "*":
 		return repeatString(left.(*object.String).Value, right.(*object.Integer).Value, line, column)
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.STRING_OBJ && operator == "*":
@@ -944,7 +942,7 @@ func evalStringInfixExpression(operator string, left, right object.Object, line,
 
 	switch operator {
 	case "+":
-		return &object.String{Value: leftVal + rightVal}
+		return object.Concat(left.(*object.String), rightVal)
 	case "==":
 		return nativeBoolToBooleanObject(leftVal == rightVal)
 	case "!=":

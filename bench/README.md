@@ -4,6 +4,7 @@ Each benchmark is a small program written twice, in TargaScript (`.tg`) and in P
 
 | Benchmark | What it does |
 |---|---|
+| `concat` | builds a 200,000-character string with `s += "x"` |
 | `fib` | `fib(30)` the slow recursive way: 1.6 million function calls |
 | `loop` | 3 million loop iterations with arithmetic |
 | `objects` | creates 200,000 small objects and sorts them by a field |
@@ -14,11 +15,12 @@ Each benchmark is a small program written twice, in TargaScript (`.tg`) and in P
 
 ```
 benchmark   TargaScript       Python
+concat             0.02         0.54
 fib                0.14         0.13
-loop               0.18         0.20
+loop               0.18         0.21
 objects            0.15         0.13
 strings            0.06         0.06
-words              0.07         0.08
+words              0.07         0.09
 ```
 
 TargaScript runs about as fast as CPython. That's enough for scripts, servers and web pages, but not for heavy number crunching.
