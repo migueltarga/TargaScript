@@ -7,8 +7,12 @@
 // environment and returns its error message, or null. When the program
 // pauses at an await, it returns a promise of one of those instead.
 //
+// targascriptCheck(source) returns the errors it can find without running
+// it, as objects with line, column and message.
+//
 // In Node, require() returns a function that takes the bytes of
-// targascript.wasm and resolves to targascriptRun.
+// targascript.wasm and resolves to targascriptRun, with the check function
+// as its check property.
 (() => {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -170,10 +174,23 @@
     return error;
   };
 
+  // Finds the errors in source without running it: an array of objects with
+  // line, column and message.
+  const check = (source) => {
+    const s = handle(String(source));
+    const result = wasm.check(s);
+    release(s);
+    const problems = JSON.parse(values[result]);
+    release(result);
+    return problems;
+  };
+
   const start = (instance) => {
     wasm = instance.exports;
     wasm._initialize();
-    return (source, onOutput = () => {}) => evaluate(source, onOutput, true);
+    const run = (source, onOutput = () => {}) => evaluate(source, onOutput, true);
+    run.check = check;
+    return run;
   };
 
   if (typeof module === "object" && module.exports) {
@@ -221,6 +238,7 @@
   Promise.all([instantiate(), domReady])
     .then(async ([{ instance }]) => {
       globalThis.targascriptRun = start(instance);
+      globalThis.targascriptCheck = check;
       for (const script of scripts()) {
         const source = await script.load();
         const report = (error) => {

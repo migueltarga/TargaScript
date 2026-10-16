@@ -142,6 +142,43 @@ func evaluate(source, onOutput, fresh uint32) uint32 {
 	return jsbridge.Return(run(jsbridge.ReadString(source), s, out))
 }
 
+// check finds the errors in the string with handle source without running
+// it: syntax errors, or the problems the compiler knows about, like names
+// that aren't defined. It returns the handle of a JSON array of objects with
+// line, column and message.
+//
+//go:wasmexport check
+func check(source uint32) uint32 {
+	text := jsbridge.ReadString(source)
+	problems := &object.Array{}
+	add := func(line, column int, message string) {
+		problem := object.NewHash()
+		problem.Set(&object.String{Value: "line"}, &object.Integer{Value: int64(line)})
+		problem.Set(&object.String{Value: "column"}, &object.Integer{Value: int64(column)})
+		problem.Set(&object.String{Value: "message"}, &object.String{Value: message})
+		problems.Elements = append(problems.Elements, problem)
+	}
+
+	p := parser.New(lexer.New(text))
+	program := p.ParseProgram()
+	if len(p.Errors()) > 0 {
+		for _, e := range p.Diagnostics() {
+			add(e.Line, e.Column, e.Message)
+		}
+	} else {
+		s := newSession()
+		if _, err := s.compiler.Compile(program); err != nil {
+			add(0, 0, err.Error())
+		}
+		for _, problem := range s.compiler.Problems() {
+			add(problem.Line, problem.Column, problem.Message)
+		}
+	}
+
+	toJSON, _ := evaluator.Builtin("toJSON")
+	return jsbridge.Return(toJSON.Fn(problems))
+}
+
 // callback runs a TargaScript function passed to JavaScript.
 //
 //go:wasmexport callback
