@@ -33,7 +33,7 @@ print(api.fetchItem(...args))
 func TestObjectMethodsStillWork(t *testing.T) {
 	tests := []struct{ input, expected string }{
 		{"let o = {n: 2, double: fn(x) { x * 2 }}; o.double(4)", "8"},
-		{"let o = {keys: fn() { 1 }}; o.keys()", "[\"keys\"]"},
+		{"let o = {keys: fn() { 1 }}; o.keys()", "1"},
 		{"let o = {get: fn(k) { \"own\" }}; o.get(\"a\")", `"own"`},
 		{"let o = {n: 1}; o.missing()", `ERROR at line 1, column 18: object has no method "missing"`},
 		{"let o = {n: 1}; o.n()", `ERROR at line 1, column 18: property "n" is an integer, not a function`},

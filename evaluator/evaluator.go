@@ -536,16 +536,13 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 			return newError(line, column, "strings have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
 	case *object.Hash:
-
+		// An object's own properties come first, so data with a length
+		// field, like {"length": 300}, reads as written
+		if pair, ok := obj.Get((&object.String{Value: propertyName}).HashKey()); ok {
+			return pair.Value
+		}
 		if propertyName == "length" {
 			return &object.Integer{Value: int64(obj.Len())}
-		}
-
-		key := &object.String{Value: propertyName}
-		hashKey := key.HashKey()
-
-		if pair, ok := obj.Get(hashKey); ok {
-			return pair.Value
 		}
 		return NULL
 	default:
@@ -781,6 +778,10 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			return newError(line, column, "arrays have no method %q%s", method, hint(method, otherLanguageArrayMethods, arrayMethods))
 		}
 	case *object.Hash:
+		// An object's own functions come before the methods every object has
+		if pair, ok := obj.Get((&object.String{Value: method}).HashKey()); ok && isCallable(pair.Value) {
+			return withPosition(applyFunction(pair.Value, args), line, column)
+		}
 		switch method {
 		case "keys":
 			if len(args) != 0 {
