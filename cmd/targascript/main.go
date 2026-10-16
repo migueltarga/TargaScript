@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -14,6 +15,7 @@ var version = "dev"
 
 func main() {
 	showVersion := flag.Bool("version", false, "Print the version and exit")
+	code := flag.String("e", "", "Run the given code instead of a file")
 	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
 	debugNoColor := flag.Bool("debug-no-color", false, "Enable debug mode with AST pretty printing (no colors)")
 
@@ -29,9 +31,33 @@ func main() {
 	debugEnabled := *debug || *debugNoColor
 
 	args := flag.Args()
+
+	if *code != "" {
+		repl.SetArgs(args)
+		if executeFile(*code, debugEnabled, noColor) != nil {
+			os.Exit(1)
+		}
+		return
+	}
+
+	// - reads the program from standard input
+	if len(args) > 0 && args[0] == "-" {
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Printf("Error reading standard input: %s\n", err)
+			os.Exit(1)
+		}
+		repl.SetArgs(args[1:])
+		if executeFile(string(input), debugEnabled, noColor) != nil {
+			os.Exit(1)
+		}
+		return
+	}
+
 	if len(args) > 0 {
-		// Run file provided as argument
+		// Run file provided as argument, passing it the arguments after it
 		filename := args[0]
+		repl.SetArgs(args[1:])
 
 		// Check file extension
 		ext := filepath.Ext(filename)
