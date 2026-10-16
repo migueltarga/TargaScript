@@ -1,7 +1,8 @@
 // Lesson 5: Objects
 //
 // Objects map keys to values and keep keys in the order you add them.
-// Read properties with a dot or with brackets.
+// Read properties with a dot or with brackets. Keys without spaces don't
+// need quotes: {name: "Ana"}.
 
 let person = {"name": "Ana", "age": 31}
 person.city = "Lisbon"
@@ -14,3 +15,14 @@ print(person.keys(), person.has("city"))
 repeat key, value in person {
     print("  ${key}: ${value}")
 }
+
+// Functions in an object are its methods; inside them, this is the object
+let counter = {
+    count: 0,
+    add: fn(n = 1) {
+        this.count += n
+        this
+    },
+}
+counter.add().add(5)
+print("counted", counter.count)
