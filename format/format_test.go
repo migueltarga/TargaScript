@@ -20,6 +20,9 @@ func TestSource(t *testing.T) {
 		{"strings inside interpolations", "fn f() {\nprint(\"a ${\"}\"} b\")\n}\n", "fn f() {\n    print(\"a ${\"}\"} b\")\n}\n"},
 		{"spread isn't a continuation", "let a = [\n...b\n]\n", "let a = [\n    ...b\n]\n"},
 		{"tabs", "if x {\n\tprint(1)\n}\n", "if x {\n    print(1)\n}\n"},
+		{"several brackets on a line are one level", "test(\"x\", fn() {\nassert(true)\n})\n", "test(\"x\", fn() {\n    assert(true)\n})\n"},
+		{"a block in a continuation", "let x = list\n.map(n => {\nn * 2\n})\n", "let x = list\n    .map(n => {\n        n * 2\n    })\n"},
+		{"objects in calls", "f({\na: 1,\nb: [\n2,\n],\n})\n", "f({\n    a: 1,\n    b: [\n        2,\n    ],\n})\n"},
 		{"empty", "\n\n", ""},
 	}
 	for _, tt := range tests {

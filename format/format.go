@@ -11,7 +11,7 @@ const Indent = "    "
 
 // lineInfo is what Source needs to know about a line before laying it out.
 type lineInfo struct {
-	depth     int  // brackets open at its start
+	indent    int  // levels of indentation
 	protected bool // it starts inside a string or a block comment
 	open      bool // it ends inside a string, so its end is text
 }
@@ -44,15 +44,7 @@ func Source(code string) string {
 			continue
 		}
 		blank = 0
-
-		depth := info.depth
-		if strings.ContainsRune(")]}", rune(text[0])) {
-			depth--
-		}
-		if continues(text) {
-			depth++
-		}
-		out = append(out, strings.Repeat(Indent, max(depth, 0))+text)
+		out = append(out, strings.Repeat(Indent, info.indent)+text)
 	}
 	for len(out) > 0 && out[len(out)-1] == "" {
 		out = out[:len(out)-1]
@@ -85,10 +77,14 @@ const (
 )
 
 // scan goes through the lines once, tracking strings with the code in
-// their ${...}, comments and brackets.
+// their ${...}, comments and brackets. A line is indented one level more
+// than the line that opened the innermost bracket still open, however many
+// it opened: test("x", fn() { gives its body one level. A line that starts
+// by closing a bracket gets the level of the line that opened it.
 func scan(lines []string) []lineInfo {
 	infos := make([]lineInfo, len(lines))
-	depth := 0
+	// The levels of the lines that opened the brackets still open
+	opened := []int{}
 	// The modes entered, innermost last; braces inside ${...} are counted
 	// per interpolation so they don't end it early
 	stack := []mode{code}
@@ -96,7 +92,19 @@ func scan(lines []string) []lineInfo {
 
 	for i, line := range lines {
 		current := stack[len(stack)-1]
-		infos[i] = lineInfo{depth: depth, protected: current != code}
+		info := lineInfo{protected: current != code}
+		text := strings.TrimLeft(line, " \t")
+
+		indent := 0
+		if n := len(opened); n > 0 {
+			indent = opened[n-1] + 1
+		}
+		if len(stack) == 1 && text != "" && strings.ContainsRune(")]}", rune(text[0])) && len(opened) > 0 {
+			indent = opened[len(opened)-1]
+		} else if len(stack) == 1 && continues(text) {
+			indent++
+		}
+		info.indent = indent
 
 		for j := 0; j < len(line); j++ {
 			c := line[j]
@@ -120,7 +128,7 @@ func scan(lines []string) []lineInfo {
 					if len(stack) > 1 {
 						braces[len(braces)-1]++
 					} else {
-						depth++
+						opened = append(opened, indent)
 					}
 				case c == '}' || c == ')' || c == ']':
 					if len(stack) > 1 {
@@ -131,8 +139,8 @@ func scan(lines []string) []lineInfo {
 							continue
 						}
 						braces[len(braces)-1]--
-					} else {
-						depth--
+					} else if len(opened) > 0 {
+						opened = opened[:len(opened)-1]
 					}
 				}
 			case doubleQuoted, backticked:
@@ -158,7 +166,8 @@ func scan(lines []string) []lineInfo {
 			}
 		}
 		top := stack[len(stack)-1]
-		infos[i].open = top == doubleQuoted || top == backticked
+		info.open = top == doubleQuoted || top == backticked
+		infos[i] = info
 	}
 	return infos
 }
