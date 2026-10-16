@@ -302,6 +302,10 @@ func (vm *VM) loopWords(base int) object.Object {
 				for i := callee + argc; i < callee+cl.Fn.NumLocals; i++ {
 					vm.stack[i] = nil
 				}
+				if cl.Fn.HasThis {
+					// this, after the parameters
+					vm.stack[callee+argc] = NULL
+				}
 				vm.receiver = nil
 				vm.sp = top
 				f.ip = pc
@@ -341,6 +345,26 @@ func (vm *VM) loopWords(base int) object.Object {
 			receiver := vm.stack[fn]
 			if cl := vm.ownMethod(receiver, name, &f.cl.Fn.Caches[pc-1]); cl != nil {
 				vm.stack[fn] = cl
+				if argc == cl.Fn.SimpleCall && len(vm.frames) <= evaluator.MaxCallDepth {
+					// The usual case, as in RCall
+					callee := fn + 1
+					top := callee + cl.Fn.NumRegisters
+					if top+256 > len(vm.stack) {
+						vm.ensureStack(top + 256)
+					}
+					for i := callee + argc; i < callee+cl.Fn.NumLocals; i++ {
+						vm.stack[i] = nil
+					}
+					if cl.Fn.HasThis {
+						vm.stack[callee+argc] = receiver
+					}
+					vm.receiver = nil
+					vm.sp = top
+					f.ip = pc
+					f = vm.pushFrame(cl, callee)
+					words, r, pc = cl.Fn.Code, vm.stack[callee:], 0
+					continue
+				}
 				vm.receiver = receiver
 				vm.sp = fn + 1 + argc
 				f.ip = pc
