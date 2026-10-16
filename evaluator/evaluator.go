@@ -34,6 +34,14 @@ func Output() io.Writer {
 	return output
 }
 
+// FlushOutput writes out what the writer print uses keeps, if it keeps
+// anything, before the program waits, reads input, runs a command or ends.
+func FlushOutput() {
+	if f, ok := output.(interface{ Flush() error }); ok {
+		f.Flush()
+	}
+}
+
 // increment returns current + 1 for "++" or current - 1 for "--".
 func increment(current object.Object, operator string, line, column int) object.Object {
 	delta := int64(1)
