@@ -8,6 +8,29 @@ test("throw and catch", fn() {
     assertEqual(messageOf(() => { throw "boom" }), "boom")
 })
 
+test("finally runs however try ends", fn() {
+    let log = []
+    fn early() {
+        try { return "returned" } finally { log += ["return"] }
+    }
+    assertEqual(early(), "returned")
+    assertEqual(messageOf(() => { try { throw "boom" } finally { log += ["error"] } }), "boom")
+    repeat i in 1..3 {
+        try {
+            if i == 1 { continue }
+            break
+        } finally {
+            log += ["loop ${i}"]
+        }
+    }
+    assertEqual(log, ["return", "error", "loop 1", "loop 2"])
+})
+
+test("finally keeps the value of try or catch", fn() {
+    assertEqual(try { 1 } finally { 2 }, 1)
+    assertEqual(try { throw "x" } catch { 3 } finally { 4 }, 3)
+})
+
 test("assertions are catchable errors", fn() {
     assertEqual(messageOf(() => assertEqual(1, 2)), "assertion failed: expected 2, got 1")
 })

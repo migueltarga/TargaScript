@@ -663,23 +663,32 @@ func (ae *AwaitExpression) String() string {
 }
 
 // TryExpression runs Body and, if it fails, Catch with the error in Name:
-// `try { ... } catch err { ... }`. Name is nil when the error is unused.
-// Its value is the value of the block that ran last.
+// `try { ... } catch err { ... } finally { ... }`. Name is nil when the
+// error is unused. Catch or Finally is nil when it is left out, and Finally
+// runs however the try ends. Its value is the value of Body or Catch.
 type TryExpression struct {
-	Token token.Token
-	Body  *BlockStatement
-	Name  *Identifier
-	Catch *BlockStatement
+	Token   token.Token
+	Body    *BlockStatement
+	Name    *Identifier
+	Catch   *BlockStatement
+	Finally *BlockStatement
 }
 
 func (ts *TryExpression) expressionNode()      {}
 func (ts *TryExpression) TokenLiteral() string { return ts.Token.Literal }
 func (ts *TryExpression) String() string {
-	name := ""
-	if ts.Name != nil {
-		name = ts.Name.Value + " "
+	out := "try " + ts.Body.String()
+	if ts.Catch != nil {
+		out += " catch "
+		if ts.Name != nil {
+			out += ts.Name.Value + " "
+		}
+		out += ts.Catch.String()
 	}
-	return "try " + ts.Body.String() + " catch " + name + ts.Catch.String()
+	if ts.Finally != nil {
+		out += " finally " + ts.Finally.String()
+	}
+	return out
 }
 
 // ThrowStatement raises an error: `throw "message"`.

@@ -1251,17 +1251,27 @@ func (p *Parser) parseTryExpression() ast.Expression {
 	}
 	stmt.Body = p.parseBlockStatement()
 
-	if !p.expectPeek(token.CATCH) {
-		return nil
+	if !p.peekTokenIs(token.FINALLY) {
+		if !p.expectPeek(token.CATCH) {
+			return nil
+		}
+		if p.peekTokenIs(token.IDENT) {
+			p.nextToken()
+			stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		}
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		stmt.Catch = p.parseBlockStatement()
 	}
-	if p.peekTokenIs(token.IDENT) {
+
+	if p.peekTokenIs(token.FINALLY) {
 		p.nextToken()
-		stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		stmt.Finally = p.parseBlockStatement()
 	}
-	if !p.expectPeek(token.LBRACE) {
-		return nil
-	}
-	stmt.Catch = p.parseBlockStatement()
 
 	return stmt
 }

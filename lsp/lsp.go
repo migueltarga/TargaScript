@@ -238,7 +238,7 @@ func uriPath(uri string) string {
 }
 
 var keywords = []string{"let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
-	"continue", "load", "as", "await", "try", "catch", "throw", "match", "true", "false", "null", "this"}
+	"continue", "load", "as", "await", "try", "catch", "finally", "throw", "match", "true", "false", "null", "this"}
 
 // completions lists the names the file declares, the builtins and the
 // keywords.

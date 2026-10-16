@@ -232,7 +232,7 @@ type completingSource interface {
 
 // replKeywords are completed along with the names.
 var replKeywords = []string{"let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
-	"continue", "load", "await", "try", "catch", "throw", "match", "true", "false", "null", "this"}
+	"continue", "load", "await", "try", "catch", "finally", "throw", "match", "true", "false", "null", "this"}
 
 func run(lines lineSource, out io.Writer, noColor bool, debug bool) {
 	sess := newSession()

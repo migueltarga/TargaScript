@@ -1,5 +1,7 @@
 package compiler
 
+import "github.com/migueltarga/TargaScript/ast"
+
 // SymbolScope says where a variable lives.
 type SymbolScope int
 
@@ -79,6 +81,14 @@ type functionScope struct {
 	recompile bool
 
 	loops int // loops open in this function, for break and continue
+	tries []openTry
+}
+
+// openTry is a try block whose handler is open at the code being compiled,
+// for return, break and continue to close it and run its finally block.
+type openTry struct {
+	finally *ast.BlockStatement
+	loops   int
 }
 
 func newFunctionScope(outer *functionScope, captured map[int]bool) *functionScope {
