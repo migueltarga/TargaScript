@@ -182,6 +182,18 @@ func (l *Lexer) NextToken() token.Token {
 		}
 		l.readChar()
 		return tok
+	case '`':
+		literal, template, interpolated, terminated := l.readRawString()
+		switch {
+		case !terminated:
+			tok = l.newToken(token.ILLEGAL, "`"+literal, tokenLine, tokenColumn)
+		case interpolated:
+			tok = l.newToken(token.TEMPLATE, template, tokenLine, tokenColumn)
+		default:
+			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
+		}
+		l.readChar()
+		return tok
 	case 0:
 		tok = l.newToken(token.EOF, "", tokenLine, tokenColumn)
 	default:
@@ -377,6 +389,46 @@ func (l *Lexer) atExponent() bool {
 // readString reads a string literal, processing escapes. It reports whether
 // the string contains ${...} interpolations, which are skipped over without
 // being processed, and whether its closing quote was found.
+// readRawString reads a string in backticks, which can span lines and
+// keeps backslashes as written: only \` and \${ stand for ` and ${. It
+// returns the text, and for one with ${...} the same string written the
+// way a template in double quotes would be, which the parser reads.
+func (l *Lexer) readRawString() (text, template string, interpolated, terminated bool) {
+	var value, quoted strings.Builder
+	for {
+		l.readChar()
+		switch {
+		case l.ch == 0:
+			return value.String(), "", interpolated, false
+		case l.ch == '`':
+			return value.String(), quoted.String(), interpolated, true
+		case l.ch == '\\' && l.peekChar() == '`':
+			l.readChar()
+			value.WriteRune('`')
+			quoted.WriteRune('`')
+		case l.ch == '\\' && l.peekChar() == '$':
+			l.readChar()
+			value.WriteRune('$')
+			quoted.WriteString("\\$")
+		case l.ch == '\\' || l.ch == '"':
+			value.WriteRune(l.ch)
+			quoted.WriteRune('\\')
+			quoted.WriteRune(l.ch)
+		case l.ch == '$' && l.peekChar() == '{':
+			interpolated = true
+			start := l.position
+			l.readChar()
+			if !l.skipInterpolation() {
+				return value.String(), "", interpolated, false
+			}
+			quoted.WriteString(l.input[start : l.position+1])
+		default:
+			value.WriteRune(l.ch)
+			quoted.WriteRune(l.ch)
+		}
+	}
+}
+
 func (l *Lexer) readString() (string, bool, bool) {
 	interpolated := false
 	escaped := false

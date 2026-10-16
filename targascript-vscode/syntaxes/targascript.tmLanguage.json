@@ -27,23 +27,40 @@
       ]
     },
     "strings": {
-      "name": "string.quoted.double.targascript",
-      "begin": "\"",
-      "end": "\"",
       "patterns": [
         {
-          "name": "constant.character.escape.targascript",
-          "match": "\\\\."
+          "name": "string.quoted.double.targascript",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.targascript",
+              "match": "\\\\."
+            },
+            { "include": "#interpolation" }
+          ]
         },
         {
-          "name": "meta.embedded.interpolation.targascript",
-          "begin": "\\$\\{",
-          "end": "\\}",
-          "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.targascript" } },
-          "endCaptures": { "0": { "name": "punctuation.section.embedded.end.targascript" } },
-          "patterns": [{ "include": "$self" }]
+          "name": "string.quoted.other.template.targascript",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            {
+              "name": "constant.character.escape.targascript",
+              "match": "\\\\[`$]"
+            },
+            { "include": "#interpolation" }
+          ]
         }
       ]
+    },
+    "interpolation": {
+      "name": "meta.embedded.interpolation.targascript",
+      "begin": "\\$\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.targascript" } },
+      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.targascript" } },
+      "patterns": [{ "include": "$self" }]
     },
     "keywords": {
       "patterns": [
