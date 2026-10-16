@@ -1,0 +1,143 @@
+// app.tg
+// A live ASCII camera written in TargaScript, running in the browser. Each
+// frame the camera picture is shrunk to one pixel per character, and
+// ascii.tg turns those pixels into text.
+
+load "ascii.tg"
+
+let doc = js.document
+let video = doc.getElementById("video")
+let art = doc.getElementById("art")
+let painted = doc.getElementById("painted")
+let stats = doc.getElementById("stats")
+let message = doc.getElementById("message")
+let columnsInput = doc.getElementById("columns")
+let styleInput = doc.getElementById("style")
+let colorInput = doc.getElementById("color")
+let invertInput = doc.getElementById("invert")
+
+// The camera picture is drawn small on this canvas to read its pixels
+let small = doc.createElement("canvas")
+let smallContext = small.getContext("2d", {"willReadFrequently": true})
+let paintContext = painted.getContext("2d")
+
+// Characters are about twice as tall as they are wide
+const CELL_ASPECT = 0.5
+const CELL_WIDTH = 7
+const CELL_HEIGHT = 12
+
+let source = "none"
+let started = clock()
+let frames = 0
+let frameTimes = 0.0
+let lastStats = clock()
+
+fn show(text) {
+    message.textContent = text
+    message.hidden = text == ""
+}
+
+// The size of the picture in characters
+fn grid() {
+    let columns = toInt(columnsInput.value)
+    let aspect = if source == "camera" && video.videoWidth > 0 {
+        video.videoHeight / toFloat(video.videoWidth)
+    } else {
+        0.75
+    }
+    [columns, max(1, round(columns * aspect * CELL_ASPECT))]
+}
+
+// The red, green, blue and alpha values of the cells, one after another
+fn readPixels(columns, rows) {
+    if source != "camera" {
+        return plasma(columns, rows, (clock() - started) / 1000)
+    }
+    small.width = columns
+    small.height = rows
+    // Mirrored, as people expect to see themselves
+    smallContext.setTransform(-1, 0, 0, 1, columns, 0)
+    smallContext.drawImage(video, 0, 0, columns, rows)
+    js.Array.from(smallContext.getImageData(0, 0, columns, rows).data)
+}
+
+// Each character in the color of its cell, on a canvas
+fn paint(rows, pixels, columns) {
+    painted.width = columns * CELL_WIDTH
+    painted.height = rows.length * CELL_HEIGHT
+    paintContext.fillStyle = "#000"
+    paintContext.fillRect(0, 0, painted.width, painted.height)
+    paintContext.font = "${CELL_HEIGHT}px ui-monospace, Menlo, monospace"
+    paintContext.textBaseline = "top"
+    repeat y, row in rows {
+        repeat x in 0..columns - 1 {
+            let c = row[x]
+            if c == " " { continue }
+            let j = (y * columns + x) * 4
+            paintContext.fillStyle = "rgb(${pixels[j]},${pixels[j + 1]},${pixels[j + 2]})"
+            paintContext.fillText(c, x * CELL_WIDTH, y * CELL_HEIGHT)
+        }
+    }
+}
+
+fn frame() {
+    let begin = clock()
+    let [columns, rows] = grid()
+    let pixels = readPixels(columns, rows)
+    let light = lightness(pixels)
+    let invert = invertInput.checked
+    let lines = if styleInput.value == "edges" {
+        edges(light, columns, invert)
+    } else {
+        shade(light, columns, STYLES[styleInput.value], invert)
+    }
+
+    let colored = colorInput.checked
+    art.hidden = colored
+    painted.hidden = !colored
+    if colored {
+        paint(lines, pixels, columns)
+    } else {
+        art.textContent = lines.join("\n")
+    }
+
+    frames += 1
+    frameTimes += clock() - begin
+    if clock() - lastStats > 500 {
+        let fps = frames * 1000 / (clock() - lastStats)
+        stats.textContent = "${columns}×${rows} characters · ${frameTimes / frames:.1f} ms per frame in TargaScript · ${fps:.0f} fps"
+        frames = 0
+        frameTimes = 0.0
+        lastStats = clock()
+    }
+    js.requestAnimationFrame(frame)
+}
+
+fn startCamera() {
+    let media = js.navigator.mediaDevices
+    if media == null {
+        show("This browser can't use a camera here. Showing a plasma instead.")
+        return null
+    }
+    show("Waiting for the camera...")
+    media.getUserMedia({"video": {"facingMode": "user"}, "audio": false}).then(
+        stream => {
+            video.srcObject = stream
+            video.play()
+            source = "camera"
+            show("")
+            doc.getElementById("start").hidden = true
+        },
+        error => show("No camera (${error.message}). Showing a plasma instead.")
+    )
+}
+
+doc.getElementById("start").addEventListener("click", () => startCamera())
+
+doc.getElementById("copy").addEventListener("click", () => {
+    js.navigator.clipboard.writeText(art.textContent)
+    show("Copied the frame as text.")
+    js.setTimeout(() => show(""), 1500)
+})
+
+js.requestAnimationFrame(frame)

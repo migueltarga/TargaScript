@@ -1,0 +1,102 @@
+// ascii.tg
+// Turns pixels into characters. It is plain TargaScript with nothing from
+// the browser, so it runs from the command line too.
+
+// Characters from dark to light, for each style
+const STYLES = {
+    classic: " .:-=+*#%@",
+    blocks: " ░▒▓█",
+    dots: " ·:•●",
+    binary: "  0011",
+}
+
+// The lightness of each pixel, from 0 to 255, given its red, green, blue and
+// alpha values one after another, as a canvas gives them
+fn lightness(pixels) {
+    let out = []
+    repeat i in 0..pixels.length / 4 - 1 {
+        let j = i * 4
+        out.insert((pixels[j] * 299 + pixels[j + 1] * 587 + pixels[j + 2] * 114) / 1000)
+    }
+    out
+}
+
+// The rows of characters for the lightness of a picture width cells wide,
+// with chars from dark to light
+fn shade(light, width, chars, invert) {
+    let last = chars.length - 1
+    let rows = []
+    repeat y in 0..light.length / width - 1 {
+        let row = ""
+        repeat x in 0..width - 1 {
+            let v = light[y * width + x]
+            if invert { v = 255 - v }
+            row += chars[v * last / 255]
+        }
+        rows.insert(row)
+    }
+    rows
+}
+
+// The outlines of a picture, drawn with lines that follow their direction.
+// It measures how fast the lightness changes across and down each cell (the
+// Sobel filter) and keeps the cells where it changes the most. The cells on
+// the border are left blank.
+fn edges(light, width, invert) {
+    let height = light.length / width
+    let blank = " ".repeat(width)
+    let rows = [blank]
+    repeat y in 1..height - 2 {
+        let row = " "
+        repeat x in 1..width - 2 {
+            let i = y * width + x
+            let up = i - width
+            let down = i + width
+            let gx = light[up + 1] + 2 * light[i + 1] + light[down + 1] - light[up - 1] - 2 * light[i - 1] - light[down - 1]
+            let gy = light[down - 1] + 2 * light[down] + light[down + 1] - light[up - 1] - 2 * light[up] - light[up + 1]
+            if abs(gx) + abs(gy) < 160 {
+                let v = if invert { 255 - light[i] } else { light[i] }
+                row += if v > 200 { "." } else { " " }
+                continue
+            }
+            // The line runs across the change, a quarter turn from it
+            row += match round(atan2(gy, gx) * 4 / PI) {
+                -4, 0, 4 => "|"
+                -2, 2 => "-"
+                -3, 1 => "/"
+                _ => "\\"
+            }
+        }
+        rows.insert(row + " ")
+    }
+    rows.insert(blank)
+    rows
+}
+
+// The colors of the plasma, from the height of its waves
+let palette = range(0, 255).map(i => {
+    let a = i * PI / 128
+    [toInt((sin(a) + 1) * 127), toInt((sin(a + 2) + 1) * 127), toInt((sin(a + 4) + 1) * 127)]
+})
+
+// Pixels of a moving plasma, for when there's no camera: waves of color
+// that change with the time t, in seconds. The waves that run across or down
+// are worked out once per column or row.
+fn plasma(width, height, t) {
+    let across = range(0, width - 1).map(x => sin(x * 10.0 / width + t))
+    let down = range(0, height - 1).map(y => sin((y * 8.0 / height + t) / 2))
+    let pixels = []
+    repeat y in 0..height - 1 {
+        let v = y / toFloat(height)
+        repeat x in 0..width - 1 {
+            let u = x / toFloat(width)
+            let wave = across[x] + down[y] + sin((u + v) * 3 + t / 2) + sin(hypot(u - 0.5, v - 0.5) * 14 - t * 2)
+            let color = palette[toInt(wave * 32 + 512) % 256]
+            pixels.insert(color[0])
+            pixels.insert(color[1])
+            pixels.insert(color[2])
+            pixels.insert(255)
+        }
+    }
+    pixels
+}
