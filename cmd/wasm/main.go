@@ -193,6 +193,7 @@ func init() {
 	vm.MaxNestedRuns = maxNestedRuns
 	compiler.ReadFile = readFile
 	evaluator.SetHost(jsbridge.Host{})
+	evaluator.SetRegexEngine(jsbridge.Regex{})
 	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }

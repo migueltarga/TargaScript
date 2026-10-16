@@ -42,6 +42,7 @@ var loop = eventloop.New()
 func init() {
 	evaluator.SetHost(loop)
 	evaluator.SetSystem(osSystem{})
+	evaluator.SetRegexEngine(goRegex{})
 }
 
 // SetMainDir sets the directory used to resolve `load` paths in the main
