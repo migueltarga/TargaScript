@@ -6,6 +6,8 @@
 
 TargaScript is a lightweight scripting language with a clean, intuitive syntax. It's designed to be easy to learn while providing powerful features for various programming tasks. TargaScript files use the `.tg` extension.
 
+**[▶ Try TargaScript in your browser](https://migueltarga.github.io/TargaScript/)**, no install needed. The playground itself is written in TargaScript and runs on WebAssembly.
+
 ## 🌟 Features
 
 - Clean, intuitive syntax
@@ -16,6 +18,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - Variable scoping that behaves intuitively
 - String interpolation and formatting
 - Powerful data transformation capabilities
+- Runs in web pages, with access to JavaScript and the DOM
 
 ## 📝 Simple Example
 
