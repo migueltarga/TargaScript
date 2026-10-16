@@ -363,7 +363,7 @@ Strings are sent as text or HTML, objects and arrays as JSON. `response(body, {s
 
 ## 🌐 TargaScript in the Browser
 
-TargaScript also runs in web pages: try the [to-do list](https://migueltarga.github.io/TargaScript/demos/todo/), written entirely in TargaScript ([source](playground/demos/todo/app.tg)). The interpreter is compiled to WebAssembly, and scripts reach JavaScript and the DOM through `js`, which is `globalThis`:
+TargaScript also runs in web pages: try the [to-do list](https://migueltarga.github.io/TargaScript/demos/todo/) and the [Markdown editor](https://migueltarga.github.io/TargaScript/demos/markdown/), written entirely in TargaScript ([source](playground/demos/todo/app.tg), [source](playground/demos/markdown/app.tg)). The interpreter is compiled to WebAssembly, and scripts reach JavaScript and the DOM through `js`, which is `globalThis`:
 
 ```html
 <button id="hello">Say hello</button>
