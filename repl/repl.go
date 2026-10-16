@@ -42,6 +42,7 @@ var loop = eventloop.New()
 func init() {
 	evaluator.SetHost(loop)
 	evaluator.SetSystem(osSystem{})
+	evaluator.SetServer(httpServer{})
 	evaluator.SetRegexEngine(goRegex{})
 }
 

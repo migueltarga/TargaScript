@@ -16,6 +16,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 - **Asynchronous code that reads top to bottom.** `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser, with no callbacks.
 - **Errors that help.** Mistakes point at the exact spot in your code, and a typo gets a "Did you mean...?".
 - **Small, modern syntax.** The pipe operator `|>`, arrow functions, `match`, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch`, closures.
+- **A web server built in.** `serve(8080, req => "Hello")` is a working HTTP server; return an object and it's sent as JSON.
 - **Tests built in.** `test("name", fn)`, `assert` and `assertEqual` need no library, and `targascript test` runs every `*_test.tg` file.
 - **Built for working with data.** JSON, `map`/`filter`/`reduce`, `groupBy`, `sortBy`, `sum`, `unique` and more, on arrays and objects that keep their order.
 - **A bytecode VM.** Programs compile to bytecode, which runs several times faster than the original tree-walking interpreter and allows 10,000 nested calls, in the browser too.
@@ -299,6 +300,20 @@ repeat file in args {
 ```
 
 From a clone of the repository, use `go run ./cmd/targascript` in place of `targascript`.
+
+### A web server in a few lines
+
+```
+serve(8080, fn(req) {
+    match req.path {
+        "/" => "<h1>Hello from TargaScript</h1>"
+        "/api/time" => ({now: timeFormat(now(), "HH:mm:ss")})
+        _ => response("Not found", {status: 404})
+    }
+})
+```
+
+Strings are sent as text or HTML, objects and arrays as JSON. `response(body, {status, headers})` sets the rest. See the [reference](docs/REFERENCE.md#web-servers) for the request object.
 
 ## 🌐 TargaScript in the Browser
 
