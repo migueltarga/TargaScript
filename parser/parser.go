@@ -1259,13 +1259,14 @@ func (p *Parser) parsePipeExpression(value ast.Expression) ast.Expression {
 	case *ast.CallExpression:
 		piped := *call
 		piped.Arguments = append([]ast.Expression{value}, call.Arguments...)
+		piped.Piped = true
 		return &piped
 	case *ast.MethodCallExpression:
 		piped := *call
 		piped.Arguments = append([]ast.Expression{value}, call.Arguments...)
 		return &piped
 	}
-	return &ast.CallExpression{Token: pipe, Function: target, Arguments: []ast.Expression{value}}
+	return &ast.CallExpression{Token: pipe, Function: target, Arguments: []ast.Expression{value}, Piped: true}
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {

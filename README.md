@@ -79,12 +79,13 @@ let [first, ...rest] = [1, 2, 3]
 print(person.address?.city ?? "unknown")   // unknown
 
 let words = "  Hello World  "
-    |> it.trim().lower()
-    |> it.split(" ")
+    |> trim
+    |> lower
+    |> split(" ")
 print(words)                               // ["hello", "world"]
 ```
 
-[▶ Try it in the playground](https://script.targa.me/#code=bJHBasMwEETv-orJ4oNFhULaWyANvfUPejA-mFhxl8iykVRMcf3vxZIDpa1OEiNm3s5eHTpvTCxd0xuV7-w6nECvxtqBJGYBAFTMd3FRKOb1_7IjsQhhTcRofBgcTphpVegIerF8MaRA4cbWBjqiotEPnW_6nl23Kq0J3DmqFzF6drHMKNlLrz5S4s_Z75HQFFLCTghvRtNEsEKKAruNR-fobYScQcXMeMBh0SjmpC8k72NUV_YhKmitvQmxxgnVQeFR4aneGDfnpm29CeGsLxw_cT6DPtzNDZMjmRm3Z_adBt-GtVRkdrwN3rYAJbCvZ3DU0XNfSm2HyfhS_hDCaDmWBJIbQnL7p5nfNVX0nnaoQNOaR7X4DgAA__8)
+[▶ Try it in the playground](https://script.targa.me/#code=bJHBbrMwEITvforJikPQbznK31ukFPXWN-gBcUDBoVaMjdauUEV59wobLm057WrQzLfju0PPWsejawct82xcjyvoVVvrqcQsAICKeRcXiWJe_18OJBYhrI4YNQfvcMVMq0IX0Is1N00SFB7G2kAX1DSy77kdBuP6Vel0ML2jZhEjGxePGSV7qdWnLPHrO52Q0CRSwkEI1qNuI4xEioJxG4_K0dsJOYOK2eAfzotCMSd9oXI_o74bDlFCKcU6xAZX1GeJ_xJPzca4ObddxzqESt1M_ERVgT7cw_nJUZkZtzX7Tp67sJaKzI43z7YDKIF9PSOyGfbZ-knzvoTRmngkULnlJ6s_avnZUU3v6QElaFrDqBHfAQAA__8)
 
 ## 🔀 Matching Values
 

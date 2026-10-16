@@ -345,6 +345,11 @@ type CallExpression struct {
 	Token     token.Token
 	Function  Expression
 	Arguments []Expression
+
+	// Piped is set for value |> f(args), with value as the first
+	// argument. When f isn't a function the program has, the call is the
+	// method f of value: xs |> map(it * 2) is xs.map(it * 2).
+	Piped bool
 }
 
 func (ce *CallExpression) expressionNode()      {}

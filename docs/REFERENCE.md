@@ -53,7 +53,7 @@ From loosest to tightest:
 | Operators | Meaning |
 |---|---|
 | `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` | assignment |
-| `\|>` | pipe: `x \|> f` is `f(x)`, `x \|> f(a)` is `f(x, a)`, and `x \|> it.trim()` uses `it` for `x` |
+| `\|>` | pipe: `x \|> f` is `f(x)` and `x \|> f(a)` is `f(x, a)`; when `f` isn't a function, they are the methods `x.f()` and `x.f(a)`, as in `xs \|> map(it * 2) \|> sum`; `x \|> it.trim()` uses `it` for `x` |
 | `??` | the right side when the left is null |
 | `\|\|` | or: the left side if truthy, else the right side |
 | `&&` | and: the left side if falsy, else the right side |
