@@ -14,7 +14,7 @@ TargaScript provides a rich set of built-in functions for common operations:
 - `printf(format, ...args)` - Print formatted values using format specifiers
 - `format(format, ...args)` - Format values like `printf`, returning the text instead of printing it
 - `type(arg)` - Return the type of a value as a string
-- `range(start, end)` - Create an array with integers from start to end (inclusive)
+- `range(start, end, step)` - Create an array with integers from start to end (inclusive), counting by step (1 when left out)
 
 #### Type Conversion
 
@@ -27,12 +27,12 @@ TargaScript provides a rich set of built-in functions for common operations:
 - `abs(num)` - Return the absolute value of a number
 - `sqrt(num)` - Return the square root of a number
 - `pow(base, exponent)` - Return base raised to the power of exponent (or use `base ** exponent`, which keeps integers as integers)
-- `round(num)` - Round a number to the nearest integer
+- `round(num, places)` - Round a number to the nearest integer, or to a number of decimal places
 - `floor(num)` - Round a number down to the nearest integer
 - `ceil(num)` - Round a number up to the nearest integer
-- `min(a, b)` - Return the smaller of two numbers
-- `max(a, b)` - Return the larger of two numbers
-- `random()` - Generate a random number between 0 and 1
+- `min(a, b, ...)` / `min(list)` - Return the smallest number
+- `max(a, b, ...)` / `max(list)` - Return the largest number
+- `random()` / `random(a, b)` / `random(list)` - A float between 0 and 1, an integer from a to b, or a random element
 
 #### JSON
 

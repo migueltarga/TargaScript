@@ -3,7 +3,6 @@ package evaluator
 import (
 	"fmt"
 	"math"
-	"math/rand/v2"
 	"strconv"
 	"time"
 
@@ -79,34 +78,6 @@ func init() {
 				fmt.Fprintln(output) // add newline at the end
 
 				return NULL
-			},
-		},
-
-		// Add a built-in range function for creating arrays of sequential integers
-		"range": {
-			Name: "range",
-			Fn: func(args ...object.Object) object.Object {
-				if len(args) != 2 {
-					return &object.Error{
-						Message: fmt.Sprintf("wrong number of arguments for range. got=%d, want=2", len(args)),
-					}
-				}
-
-				start, ok := args[0].(*object.Integer)
-				if !ok {
-					return &object.Error{
-						Message: fmt.Sprintf("first argument to range must be an integer, got %s", typeName(args[0])),
-					}
-				}
-
-				end, ok := args[1].(*object.Integer)
-				if !ok {
-					return &object.Error{
-						Message: fmt.Sprintf("second argument to range must be an integer, got %s", typeName(args[1])),
-					}
-				}
-
-				return integerRange(start.Value, end.Value, 0, 0)
 			},
 		},
 
@@ -327,36 +298,6 @@ func init() {
 			},
 		},
 
-		// round - Round a number to the nearest integer
-		"round": {
-			Name: "round",
-			Fn: func(args ...object.Object) object.Object {
-				if len(args) != 1 {
-					return &object.Error{
-						Message: fmt.Sprintf("wrong number of arguments for round. got=%d, want=1", len(args)),
-					}
-				}
-
-				var value float64
-				switch arg := args[0].(type) {
-				case *object.Integer:
-					return arg
-				case *object.Float:
-					value = arg.Value
-				default:
-					return &object.Error{
-						Message: fmt.Sprintf("argument to `round` must be a number, got %s", typeName(args[0])),
-					}
-				}
-
-				result, ok := floatToInt(math.Round(value))
-				if !ok {
-					return &object.Error{Message: "integer overflow"}
-				}
-				return &object.Integer{Value: result}
-			},
-		},
-
 		// floor - Round a number down to the nearest integer
 		"floor": {
 			Name: "floor",
@@ -414,102 +355,6 @@ func init() {
 					return &object.Error{Message: "integer overflow"}
 				}
 				return &object.Integer{Value: result}
-			},
-		},
-
-		// min - Minimum of two numbers
-		"min": {
-			Name: "min",
-			Fn: func(args ...object.Object) object.Object {
-				if len(args) != 2 {
-					return &object.Error{
-						Message: fmt.Sprintf("wrong number of arguments for min. got=%d, want=2", len(args)),
-					}
-				}
-
-				var val1, val2 float64
-
-				switch arg := args[0].(type) {
-				case *object.Integer:
-					val1 = float64(arg.Value)
-				case *object.Float:
-					val1 = arg.Value
-				default:
-					return &object.Error{
-						Message: fmt.Sprintf("first argument to `min` must be a number, got %s", typeName(args[0])),
-					}
-				}
-
-				switch arg := args[1].(type) {
-				case *object.Integer:
-					val2 = float64(arg.Value)
-				case *object.Float:
-					val2 = arg.Value
-				default:
-					return &object.Error{
-						Message: fmt.Sprintf("second argument to `min` must be a number, got %s", typeName(args[1])),
-					}
-				}
-
-				if val1 <= val2 {
-					return args[0]
-				}
-				return args[1]
-			},
-		},
-
-		// max - Maximum of two numbers
-		"max": {
-			Name: "max",
-			Fn: func(args ...object.Object) object.Object {
-				if len(args) != 2 {
-					return &object.Error{
-						Message: fmt.Sprintf("wrong number of arguments for max. got=%d, want=2", len(args)),
-					}
-				}
-
-				var val1, val2 float64
-
-				switch arg := args[0].(type) {
-				case *object.Integer:
-					val1 = float64(arg.Value)
-				case *object.Float:
-					val1 = arg.Value
-				default:
-					return &object.Error{
-						Message: fmt.Sprintf("first argument to `max` must be a number, got %s", typeName(args[0])),
-					}
-				}
-
-				switch arg := args[1].(type) {
-				case *object.Integer:
-					val2 = float64(arg.Value)
-				case *object.Float:
-					val2 = arg.Value
-				default:
-					return &object.Error{
-						Message: fmt.Sprintf("second argument to `max` must be a number, got %s", typeName(args[1])),
-					}
-				}
-
-				if val1 >= val2 {
-					return args[0]
-				}
-				return args[1]
-			},
-		},
-
-		// random - Generate a random number between 0 and 1
-		"random": {
-			Name: "random",
-			Fn: func(args ...object.Object) object.Object {
-				if len(args) != 0 {
-					return &object.Error{
-						Message: fmt.Sprintf("wrong number of arguments for random. got=%d, want=0", len(args)),
-					}
-				}
-
-				return &object.Float{Value: rand.Float64()}
 			},
 		},
 
