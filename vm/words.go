@@ -178,10 +178,9 @@ func (vm *VM) loopWords(base int) object.Object {
 
 		case code.RJump:
 			if w.A() < pc && vm.MaxSteps > 0 {
+				// The jump back has the position of its loop
 				if err := vm.step(f, pc-1); err != nil {
-					// Without a position of its own, the error takes the
-					// one of the loop's start
-					f.ip = w.A()
+					f.ip = pc
 					return err
 				}
 			}
