@@ -225,9 +225,26 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 	run(plainLines{bufio.NewScanner(in), out}, out, noColor, debug)
 }
 
+// completingSource is a lineSource that can complete names with Tab.
+type completingSource interface {
+	setNames(names func() []string)
+}
+
+// replKeywords are completed along with the names.
+var replKeywords = []string{"let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
+	"continue", "load", "await", "try", "catch", "throw", "match", "true", "false", "null", "this"}
+
 func run(lines lineSource, out io.Writer, noColor bool, debug bool) {
 	sess := newSession()
 	var code strings.Builder
+
+	if completing, ok := lines.(completingSource); ok {
+		completing.setNames(func() []string {
+			names := append([]string{}, sess.compiler.Globals().Names()...)
+			names = append(names, evaluator.BuiltinNames()...)
+			return append(names, replKeywords...)
+		})
+	}
 
 	for {
 		prompt := PROMPT
