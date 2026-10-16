@@ -9,11 +9,20 @@ import (
 	"github.com/migueltarga/TargaScript/repl"
 )
 
+// version is set by the release build.
+var version = "dev"
+
 func main() {
+	showVersion := flag.Bool("version", false, "Print the version and exit")
 	debug := flag.Bool("debug", false, "Enable debug mode with AST pretty printing (colored)")
 	debugNoColor := flag.Bool("debug-no-color", false, "Enable debug mode with AST pretty printing (no colors)")
 
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("targascript", version)
+		return
+	}
 
 	// Calculate color and debug settings
 	noColor := *debugNoColor
@@ -41,7 +50,7 @@ func main() {
 		}
 
 		if debugEnabled {
-			fmt.Printf("Welcome to TargaScript v0.0.1\n")
+			fmt.Printf("Welcome to TargaScript %s\n", version)
 			fmt.Printf("Executing file '%s'...\n", filename)
 		}
 
@@ -53,7 +62,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Welcome to TargaScript v0.0.1\n")
+	fmt.Printf("Welcome to TargaScript %s\n", version)
 	fmt.Println("")
 	fmt.Println("Type commands and press Enter to execute")
 	fmt.Println("Press Ctrl+C to exit")
