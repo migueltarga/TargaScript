@@ -335,6 +335,10 @@ func assign(target ast.Expression, val object.Object, env *object.Environment, l
 			return val
 		}
 
+		if external, ok := obj.(object.External); ok {
+			return withPosition(external.Set(propertyName, val), line, column)
+		}
+
 		return newError(line, column, "cannot assign to property of non-object: %s", obj.Type())
 
 	case *ast.IndexExpression:
@@ -371,6 +375,14 @@ func assign(target ast.Expression, val object.Object, env *object.Environment, l
 
 			hash.Set(hashable, val)
 			return val
+		}
+
+		if external, ok := container.(object.External); ok {
+			name, ok := externalKey(index)
+			if !ok {
+				return newError(line, column, "index must be a string or an integer, got: %s", index.Type())
+			}
+			return withPosition(external.Set(name, val), line, column)
 		}
 
 		return newError(line, column, "index assignment not supported for: %s", container.Type())
@@ -711,6 +723,8 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 			return newError(0, 0, "builtin function is nil")
 		}
 		return fn.Fn(args...)
+	case object.External:
+		return fn.Call(args)
 	default:
 		return newError(0, 0, "not a function: %s", fn.Type())
 	}
@@ -718,7 +732,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 func isCallable(obj object.Object) bool {
 	switch obj.(type) {
-	case *object.Function, *object.Builtin:
+	case *object.Function, *object.Builtin, object.External:
 		return true
 	default:
 		return false
@@ -759,6 +773,14 @@ func unwrapReturnValue(obj object.Object) object.Object {
 }
 
 func evalIndexExpression(left, index object.Object, line, column int) object.Object {
+	if external, ok := left.(object.External); ok {
+		name, ok := externalKey(index)
+		if !ok {
+			return newError(line, column, "index must be a string or an integer, got: %s", index.Type())
+		}
+		return withPosition(external.Get(name), line, column)
+	}
+
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
@@ -838,6 +860,8 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 
 func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.Environment) object.Object {
 	switch obj := obj.(type) {
+	case object.External:
+		return withPosition(obj.Get(node.Property.Value), node.Token.Line, node.Token.Column)
 	case *object.Array:
 		propertyName := node.Property.Value
 		switch propertyName {
@@ -875,6 +899,11 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 
 func evalMethodCallExpression(obj object.Object, method string, args []object.Object, line, column int) object.Object {
 	switch obj := obj.(type) {
+	case object.External:
+		if method == "new" {
+			return withPosition(obj.New(args), line, column)
+		}
+		return withPosition(obj.CallMethod(method, args), line, column)
 	case *object.String:
 		switch method {
 		case "trim":
