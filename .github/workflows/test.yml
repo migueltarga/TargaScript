@@ -34,8 +34,8 @@ jobs:
         run: |
           go build -o targascript ./cmd/targascript
           for f in examples/*.tg; do
-            # const_test.tg ends with an intentional error
-            [ "$f" = "examples/const_test.tg" ] && continue
+            # constants.tg ends with an intentional error
+            [ "$f" = "examples/constants.tg" ] && continue
             echo "== $f"
             ./targascript "$f" > /dev/null
           done

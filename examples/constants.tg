@@ -1,4 +1,4 @@
-// const_test.tg - Testing the const keyword behavior
+// constants.tg - How the const keyword behaves
 //
 // This file tests the behavior of constants in TargaScript
 // to ensure they can't be reassigned after declaration.
