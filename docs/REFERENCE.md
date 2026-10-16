@@ -57,7 +57,7 @@ From loosest to tightest:
 | `\|\|` | or: the left side if truthy, else the right side |
 | `&&` | and: the left side if falsy, else the right side |
 | `==` `!=` | equality; arrays and objects compare by content, and `1 == 1.0` |
-| `<` `>` `<=` `>=` `in` | comparison of numbers or strings; `x in list` (an element), `"key" in object`, `"part" in text`, `n in 1..10` (between the ends, without building the range) |
+| `<` `>` `<=` `>=` `in` | comparison of numbers, strings, or arrays element by element; `x in list` (an element), `"key" in object`, `"part" in text`, `n in 1..10` (between the ends, without building the range) |
 | `..` | inclusive range of integers: `1..3` is `[1, 2, 3]` |
 | `+` `-` `^` | addition (and joining strings or arrays), subtraction, bitwise xor |
 | `*` `/` `%` | multiplication (and repeating strings: `"-" * 3`), division, remainder |
@@ -135,6 +135,8 @@ print(numbers.reduce((a, b) => a + b, 0), numbers.sum())  // → 26 26
 print(numbers.sort())                  // sorts in place → [1, 3, 5, 8, 9]
 print([1, [2, [3]]].flatten(), [1, 1, 2].unique())  // → [1, 2, [3]] [1, 2]
 print(["bb", "a"].sortBy(s => s.length))            // → ["a", "bb"]
+print([["Rio", "Bia"], ["SP", "Ana"], ["Rio", "Ana"]].sort())  // arrays sort element by element
+// → [["Rio", "Ana"], ["Rio", "Bia"], ["SP", "Ana"]]
 print([1, 2, 3].chunk(2), ["a", "b"].zip([1, 2]))   // → [[1, 2], [3]] [["a", 1], ["b", 2]]
 print(["apple", "avocado", "kiwi"].groupBy(w => w[0]))
 // → {"a": ["apple", "avocado"], "k": ["kiwi"]}

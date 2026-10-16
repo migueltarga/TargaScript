@@ -162,6 +162,8 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return repeatString(left.(*object.String).Value, right.(*object.Integer).Value, line, column)
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.STRING_OBJ && operator == "*":
 		return repeatString(right.(*object.String).Value, left.(*object.Integer).Value, line, column)
+	case left.Type() == object.ARRAY_OBJ && right.Type() == object.ARRAY_OBJ && isOrdering(operator):
+		return compareArrays(operator, left.(*object.Array), right.(*object.Array), line, column)
 	case left.Type() == object.ARRAY_OBJ && right.Type() == object.ARRAY_OBJ && operator == "+":
 		leftElements := left.(*object.Array).Elements
 		rightElements := right.(*object.Array).Elements
@@ -179,6 +181,37 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	default:
 		return operatorError(line, column, operator, left, right)
 	}
+}
+
+func isOrdering(operator string) bool {
+	return operator == "<" || operator == ">" || operator == "<=" || operator == ">="
+}
+
+// compareArrays orders arrays element by element, the first difference
+// deciding, and a shorter array first when one starts the other: so
+// sortBy(p => [p.city, p.name]) sorts by city, then by name.
+func compareArrays(operator string, left, right *object.Array, line, column int) object.Object {
+	for i := 0; i < len(left.Elements) && i < len(right.Elements); i++ {
+		a, b := left.Elements[i], right.Elements[i]
+		if valuesEqual(a, b, 0) {
+			continue
+		}
+		less := evalInfixExpression("<", a, b, line, column)
+		if isError(less) {
+			return less
+		}
+		if less == TRUE {
+			return nativeBoolToBooleanObject(operator == "<" || operator == "<=")
+		}
+		return nativeBoolToBooleanObject(operator == ">" || operator == ">=")
+	}
+	switch {
+	case len(left.Elements) < len(right.Elements):
+		return nativeBoolToBooleanObject(operator == "<" || operator == "<=")
+	case len(left.Elements) > len(right.Elements):
+		return nativeBoolToBooleanObject(operator == ">" || operator == ">=")
+	}
+	return nativeBoolToBooleanObject(operator == "<=" || operator == ">=")
 }
 
 // evalInExpression reports whether value is an element of an array, a key
