@@ -130,6 +130,10 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		return newError(line, column, "cannot evaluate infix expression: one of the operands is nil")
 	}
 
+	if operator == "in" {
+		return evalInExpression(left, right, line, column)
+	}
+
 	if operator == ".." {
 		start, startOk := left.(*object.Integer)
 		end, endOk := right.(*object.Integer)
@@ -175,6 +179,34 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	default:
 		return operatorError(line, column, operator, left, right)
 	}
+}
+
+// evalInExpression reports whether value is an element of an array, a key
+// of an object or a part of a string.
+func evalInExpression(value, collection object.Object, line, column int) object.Object {
+	switch collection := collection.(type) {
+	case *object.Array:
+		for _, element := range collection.Elements {
+			if valuesEqual(value, element, 0) {
+				return TRUE
+			}
+		}
+		return FALSE
+	case *object.Hash:
+		key, ok := value.(object.Hashable)
+		if !ok {
+			return FALSE
+		}
+		_, found := collection.Pairs[key.HashKey()]
+		return nativeBoolToBooleanObject(found)
+	case *object.String:
+		part, ok := value.(*object.String)
+		if !ok {
+			return newError(line, column, "cannot look for %s in a string, only for a string", typeName(value))
+		}
+		return nativeBoolToBooleanObject(strings.Contains(collection.Value, part.Value))
+	}
+	return newError(line, column, "cannot use \"in\" with %s, only with an array, an object or a string", typeName(collection))
 }
 
 // maxRepeatLength keeps "x" * n from asking for more memory than any

@@ -51,7 +51,7 @@ From loosest to tightest:
 | `\|\|` | or: the left side if truthy, else the right side |
 | `&&` | and: the left side if falsy, else the right side |
 | `==` `!=` | equality; arrays and objects compare by content, and `1 == 1.0` |
-| `<` `>` `<=` `>=` | comparison of numbers or strings |
+| `<` `>` `<=` `>=` `in` | comparison of numbers or strings; `x in list` (an element), `"key" in object`, `"part" in text`, `n in 1..10` (between the ends, without building the range) |
 | `..` | inclusive range of integers: `1..3` is `[1, 2, 3]` |
 | `+` `-` `^` | addition (and joining strings or arrays), subtraction, bitwise xor |
 | `*` `/` `%` | multiplication (and repeating strings: `"-" * 3`), division, remainder |

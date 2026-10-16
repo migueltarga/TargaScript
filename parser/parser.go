@@ -34,6 +34,7 @@ var precedences = map[token.TokenType]int{
 	token.LT:        LESSGREATER,
 	token.GT:        LESSGREATER,
 	token.LT_EQ:     LESSGREATER,
+	token.IN:        LESSGREATER,
 	token.GT_EQ:     LESSGREATER,
 	token.RANGE:     RANGE,
 	token.PLUS:      SUM,
@@ -125,6 +126,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.IN, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.GT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT_EQ, p.parseInfixExpression)
@@ -1064,18 +1066,18 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 		stmt.Iterator = nil
 		stmt.Collection = p.parseExpression(LOWEST)
 
-		// A literal followed by in is a pattern: repeat [x, y] in points
-		if p.peekTokenIs(token.IN) {
-			pattern := literalPattern(stmt.Collection)
-			if pattern == nil {
-				p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected a name or a pattern like [a, b] before \"in\"")
+		// A literal before in is a pattern: repeat [x, y] in points
+		if in, ok := stmt.Collection.(*ast.InfixExpression); ok && in.Operator == "in" {
+			pattern := literalPattern(in.Left)
+			switch {
+			case pattern != nil:
+				stmt.Pattern = pattern
+				stmt.Iterator = &ast.Identifier{Token: pattern.Token, Value: pattern.String()}
+				stmt.Collection = in.Right
+			case isLiteral(in.Left):
+				p.errorAt(in.Token.Line, in.Token.Column, "expected a name or a pattern like [a, b] before \"in\"")
 				return nil
 			}
-			stmt.Pattern = pattern
-			stmt.Iterator = &ast.Identifier{Token: pattern.Token, Value: pattern.String()}
-			p.nextToken()
-			p.nextToken()
-			stmt.Collection = p.parseExpression(LOWEST)
 		}
 	}
 
@@ -1088,6 +1090,15 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	stmt.Body = p.parseBlockStatement()
 
 	return stmt
+}
+
+// isLiteral reports whether node is an array or object literal.
+func isLiteral(node ast.Expression) bool {
+	switch node.(type) {
+	case *ast.ArrayLiteral, *ast.HashLiteral:
+		return true
+	}
+	return false
 }
 
 func (p *Parser) parseArrayLiteral() ast.Expression {

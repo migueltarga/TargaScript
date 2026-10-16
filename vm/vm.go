@@ -246,7 +246,7 @@ func (vm *VM) loop(base int) object.Object {
 
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpPow, code.OpXor,
 			code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEqual,
-			code.OpLessThan, code.OpLessEqual, code.OpRange:
+			code.OpLessThan, code.OpLessEqual, code.OpRange, code.OpIn:
 			right := vm.stack[vm.sp-1]
 			left := vm.stack[vm.sp-2]
 			vm.sp -= 2
@@ -847,7 +847,7 @@ var operators = func() (names [256]string) {
 		code.OpAdd: "+", code.OpSub: "-", code.OpMul: "*", code.OpDiv: "/",
 		code.OpMod: "%", code.OpPow: "**", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
 		code.OpGreaterThan: ">", code.OpGreaterEqual: ">=", code.OpLessThan: "<",
-		code.OpLessEqual: "<=", code.OpRange: "..",
+		code.OpLessEqual: "<=", code.OpRange: "..", code.OpIn: "in",
 	} {
 		names[op] = name
 	}
