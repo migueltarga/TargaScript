@@ -63,7 +63,7 @@ From loosest to tightest:
 | `*` `/` `%` | multiplication (and repeating strings: `"-" * 3`), division, remainder |
 | `**` | power, grouping to the right: `2 ** 3 ** 2` is `512` |
 | `-x` `!x` | negation, not |
-| `x++` `x--` `f()` `a[i]` `o.p` `o?.p` | increment, call, index, property, optional property |
+| `x++` `x--` `f()` `a[i]` `o.p` `o?.p` `a?.[i]` | increment, call, index, property, optional property and index |
 
 `false`, `null`, `0`, `0.0`, `""`, `[]` and `{}` are falsy; everything else is truthy.
 
@@ -286,7 +286,7 @@ print(user.address?.city ?? "no city")       // → no city
 config.size ??= 12                           // assigns only when null
 ```
 
-`a?.b`, `a?.method()` give `null` when `a` is null, skipping the rest of the chain.
+`a?.b`, `a?.method()` and `a?.[i]` give `null` when `a` is null, skipping the rest of the chain.
 
 ## Errors
 
