@@ -60,9 +60,6 @@ type VM struct {
 
 	modules *modules
 
-	// Frames of finished calls, to reuse
-	freeFrames []*frame
-
 	// pendingError stops a resumed run right away, when the promise it
 	// awaited was rejected
 	pendingError *object.Error
@@ -839,14 +836,15 @@ func (vm *VM) loop(base int) object.Object {
 			if cl, ok := vm.stack[vm.sp-1-argc].(*object.Closure); ok && cl.Runner == vm &&
 				argc == cl.Fn.NumParams && !cl.Fn.Variadic && !cl.Fn.HasThis && len(vm.frames) <= evaluator.MaxCallDepth {
 				base := vm.sp - argc
-				vm.ensureStack(base + cl.Fn.NumLocals + 256)
+				if need := base + cl.Fn.NumLocals + 256; need > len(vm.stack) {
+					vm.ensureStack(need)
+				}
 				for i := vm.sp; i < base+cl.Fn.NumLocals; i++ {
 					vm.stack[i] = nil
 				}
 				vm.receiver = nil
 				vm.sp = base + cl.Fn.NumLocals
-				f = vm.newFrame(cl, base)
-				vm.frames = append(vm.frames, f)
+				f = vm.pushFrame(cl, base)
 				ins = cl.Fn.Instructions
 				continue
 			}
@@ -1005,7 +1003,6 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpReturnValue:
 			value := vm.pop()
 			vm.frames = vm.frames[:len(vm.frames)-1]
-			vm.freeFrames = append(vm.freeFrames, f)
 			vm.sp = f.base - 1
 			vm.push(value)
 			if len(vm.frames) == base {
@@ -1105,15 +1102,24 @@ func (vm *VM) call(f *frame, ip int, argc int) (switched bool, err *object.Error
 
 // newFrame returns a frame for a call, reusing one from a finished call
 // when possible.
-func (vm *VM) newFrame(cl *object.Closure, base int) *frame {
-	if n := len(vm.freeFrames); n > 0 {
-		f := vm.freeFrames[n-1]
-		vm.freeFrames = vm.freeFrames[:n-1]
-		f.cl, f.ip, f.base = cl, 0, base
-		f.loops, f.handlers = f.loops[:0], f.handlers[:0]
-		return f
+func (vm *VM) pushFrame(cl *object.Closure, base int) *frame {
+	// The frames of finished calls stay past the end of vm.frames, to
+	// reuse, unless a paused run took them
+	n := len(vm.frames)
+	var f *frame
+	if n < cap(vm.frames) {
+		vm.frames = vm.frames[:n+1]
+		f = vm.frames[n]
+	} else {
+		vm.frames = append(vm.frames, nil)
 	}
-	return &frame{cl: cl, base: base}
+	if f == nil {
+		f = &frame{}
+		vm.frames[n] = f
+	}
+	f.cl, f.ip, f.base = cl, 0, base
+	f.loops, f.handlers = f.loops[:0], f.handlers[:0]
+	return f
 }
 
 // callClosure starts a call to the closure below the argc arguments on the
@@ -1161,7 +1167,7 @@ func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
 	vm.receiver = nil
 	vm.sp = base + fn.NumLocals
 
-	vm.frames = append(vm.frames, vm.newFrame(cl, base))
+	vm.pushFrame(cl, base)
 	return nil
 }
 

@@ -52,6 +52,10 @@ func (vm *VM) suspend(base int, fb *fiber, s *suspension) {
 		vm.stack[i] = nil
 	}
 	vm.sp = bottom
+	// The paused run owns its frames now, so they can't be reused
+	for i := base; i < len(vm.frames); i++ {
+		vm.frames[i] = nil
+	}
 	vm.frames = vm.frames[:base]
 
 	s.awaited.Then(
