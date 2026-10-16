@@ -64,11 +64,6 @@ func precedence(k token.TokenType) (int, bool) {
 	return 0, false
 }
 
-type (
-	prefixParseFn func() ast.Expression
-	infixParseFn  func(ast.Expression) ast.Expression
-)
-
 type Parser struct {
 	l      *lexer.Lexer
 	errors []Error
@@ -76,9 +71,6 @@ type Parser struct {
 	prevToken token.Token
 	curToken  token.Token
 	peekToken token.Token
-
-	prefixParseFns map[token.TokenType]prefixParseFn
-	infixParseFns  map[token.TokenType]infixParseFn
 
 	// Number of errors already handled by statement recovery
 	recovered int
@@ -102,57 +94,6 @@ func New(l *lexer.Lexer) *Parser {
 		l:      l,
 		errors: []Error{},
 	}
-
-	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
-	p.registerPrefix(token.IDENT, p.parseIdentifier)
-	p.registerPrefix(token.INT, p.parseIntegerLiteral)
-	p.registerPrefix(token.FLOAT, p.parseFloatLiteral)
-	p.registerPrefix(token.BANG, p.parsePrefixExpression)
-	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
-	p.registerPrefix(token.SPREAD, p.parseSpreadExpression)
-	p.registerPrefix(token.TRY, p.parseTryExpression)
-	p.registerPrefix(token.MATCH, p.parseMatchExpression)
-	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
-	p.registerPrefix(token.TRUE, p.parseBoolean)
-	p.registerPrefix(token.FALSE, p.parseBoolean)
-	p.registerPrefix(token.NULL, p.parseNullLiteral)
-	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
-	p.registerPrefix(token.IF, p.parseIfExpression)
-	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
-	p.registerPrefix(token.STRING, p.parseStringLiteral)
-	p.registerPrefix(token.TEMPLATE, p.parseTemplateLiteral)
-	p.registerPrefix(token.THROW, p.parseThrowExpression)
-	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
-	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
-
-	p.infixParseFns = make(map[token.TokenType]infixParseFn)
-	p.registerInfix(token.PLUS, p.parseInfixExpression)
-	p.registerInfix(token.MINUS, p.parseInfixExpression)
-	p.registerInfix(token.SLASH, p.parseInfixExpression)
-	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
-	p.registerInfix(token.POWER, p.parseInfixExpression)
-	p.registerInfix(token.MODULO, p.parseInfixExpression)
-	p.registerInfix(token.XOR, p.parseInfixExpression)
-	p.registerInfix(token.RANGE, p.parseInfixExpression)
-	p.registerInfix(token.EQ, p.parseInfixExpression)
-	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
-	p.registerInfix(token.LT, p.parseInfixExpression)
-	p.registerInfix(token.IN, p.parseInfixExpression)
-	p.registerInfix(token.GT, p.parseInfixExpression)
-	p.registerInfix(token.GT_EQ, p.parseInfixExpression)
-	p.registerInfix(token.LT_EQ, p.parseInfixExpression)
-	p.registerInfix(token.AND, p.parseInfixExpression)
-	p.registerInfix(token.OR, p.parseInfixExpression)
-	p.registerInfix(token.LPAREN, p.parseCallExpression)
-	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
-	p.registerInfix(token.DOT, p.parseDotExpression)
-	p.registerInfix(token.OPTIONAL, p.parseDotExpression)
-	p.registerInfix(token.NULLISH, p.parseInfixExpression)
-	p.registerInfix(token.PIPE, p.parsePipeExpression)
-	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
-	p.registerInfix(token.OP_ASSIGN, p.parseAssignmentExpression)
-	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
-	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -688,13 +629,87 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return stmt
 }
 
+// prefix parses the expression that starts with the current token, and
+// reports whether a token like it can start one.
+func (p *Parser) prefix() (ast.Expression, bool) {
+	switch p.curToken.Type {
+	case token.IDENT:
+		return p.parseIdentifier(), true
+	case token.INT:
+		return p.parseIntegerLiteral(), true
+	case token.FLOAT:
+		return p.parseFloatLiteral(), true
+	case token.BANG, token.MINUS:
+		return p.parsePrefixExpression(), true
+	case token.AWAIT:
+		return p.parseAwaitExpression(), true
+	case token.SPREAD:
+		return p.parseSpreadExpression(), true
+	case token.TRY:
+		return p.parseTryExpression(), true
+	case token.MATCH:
+		return p.parseMatchExpression(), true
+	case token.TRUE, token.FALSE:
+		return p.parseBoolean(), true
+	case token.NULL:
+		return p.parseNullLiteral(), true
+	case token.LPAREN:
+		return p.parseGroupedExpression(), true
+	case token.IF:
+		return p.parseIfExpression(), true
+	case token.FUNCTION:
+		return p.parseFunctionLiteral(), true
+	case token.STRING:
+		return p.parseStringLiteral(), true
+	case token.TEMPLATE:
+		return p.parseTemplateLiteral(), true
+	case token.THROW:
+		return p.parseThrowExpression(), true
+	case token.LBRACKET:
+		return p.parseArrayLiteral(), true
+	case token.LBRACE:
+		return p.parseHashLiteral(), true
+	}
+	return nil, false
+}
+
+// infix parses the rest of an expression whose left side is left and goes
+// on with the current token, and reports whether a token like it can.
+func (p *Parser) infix(left ast.Expression) (ast.Expression, bool) {
+	switch p.curToken.Type {
+	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.NULLISH:
+		return p.parseInfixExpression(left), true
+	case token.LPAREN:
+		return p.parseCallExpression(left), true
+	case token.LBRACKET:
+		return p.parseIndexExpression(left), true
+	case token.DOT, token.OPTIONAL:
+		return p.parseDotExpression(left), true
+	case token.PIPE:
+		return p.parsePipeExpression(left), true
+	case token.ASSIGN, token.OP_ASSIGN:
+		return p.parseAssignmentExpression(left), true
+	case token.INCREMENT, token.DECREMENT:
+		return p.parsePostfixExpression(left), true
+	}
+	return left, false
+}
+
+// infixes reports whether an expression can go on with a token of type t.
+func infixes(t token.TokenType) bool {
+	switch t {
+	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.LPAREN, token.LBRACKET, token.DOT, token.OPTIONAL, token.NULLISH, token.PIPE, token.ASSIGN, token.OP_ASSIGN, token.INCREMENT, token.DECREMENT:
+		return true
+	}
+	return false
+}
+
 func (p *Parser) parseExpression(precedence int) ast.Expression {
-	prefix := p.prefixParseFns[p.curToken.Type]
-	if prefix == nil {
+	leftExp, ok := p.prefix()
+	if !ok {
 		p.noPrefixParseFnError(p.curToken.Type)
 		return nil
 	}
-	leftExp := prefix()
 
 	for !p.peekTokenIs(token.SEMICOLON) &&
 		!isStatementEnd(p.peekToken.Type) &&
@@ -704,14 +719,13 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 			return leftExp
 		}
 
-		infix := p.infixParseFns[p.peekToken.Type]
-		if infix == nil {
+		if !infixes(p.peekToken.Type) {
 			return leftExp
 		}
 
 		p.nextToken()
 
-		leftExp = infix(leftExp)
+		leftExp, _ = p.infix(leftExp)
 	}
 
 	return leftExp
@@ -1273,14 +1287,6 @@ func (p *Parser) parsePipeExpression(value ast.Expression) ast.Expression {
 
 func (p *Parser) parseCallArguments() []ast.Expression {
 	return p.parseArguments()
-}
-
-func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
-	p.prefixParseFns[tokenType] = fn
-}
-
-func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
-	p.infixParseFns[tokenType] = fn
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {
