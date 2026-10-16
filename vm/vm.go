@@ -244,7 +244,7 @@ func (vm *VM) loop(base int) object.Object {
 			vm.sp -= n
 			vm.push(&object.String{Value: text})
 
-		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpXor,
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpPow, code.OpXor,
 			code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEqual,
 			code.OpLessThan, code.OpLessEqual, code.OpRange:
 			right := vm.stack[vm.sp-1]
@@ -839,7 +839,7 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 var operators = func() (names [256]string) {
 	for op, name := range map[code.Opcode]string{
 		code.OpAdd: "+", code.OpSub: "-", code.OpMul: "*", code.OpDiv: "/",
-		code.OpMod: "%", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
+		code.OpMod: "%", code.OpPow: "**", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
 		code.OpGreaterThan: ">", code.OpGreaterEqual: ">=", code.OpLessThan: "<",
 		code.OpLessEqual: "<=", code.OpRange: "..",
 	} {

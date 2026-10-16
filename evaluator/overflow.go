@@ -47,3 +47,25 @@ func floatToInt(v float64) (int64, bool) {
 	}
 	return int64(v), true
 }
+
+// powInt returns base raised to a non-negative exponent, and whether it fits
+// in an int64.
+func powInt(base, exponent int64) (int64, bool) {
+	result := int64(1)
+	for exponent > 0 {
+		if exponent&1 == 1 {
+			var ok bool
+			if result, ok = mulInt(result, base); !ok {
+				return 0, false
+			}
+		}
+		exponent >>= 1
+		if exponent > 0 {
+			var ok bool
+			if base, ok = mulInt(base, base); !ok {
+				return 0, false
+			}
+		}
+	}
+	return result, true
+}
