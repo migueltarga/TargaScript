@@ -5,14 +5,15 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
-// driver runs map, filter, reduce, find, some, every or count over an
-// array with a function of this
+// driver runs map, filter, reduce, find, some, every, count or sortBy over
+// an array with a function of this
 // VM that can't pause, in the VM's loop: each call of the function returns
 // to it, which notes the result and calls the function again with the next
 // element. Going through the evaluator, each call would start the loop
 // again.
 type driver struct {
 	method string
+	arr    *object.Array
 	cl     *object.Closure
 	elems  []object.Object
 	i      int // the element of the call running
@@ -29,7 +30,7 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 		return nil
 	}
 	switch method {
-	case "map", "filter", "find", "some", "every", "count":
+	case "map", "filter", "find", "some", "every", "count", "sortBy":
 		if argc != 1 {
 			return nil
 		}
@@ -44,19 +45,22 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 	if !ok || cl.Runner != vm || !cl.Fn.Leaf || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
 		return nil
 	}
-	d := &driver{method: method, cl: cl, elems: arr.Elements}
+	d := &driver{method: method, arr: arr, cl: cl, elems: arr.Elements}
 	switch method {
 	case "reduce":
 		d.acc = vm.stack[fn+2]
-	case "map", "filter":
+	case "map", "filter", "sortBy":
 		d.out = make([]object.Object, 0, len(arr.Elements))
 	}
 	return d
 }
 
-// result is what the method returns, once done.
+// result is what the method returns, once done, or its error.
 func (d *driver) result() object.Object {
 	switch d.method {
+	case "sortBy":
+		// The keys, in the order of the elements
+		return evaluator.SortByKeys(d.arr, d.out)
 	case "map", "filter":
 		return &object.Array{Elements: d.out}
 	case "count":
@@ -116,7 +120,7 @@ func (vm *VM) enter(d *driver, base int) *frame {
 // whether the method is done.
 func (d *driver) returned(value object.Object) bool {
 	switch d.method {
-	case "map":
+	case "map", "sortBy":
 		d.out = append(d.out, value)
 	case "filter":
 		if evaluator.IsTruthy(value) {

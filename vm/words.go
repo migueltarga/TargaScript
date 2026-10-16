@@ -468,7 +468,12 @@ func (vm *VM) loopWords(base int) object.Object {
 					words, r, pc = f.cl.Fn.Code, vm.stack[f.base:], 0
 					continue
 				}
-				vm.stack[f.base-1] = d.result()
+				result := d.result()
+				if err, ok := result.(*object.Error); ok {
+					caller := vm.frames[len(vm.frames)-1]
+					return vm.positioned(caller, caller.ip-1, err)
+				}
+				vm.stack[f.base-1] = result
 			}
 			if len(vm.frames) == base {
 				vm.sp = f.base - 1
