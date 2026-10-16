@@ -20,7 +20,7 @@ func TestDefaultParameters(t *testing.T) {
 		{"fn f(a = missing) { a }\nf(1)", "1"},
 		{"fn f(a = missing) { a }\nf()", `ERROR at line 1, column 10: "missing" is not defined`},
 		{"fn f(a, b = 2) { a + b }\nf", "fn f(a, b = 2)"},
-		{"[1, 2].map(fn(x, i = 100) { x + i })", "[101, 102]"},
+		{"[1, 2].map(fn(x, i = 100) { x + i })", "[1, 3]"},
 	}
 
 	for _, tt := range tests {

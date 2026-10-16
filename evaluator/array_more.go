@@ -19,8 +19,8 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 		if err != nil {
 			return err, true
 		}
-		for _, element := range arr.Elements {
-			result := applyFunction(fn, []object.Object{element})
+		for i, element := range arr.Elements {
+			result := applyFunction(fn, callbackArgs(fn, element, i))
 			if isError(result) {
 				return withPosition(result, line, column), true
 			}
@@ -35,9 +35,9 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			return newError(line, column, "wrong number of arguments for array.count(): got %d, want 1", len(args)), true
 		}
 		count := int64(0)
-		for _, element := range arr.Elements {
+		for i, element := range arr.Elements {
 			if isCallable(args[0]) {
-				result := applyFunction(args[0], []object.Object{element})
+				result := applyFunction(args[0], callbackArgs(args[0], element, i))
 				if isError(result) {
 					return withPosition(result, line, column), true
 				}
@@ -139,8 +139,8 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			return err, true
 		}
 		groups := object.NewHash()
-		for _, element := range arr.Elements {
-			key := applyFunction(fn, []object.Object{element})
+		for i, element := range arr.Elements {
+			key := applyFunction(fn, callbackArgs(fn, element, i))
 			if isError(key) {
 				return withPosition(key, line, column), true
 			}
@@ -168,7 +168,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 		}
 		keys := make([]object.Object, len(arr.Elements))
 		for i, element := range arr.Elements {
-			keys[i] = applyFunction(fn, []object.Object{element})
+			keys[i] = applyFunction(fn, callbackArgs(fn, element, i))
 			if isError(keys[i]) {
 				return withPosition(keys[i], line, column), true
 			}
