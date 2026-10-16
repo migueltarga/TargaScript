@@ -363,6 +363,11 @@ func (vm *VM) loop(base int) object.Object {
 			// Integers first, without a call, as most arithmetic is on them
 			if l, ok := left.(*object.Integer); ok {
 				if r, ok := right.(*object.Integer); ok {
+					if n, ok := addSub(op, l.Value, r.Value); ok {
+						vm.sp--
+						vm.stack[vm.sp-1] = vm.ints.get(n)
+						continue
+					}
 					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
 						vm.sp--
 						vm.stack[vm.sp-1] = result
@@ -385,6 +390,10 @@ func (vm *VM) loop(base int) object.Object {
 			f.ip += 3
 			if l, ok := left.(*object.Integer); ok {
 				if r, ok := right.(*object.Integer); ok {
+					if n, ok := addSub(op, l.Value, r.Value); ok {
+						vm.stack[vm.sp-1] = vm.ints.get(n)
+						continue
+					}
 					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
 						vm.stack[vm.sp-1] = result
 						continue
@@ -430,20 +439,26 @@ func (vm *VM) loop(base int) object.Object {
 
 		case code.OpLocalBinaryConst:
 			// The operator's position is that of the instruction it replaced
-			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
-			if err != nil {
-				return err
-			}
+			left := vm.stack[f.base+int(code.ReadUint16(ins[ip+1:]))]
 			op := code.Opcode(ins[ip+3])
 			right := vm.constants[code.ReadUint16(ins[ip+4:])]
 			f.ip += 6
 			if l, ok := left.(*object.Integer); ok {
 				if r, ok := right.(*object.Integer); ok {
+					if n, ok := addSub(op, l.Value, r.Value); ok {
+						vm.push(vm.ints.get(n))
+						continue
+					}
 					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
 						vm.push(result)
 						continue
 					}
 				}
+			}
+			// Cells and locals not set yet, or other values
+			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
+			if err != nil {
+				return err
 			}
 			result := vm.binary(f, ip+6, op, left, right)
 			if err, ok := result.(*object.Error); ok {
@@ -452,14 +467,26 @@ func (vm *VM) loop(base int) object.Object {
 			vm.push(result)
 
 		case code.OpLocalCompareConstJump:
-			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
-			if err != nil {
-				return err
+			left := vm.stack[f.base+int(code.ReadUint16(ins[ip+1:]))]
+			op := code.Opcode(ins[ip+3])
+			right := vm.constants[code.ReadUint16(ins[ip+4:])]
+			var truthy bool
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					truthy = compareInts(op, l.Value, r.Value)
+					goto jump
+				}
 			}
-			truthy, err := vm.compare(f, ip+6, code.Opcode(ins[ip+3]), left, vm.constants[code.ReadUint16(ins[ip+4:])])
-			if err != nil {
-				return err
+			{
+				left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
+				if err != nil {
+					return err
+				}
+				if truthy, err = vm.compare(f, ip+6, op, left, right); err != nil {
+					return err
+				}
 			}
+		jump:
 			if truthy {
 				f.ip += 9
 			} else {
@@ -1149,6 +1176,22 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// addSub does + and - on integers small enough not to overflow, the most
+// common arithmetic; it is small enough for Go to inline in the loop. It
+// returns false for the cases it leaves to intBinary.
+func addSub(op code.Opcode, x, y int64) (int64, bool) {
+	if !smallInt(x) || !smallInt(y) {
+		return 0, false
+	}
+	switch op {
+	case code.OpAdd:
+		return x + y, true
+	case code.OpSub:
+		return x - y, true
+	}
+	return 0, false
 }
 
 // local returns the value of a local of the running function, like
