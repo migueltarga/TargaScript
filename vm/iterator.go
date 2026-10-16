@@ -69,7 +69,7 @@ func (it *listIterator) Next() (object.Object, object.Object, bool) {
 	if it.keys != nil {
 		return it.keys[i], it.values[i], true
 	}
-	return &object.Integer{Value: int64(i)}, it.values[i], true
+	return newInt(int64(i)), it.values[i], true
 }
 
 type rangeIterator struct {
@@ -86,8 +86,8 @@ func (it *rangeIterator) Next() (object.Object, object.Object, bool) {
 	if it.done || it.next > it.end {
 		return nil, nil, false
 	}
-	key := &object.Integer{Value: it.index}
-	value := &object.Integer{Value: it.next}
+	key := newInt(it.index)
+	value := newInt(it.next)
 	it.index++
 	if it.next == it.end {
 		// Stop here, as next+1 would overflow at the largest integer

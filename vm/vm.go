@@ -58,6 +58,9 @@ type VM struct {
 
 	modules *modules
 
+	// Frames of finished calls, to reuse
+	freeFrames []*frame
+
 	// pendingError stops a resumed run right away, when the promise it
 	// awaited was rejected
 	pendingError *object.Error
@@ -258,10 +261,9 @@ func (vm *VM) loop(base int) object.Object {
 			if op == code.OpBang {
 				operator = "!"
 			}
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.Prefix(operator, vm.pop(), line, column)
+			result := evaluator.Prefix(operator, vm.pop(), 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -271,10 +273,9 @@ func (vm *VM) loop(base int) object.Object {
 				operator = "--"
 			}
 			f.ip++
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.Increment(vm.pop(), operator, line, column)
+			result := evaluator.Increment(vm.pop(), operator, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -460,10 +461,9 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpIndex:
 			index := vm.pop()
 			left := vm.pop()
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.Index(left, index, line, column)
+			result := evaluator.Index(left, index, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -471,20 +471,28 @@ func (vm *VM) loop(base int) object.Object {
 			value := vm.pop()
 			index := vm.pop()
 			container := vm.pop()
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.SetIndex(container, index, value, line, column)
+			result := evaluator.SetIndex(container, index, value, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
 		case code.OpGetProperty:
-			name := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
+			nameObj := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String)
+			name := nameObj.Value
 			f.ip += 2
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.GetProperty(vm.pop(), name, line, column)
+			// Fast path for objects, with the hash of the name computed once
+			if hash, ok := vm.stack[vm.sp-1].(*object.Hash); ok && name != "length" {
+				if pair, ok := hash.Pairs[nameObj.HashKey()]; ok {
+					vm.stack[vm.sp-1] = pair.Value
+				} else {
+					vm.stack[vm.sp-1] = NULL
+				}
+				continue
+			}
+			result := evaluator.GetProperty(vm.pop(), name, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -493,10 +501,9 @@ func (vm *VM) loop(base int) object.Object {
 			f.ip += 2
 			value := vm.pop()
 			obj := vm.pop()
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.SetProperty(obj, name, value, line, column)
+			result := evaluator.SetProperty(obj, name, value, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -531,10 +538,9 @@ func (vm *VM) loop(base int) object.Object {
 			f.ip += 2
 			args := vm.pop().(*object.Array)
 			obj := vm.pop()
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.CallMethod(obj, name, append([]object.Object{}, args.Elements...), line, column)
+			result := evaluator.CallMethod(obj, name, append([]object.Object{}, args.Elements...), 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
@@ -586,16 +592,16 @@ func (vm *VM) loop(base int) object.Object {
 			copy(args, vm.stack[vm.sp-argc:vm.sp])
 			vm.sp -= argc
 			obj := vm.pop()
-			line, column := f.cl.Fn.PositionAt(ip)
-			result := evaluator.CallMethod(obj, name, args, line, column)
+			result := evaluator.CallMethod(obj, name, args, 0, 0)
 			if err, ok := result.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(result)
 
 		case code.OpReturnValue:
 			value := vm.pop()
 			vm.frames = vm.frames[:len(vm.frames)-1]
+			vm.freeFrames = append(vm.freeFrames, f)
 			vm.sp = f.base - 1
 			vm.push(value)
 			if len(vm.frames) == base {
@@ -629,10 +635,9 @@ func (vm *VM) loop(base int) object.Object {
 			path := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
 			shown := vm.constants[code.ReadUint16(ins[ip+3:])].(*object.String).Value
 			f.ip += 4
-			line, column := f.cl.Fn.PositionAt(ip)
-			module := vm.load(path, shown, line, column)
+			module := vm.load(path, shown, 0, 0)
 			if err, ok := module.(*object.Error); ok {
-				return err
+				return vm.positioned(f, ip, err)
 			}
 			vm.push(module)
 
@@ -703,6 +708,19 @@ func (vm *VM) call(f *frame, ip int, argc int) (switched bool, err *object.Error
 	return false, nil
 }
 
+// newFrame returns a frame for a call, reusing one from a finished call
+// when possible.
+func (vm *VM) newFrame(cl *object.Closure, base int) *frame {
+	if n := len(vm.freeFrames); n > 0 {
+		f := vm.freeFrames[n-1]
+		vm.freeFrames = vm.freeFrames[:n-1]
+		f.cl, f.ip, f.base = cl, 0, base
+		f.loops, f.handlers = f.loops[:0], f.handlers[:0]
+		return f
+	}
+	return &frame{cl: cl, base: base}
+}
+
 // callClosure starts a call to the closure below the argc arguments on the
 // stack.
 func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
@@ -740,7 +758,7 @@ func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
 	}
 	vm.sp = base + fn.NumLocals
 
-	vm.frames = append(vm.frames, &frame{cl: cl, base: base})
+	vm.frames = append(vm.frames, vm.newFrame(cl, base))
 	return nil
 }
 
@@ -748,36 +766,90 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 	// Fast paths for small integers, which can't overflow
 	if l, ok := left.(*object.Integer); ok {
 		if r, ok := right.(*object.Integer); ok && smallInt(l.Value) && smallInt(r.Value) {
+			a, b := l.Value, r.Value
 			switch op {
 			case code.OpAdd:
-				return &object.Integer{Value: l.Value + r.Value}
+				return newInt(a + b)
 			case code.OpSub:
-				return &object.Integer{Value: l.Value - r.Value}
+				return newInt(a - b)
+			case code.OpMul:
+				if a > -(1<<30) && a < 1<<30 && b > -(1<<30) && b < 1<<30 {
+					return newInt(a * b)
+				}
+			case code.OpDiv:
+				if b != 0 {
+					return newInt(a / b)
+				}
+			case code.OpMod:
+				if b != 0 {
+					return newInt(a % b)
+				}
 			case code.OpLessThan:
-				return nativeBool(l.Value < r.Value)
+				return nativeBool(a < b)
 			case code.OpLessEqual:
-				return nativeBool(l.Value <= r.Value)
+				return nativeBool(a <= b)
 			case code.OpGreaterThan:
-				return nativeBool(l.Value > r.Value)
+				return nativeBool(a > b)
 			case code.OpGreaterEqual:
-				return nativeBool(l.Value >= r.Value)
+				return nativeBool(a >= b)
 			case code.OpEqual:
-				return nativeBool(l.Value == r.Value)
+				return nativeBool(a == b)
 			case code.OpNotEqual:
-				return nativeBool(l.Value != r.Value)
+				return nativeBool(a != b)
 			}
 		}
 	}
 
-	line, column := f.cl.Fn.PositionAt(ip)
-	return evaluator.Infix(operators[op], left, right, line, column)
+	result := evaluator.Infix(operators[op], left, right, 0, 0)
+	if err, ok := result.(*object.Error); ok {
+		return vm.positioned(f, ip, err)
+	}
+	return result
 }
 
-var operators = map[code.Opcode]string{
-	code.OpAdd: "+", code.OpSub: "-", code.OpMul: "*", code.OpDiv: "/",
-	code.OpMod: "%", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
-	code.OpGreaterThan: ">", code.OpGreaterEqual: ">=", code.OpLessThan: "<",
-	code.OpLessEqual: "<=", code.OpRange: "..",
+// operators are the text of the binary operators, by opcode.
+var operators = func() (names [256]string) {
+	for op, name := range map[code.Opcode]string{
+		code.OpAdd: "+", code.OpSub: "-", code.OpMul: "*", code.OpDiv: "/",
+		code.OpMod: "%", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
+		code.OpGreaterThan: ">", code.OpGreaterEqual: ">=", code.OpLessThan: "<",
+		code.OpLessEqual: "<=", code.OpRange: "..",
+	} {
+		names[op] = name
+	}
+	return names
+}()
+
+// Integers from smallIntMin to smallIntMax are shared, so loops and
+// counters don't allocate a new one for every value. Integers are never
+// changed in place, so sharing them is safe.
+const (
+	smallIntMin = -128
+	smallIntMax = 1024
+)
+
+var smallInts = func() (ints [smallIntMax - smallIntMin + 1]*object.Integer) {
+	for i := range ints {
+		ints[i] = &object.Integer{Value: int64(i + smallIntMin)}
+	}
+	return ints
+}()
+
+func newInt(n int64) *object.Integer {
+	if n >= smallIntMin && n <= smallIntMax {
+		return smallInts[n-smallIntMin]
+	}
+	return &object.Integer{Value: n}
+}
+
+// positioned gives an error raised by the instruction at ip its position,
+// when it has none. Operations get no position up front, so the common case
+// of no error doesn't pay for looking it up.
+func (vm *VM) positioned(f *frame, ip int, err *object.Error) *object.Error {
+	if err.Line == 0 {
+		err.Line, err.Column = f.cl.Fn.PositionAt(ip)
+	}
+	return err
 }
 
 func smallInt(n int64) bool {
