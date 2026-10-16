@@ -365,6 +365,9 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 			out.WriteString("[]")
 			break
 		}
+		if depth >= maxJSONDepth {
+			return jsonTooDeep()
+		}
 		out.WriteByte('[')
 		for i, element := range obj.Elements {
 			if i > 0 {
@@ -381,6 +384,9 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		if len(obj.Pairs) == 0 {
 			out.WriteString("{}")
 			break
+		}
+		if depth >= maxJSONDepth {
+			return jsonTooDeep()
 		}
 		out.WriteByte('{')
 		for i, pair := range obj.OrderedPairs() {
@@ -404,6 +410,14 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		return &object.Error{Message: fmt.Sprintf("cannot convert %s to JSON", typeName(obj))}
 	}
 	return nil
+}
+
+// maxJSONDepth limits the nesting toJSON follows, which also stops it on
+// a value that contains itself.
+const maxJSONDepth = 1000
+
+func jsonTooDeep() *object.Error {
+	return &object.Error{Message: fmt.Sprintf("cannot convert to JSON a value that contains itself or is nested more than %d levels deep", maxJSONDepth)}
 }
 
 func writeJSONString(out *strings.Builder, s string) {
