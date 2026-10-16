@@ -87,6 +87,23 @@ countdown(3)
 
 The same code runs in the CLI, where an event loop keeps the program alive while it waits, and in the browser, where `await` also works with JavaScript promises like `fetch`.
 
+`fetch(url, options)` makes HTTP requests, in the CLI and in the browser alike:
+
+```
+let response = await fetch("https://api.github.com/repos/migueltarga/TargaScript")
+let repo = response.json()
+print(repo.full_name, "has", repo.stargazers_count, "stars")
+
+let created = await fetch("https://example.com/api/items", {
+    "method": "POST",
+    "headers": {"Authorization": "Bearer ..."},
+    "body": {"name": "new item"}
+})
+print(created.status, created.ok)
+```
+
+The response has `status`, `ok`, `url`, `headers`, `text` (the body) and `json()`. A body that isn't a string is sent as JSON.
+
 ## 📦 Loading Other Files
 
 Split code across files with `load`. A loaded file runs once, and its top-level variables, constants and functions become available:
