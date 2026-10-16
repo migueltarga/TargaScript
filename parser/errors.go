@@ -59,6 +59,9 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 			p.errorAt(cur.Line, cur.Column, "this string is never closed, add a ` at its end")
 		case cur.Literal == "/*":
 			p.errorAt(cur.Line, cur.Column, "this comment is never closed, add */ at its end")
+		case cur.Literal == "?":
+			// a ? b : c from C and JavaScript
+			p.errorAt(cur.Line, cur.Column, "TargaScript has no a ? b : c, but if gives a value: if a { b } else { c }")
 		default:
 			p.errorAt(cur.Line, cur.Column, "unexpected %q", cur.Literal)
 		}
