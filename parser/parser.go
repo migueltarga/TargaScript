@@ -422,6 +422,15 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 				}
 				continue
 			}
+			if str, ok := pair.Key.(*ast.StringLiteral); ok {
+				value, isIdent := pair.Value.(*ast.Identifier)
+				if !isIdent {
+					return nil
+				}
+				pattern.Names = append(pattern.Names, value)
+				setKey(pattern, len(pattern.Names)-1, str.Value)
+				continue
+			}
 			key, ok := pair.Key.(*ast.Identifier)
 			if !ok {
 				return nil
@@ -432,10 +441,14 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 				continue
 			}
 			value, isIdent := pair.Value.(*ast.Identifier)
-			if !isIdent || key != value {
+			if !isIdent {
 				return nil
 			}
-			pattern.Names = append(pattern.Names, key)
+			pattern.Names = append(pattern.Names, value)
+			// ({first: name}) => ... takes first into name
+			if key != value {
+				setKey(pattern, len(pattern.Names)-1, key.Value)
+			}
 		}
 		return pattern
 	}
@@ -457,6 +470,14 @@ func patternDefault(pair ast.HashPair) (ast.Expression, bool) {
 func PatternOnly(pair ast.HashPair) bool {
 	_, ok := patternDefault(pair)
 	return ok
+}
+
+// setKey sets the property the name at i takes in an object pattern.
+func setKey(pattern *ast.Pattern, i int, key string) {
+	for len(pattern.Keys) <= i {
+		pattern.Keys = append(pattern.Keys, "")
+	}
+	pattern.Keys[i] = key
 }
 
 // setDefault sets the default value of the name at i in a pattern.
@@ -489,10 +510,37 @@ func (p *Parser) parsePattern() *ast.Pattern {
 			}
 			break
 		}
-		if !p.expectPeek(token.IDENT) {
-			return nil
+		// {key: name} takes the property key into name, and the key can be
+		// a string: {"first name": first}
+		if pattern.Object && p.peekTokenIs(token.STRING) {
+			p.nextToken()
+			key := p.curToken.Literal
+			if !p.expectPeek(token.COLON) {
+				return nil
+			}
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			pattern.Names = append(pattern.Names, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+			setKey(pattern, len(pattern.Names)-1, key)
+		} else {
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			name := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+			if pattern.Object && p.peekTokenIs(token.COLON) {
+				p.nextToken()
+				if !p.expectPeek(token.IDENT) {
+					return nil
+				}
+				key := name.Value
+				name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+				pattern.Names = append(pattern.Names, name)
+				setKey(pattern, len(pattern.Names)-1, key)
+			} else {
+				pattern.Names = append(pattern.Names, name)
+			}
 		}
-		pattern.Names = append(pattern.Names, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
 		if p.peekTokenIs(token.ASSIGN) {
 			p.nextToken()
 			p.nextToken()

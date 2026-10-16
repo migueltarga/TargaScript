@@ -263,7 +263,11 @@ let {port = 8080, host = "localhost"} = {"host": "example.com"}
 print(port, host)                          // → 8080 example.com
 fn connect({url, retries = 3}) { "${url} x${retries}" }
 print(connect({"url": "db"}))              // → db x3
+let {name: who, "home town": town} = {"name": "Ana", "home town": "Rio"}
+print(who, town)                           // → Ana Rio
 ```
+
+In an object pattern, `key: name` takes the property `key` into a variable with another name.
 
 ## Null
 
