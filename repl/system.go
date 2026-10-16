@@ -78,6 +78,7 @@ func (osSystem) Env(name string) (string, bool) {
 }
 
 func (osSystem) Exit(code int) {
+	evaluator.FlushOutput()
 	os.Exit(code)
 }
 
@@ -85,6 +86,8 @@ func (osSystem) Exit(code int) {
 var stdin = bufio.NewReader(os.Stdin)
 
 func (osSystem) ReadLine() (string, bool) {
+	// What the program asked shows before it waits for the answer
+	evaluator.FlushOutput()
 	line, err := stdin.ReadString('\n')
 	if err != nil && line == "" {
 		return "", false
@@ -112,6 +115,8 @@ func (osSystem) RunCommand(command evaluator.Command) (string, string, int, erro
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if command.Show {
 		cmd.Stdout, cmd.Stderr = evaluator.Output(), os.Stderr
+		evaluator.FlushOutput()
+		defer evaluator.FlushOutput()
 	}
 	err := cmd.Run()
 	var exitErr *exec.ExitError

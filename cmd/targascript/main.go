@@ -9,6 +9,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/migueltarga/TargaScript/compiler"
+	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/repl"
 )
 
@@ -164,7 +165,10 @@ func executeFile(input string, debug bool, noColor bool) (err error) {
 		}
 	}()
 
-	err = repl.EvalSource(input, os.Stdout, noColor, debug, false)
+	out := scriptOutput()
+	defer evaluator.FlushOutput()
+	err = repl.EvalSource(input, out, noColor, debug, false)
+	evaluator.FlushOutput()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\033[31m%v\033[0m\n", err)
 		return err

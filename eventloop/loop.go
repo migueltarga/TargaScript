@@ -90,9 +90,22 @@ func (l *Loop) Run(done func() bool) bool {
 		if l.pending == 0 {
 			return false
 		}
-		fn := <-l.tasks
+		var fn func()
+		select {
+		case fn = <-l.tasks:
+		default:
+			// Nothing is ready, so the program waits
+			if BeforeWait != nil {
+				BeforeWait()
+			}
+			fn = <-l.tasks
+		}
 		l.pending--
 		fn()
 	}
 	return true
 }
+
+// BeforeWait, when set, runs before the loop waits for work that isn't
+// finished, as a program that prints while it serves does to show it.
+var BeforeWait func()
