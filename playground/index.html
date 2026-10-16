@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TargaScript Playground</title>
+<meta name="description" content="Write and run TargaScript in your browser.">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --panel: #ffffff;
+    --border: #dddcd7;
+    --text: #1f1f1d;
+    --muted: #6b6a65;
+    --brand: #266ca4;
+    --brand-dark: #16405b;
+    --brand-text: #ffffff;
+    --link: #266ca4;
+    --error: #b91c1c;
+    --tok-comment: #8a8a85;
+    --tok-string: #15803d;
+    --tok-number: #b45309;
+    --tok-keyword: #266ca4;
+    --tok-call: #7c3aed;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614;
+      --panel: #1e1e1c;
+      --border: #33332f;
+      --text: #ececea;
+      --muted: #9a9993;
+      --brand: #266ca4;
+      --brand-dark: #16405b;
+      --brand-text: #ffffff;
+      --link: #7fb3e6;
+      --error: #f87171;
+      --tok-comment: #7d7c77;
+      --tok-string: #86efac;
+      --tok-number: #fdba74;
+      --tok-keyword: #7fb3e6;
+      --tok-call: #c4b5fd;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { display: flex; align-items: center; gap: 8px; font-size: 17px; margin: 0 auto 0 0; }
+  h1 svg { flex: none; }
+  button, select {
+    font: inherit;
+    font-size: 14px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #run { background: var(--brand); border-color: var(--brand-dark); color: var(--brand-text); font-weight: 600; }
+  #run:not(:disabled):hover { background: var(--brand-dark); }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+  }
+  .pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .pane + .pane { border-left: 1px solid var(--border); }
+  .label {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .editor { position: relative; flex: 1; display: flex; min-height: 0; background: var(--panel); }
+  #gutter, #highlight, #code, #output {
+    margin: 0;
+    padding: 12px;
+    font: 14px/1.5 var(--mono);
+    tab-size: 4;
+    white-space: pre;
+  }
+  #gutter {
+    padding-right: 10px;
+    text-align: right;
+    color: var(--muted);
+    user-select: none;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+    min-width: 3.2em;
+  }
+  .code-area { position: relative; flex: 1; min-width: 0; }
+  #highlight, #code {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    border: 0;
+  }
+  #highlight { pointer-events: none; color: var(--text); }
+  #code {
+    resize: none;
+    outline: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--text);
+  }
+  #code::selection { background: color-mix(in srgb, var(--brand) 35%, transparent); }
+  #output {
+    flex: 1;
+    overflow: auto;
+    background: var(--panel);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #output .error { color: var(--error); }
+  .tok-comment { color: var(--tok-comment); font-style: italic; }
+  .tok-string { color: var(--tok-string); }
+  .tok-number { color: var(--tok-number); }
+  .tok-keyword { color: var(--tok-keyword); font-weight: 600; }
+  .tok-call { color: var(--tok-call); }
+  footer {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+  a { color: var(--link); }
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 3fr 2fr; }
+    .pane + .pane { border-left: 0; border-top: 1px solid var(--border); }
+    h1 { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>
+    <svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true">
+      <path d="M4 1.5h18a2.5 2.5 0 0 1 2.5 2.5v14.6a2.5 2.5 0 0 1-1.4 2.2L14.1 25.4a2.5 2.5 0 0 1-2.2 0L2.9 20.8a2.5 2.5 0 0 1-1.4-2.2V4A2.5 2.5 0 0 1 4 1.5z" fill="#266ca4" stroke="#16405b" stroke-width="2"/>
+      <text x="13" y="16.5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="800" fill="#f3f2f0">TG</text>
+    </svg>
+    TargaScript Playground
+  </h1>
+  <select id="examples" aria-label="Examples">
+    <option value="">Examples...</option>
+  </select>
+  <button id="share">Share</button>
+  <button id="stop" disabled>Stop</button>
+  <button id="run" disabled title="Ctrl+Enter">Run</button>
+</header>
+<main>
+  <section class="pane">
+    <div class="label"><span>Code</span><span>Ctrl+Enter to run</span></div>
+    <div class="editor">
+      <pre id="gutter" aria-hidden="true">1</pre>
+      <div class="code-area">
+        <pre id="highlight" aria-hidden="true"></pre>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Code"></textarea>
+      </div>
+    </div>
+  </section>
+  <section class="pane">
+    <div class="label"><span>Output</span><span id="status">Loading...</span></div>
+    <pre id="output" aria-live="polite"></pre>
+  </section>
+</main>
+<footer>
+  This playground is written in TargaScript and runs in your browser.
+  <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/playground.tg">See its source</a>
+  &middot; <a href="https://github.com/migueltarga/TargaScript">TargaScript on GitHub</a>
+</footer>
+<script src="targascript.js"></script>
+<script type="text/targascript" src="playground.tg"></script>
+</body>
+</html>

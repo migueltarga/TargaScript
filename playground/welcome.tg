@@ -1,0 +1,26 @@
+// Welcome to TargaScript!
+// Edit this code and press Run (or Ctrl+Enter).
+
+fn greet(name) {
+    return "Hello, ${name}!"
+}
+
+print(greet("world"))
+
+// Arrays, ranges and method chaining
+let squares = (1..10).map(fn(n) { n * n })
+print("Squares:", squares)
+print("Even squares:", squares.filter(fn(n) { n % 2 == 0 }))
+
+// Objects
+let languages = {"Lua": 1993, "JavaScript": 1995, "TargaScript": 2025}
+repeat name in languages {
+    print("${name} was created in ${languages[name]}")
+}
+
+// Recursion
+fn fib(n) {
+    if n < 2 { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+printf("fib(20) = %d", fib(20))

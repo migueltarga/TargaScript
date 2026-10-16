@@ -1,0 +1,14 @@
+// runner.tg
+// Runs the playground's programs. The page starts a new worker with this
+// script for every run, so each program starts from a clean state and can be
+// stopped by terminating the worker.
+
+js.onmessage = fn(event) {
+    let onOutput = fn(text) {
+        js.postMessage({"type": "output", "text": text})
+    }
+    let error = targascript.run(event.data, onOutput)
+    js.postMessage({"type": "done", "error": error})
+}
+
+js.postMessage({"type": "ready"})
