@@ -154,6 +154,17 @@ Array methods:
   - `removeAt(i)` removes at a position;
   - `sort()`, `sort(compare)`, `sortBy(fn)` and `reverse()` reorder it.
 
+An argument that uses `it` is a function of one value, called `it`, so short functions need no parameter:
+
+```targascript
+let people = [{name: "Ana", age: 30}, {name: "Bo", age: 20}]
+print(people.filter(it.age > 25).map(it.name))   // → ["Ana"]
+print([3, 1, 2].sortBy(-it))                     // → [3, 2, 1]
+print([[1, 2], [3]].map(it.map(it * 10)))        // the innermost argument has its own it → [[10, 20], [30]]
+```
+
+Only the argument that uses `it` itself becomes the function, not one around the call it's in, and an `it` inside a function written out is that function's. Where `it` is a variable, it's the variable.
+
 Functions given to `map`, `filter`, `find`, `some`, `every`, `count`, `sortBy` and `groupBy` get the position too when they take a second parameter, as in `list.map((item, i) => "${i + 1}. ${item}")`; `reduce` passes it third.
 
 `array[i]` is `null` outside the array, and negative positions in `array[i]`, `slice` and `removeAt` count from the end.

@@ -1,10 +1,9 @@
 package vm
 
 import (
-	"fmt"
-
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // iterator produces the values of a repeat loop. Iterators live on the stack
@@ -49,7 +48,7 @@ func newIterator(collection object.Object, ints *ints) (iterator, error) {
 	case *object.Integer:
 		return &rangeIterator{next: 1, end: c.Value, ints: ints}, nil
 	}
-	return nil, fmt.Errorf("cannot iterate over %s", evaluator.TypeName(collection))
+	return nil, strfmt.Errorf("cannot iterate over %s", evaluator.TypeName(collection))
 }
 
 type listIterator struct {

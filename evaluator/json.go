@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // JSON is parsed and written here instead of with encoding/json, which
@@ -24,11 +24,11 @@ func init() {
 // keys, and numbers without a fraction or exponent become integers.
 func parseJSON(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for parseJSON. got=%d, want=1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for parseJSON. got=%d, want=1", len(args))}
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("argument to parseJSON must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("argument to parseJSON must be a string, got %s", typeName(args[0]))}
 	}
 
 	p := &jsonParser{text: text.Value}
@@ -92,7 +92,7 @@ func (p *jsonParser) value() (object.Object, string) {
 
 func (p *jsonParser) unexpected() string {
 	r, _ := utf8.DecodeRuneInString(p.text[p.pos:])
-	return fmt.Sprintf("unexpected %q", r)
+	return strfmt.Sprintf("unexpected %q", r)
 }
 
 func (p *jsonParser) object() (object.Object, string) {
@@ -235,7 +235,7 @@ func (p *jsonParser) string() (string, string) {
 			out.WriteRune(r)
 		default:
 			p.pos--
-			return "", fmt.Sprintf("invalid escape \\%c", escape)
+			return "", strfmt.Sprintf("invalid escape \\%c", escape)
 		}
 	}
 }
@@ -298,7 +298,7 @@ func (p *jsonParser) number() (object.Object, string) {
 	}
 	f, err := strconv.ParseFloat(literal, 64)
 	if err != nil {
-		return nil, fmt.Sprintf("number %s is out of range", literal)
+		return nil, strfmt.Sprintf("number %s is out of range", literal)
 	}
 	return &object.Float{Value: f}, ""
 }
@@ -309,14 +309,14 @@ func jsonPosition(text string, offset int) string {
 	before := text[:offset]
 	line := strings.Count(before, "\n") + 1
 	column := utf8.RuneCountInString(before[strings.LastIndex(before, "\n")+1:]) + 1
-	return fmt.Sprintf(" at line %d, column %d", line, column)
+	return strfmt.Sprintf(" at line %d, column %d", line, column)
 }
 
 // toJSON converts a value to JSON text, indented by the number of spaces or
 // the string given as second argument.
 func toJSON(args ...object.Object) object.Object {
 	if len(args) != 1 && len(args) != 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for toJSON. got=%d, want=1 or 2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for toJSON. got=%d, want=1 or 2", len(args))}
 	}
 
 	indent := ""
@@ -327,7 +327,7 @@ func toJSON(args ...object.Object) object.Object {
 		case *object.String:
 			indent = arg.Value
 		default:
-			return &object.Error{Message: fmt.Sprintf("indent for toJSON must be an integer or a string, got %s", typeName(args[1]))}
+			return &object.Error{Message: strfmt.Sprintf("indent for toJSON must be an integer or a string, got %s", typeName(args[1]))}
 		}
 	}
 
@@ -355,7 +355,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		out.WriteString(strconv.FormatInt(obj.Value, 10))
 	case *object.Float:
 		if math.IsInf(obj.Value, 0) || math.IsNaN(obj.Value) {
-			return &object.Error{Message: fmt.Sprintf("cannot convert %s to JSON", obj.Inspect())}
+			return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", obj.Inspect())}
 		}
 		out.WriteString(strconv.FormatFloat(obj.Value, 'g', -1, 64))
 	case *object.String:
@@ -407,7 +407,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		newline(depth)
 		out.WriteByte('}')
 	default:
-		return &object.Error{Message: fmt.Sprintf("cannot convert %s to JSON", typeName(obj))}
+		return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", typeName(obj))}
 	}
 	return nil
 }
@@ -417,7 +417,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 const maxJSONDepth = 1000
 
 func jsonTooDeep() *object.Error {
-	return &object.Error{Message: fmt.Sprintf("cannot convert to JSON a value that contains itself or is nested more than %d levels deep", maxJSONDepth)}
+	return &object.Error{Message: strfmt.Sprintf("cannot convert to JSON a value that contains itself or is nested more than %d levels deep", maxJSONDepth)}
 }
 
 func writeJSONString(out *strings.Builder, s string) {
@@ -436,7 +436,7 @@ func writeJSONString(out *strings.Builder, s string) {
 			out.WriteString(`\t`)
 		default:
 			if r < 0x20 {
-				fmt.Fprintf(out, `\u%04x`, r)
+				strfmt.Fprintf(out, `\u%04x`, r)
 			} else {
 				out.WriteRune(r)
 			}

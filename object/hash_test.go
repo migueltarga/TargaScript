@@ -159,3 +159,25 @@ func TestSmallHashes(t *testing.T) {
 		t.Error("the zero hash should take keys")
 	}
 }
+
+// Small arrays and closures keep their elements and cells with them, and
+// arrays still grow past them
+func TestSmallArraysAndClosures(t *testing.T) {
+	for n := 0; n <= 6; n++ {
+		a := NewArray(n)
+		if len(a.Elements) != n {
+			t.Fatalf("NewArray(%d) has %d elements", n, len(a.Elements))
+		}
+		for i := range a.Elements {
+			a.Elements[i] = &Integer{Value: int64(i)}
+		}
+		a.Elements = append(a.Elements, &Integer{Value: 99})
+		if len(a.Elements) != n+1 || a.Elements[n].(*Integer).Value != 99 {
+			t.Fatalf("NewArray(%d) didn't grow", n)
+		}
+		c := NewClosure(&CompiledFunction{}, n, nil)
+		if len(c.Free) != n {
+			t.Fatalf("NewClosure(%d) has %d cells", n, len(c.Free))
+		}
+	}
+}

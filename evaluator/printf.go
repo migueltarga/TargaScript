@@ -1,12 +1,12 @@
 package evaluator
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // formatPrintf formats args with Go's format verbs, checking that there is
@@ -19,7 +19,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 
 	take := func() (object.Object, *object.Error) {
 		if next >= len(args) {
-			return nil, &object.Error{Message: fmt.Sprintf(
+			return nil, &object.Error{Message: strfmt.Sprintf(
 				"not enough arguments for printf: format has more verbs than the %d given", len(args))}
 		}
 		next++
@@ -70,11 +70,11 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 				}
 				n, ok := arg.(*object.Integer)
 				if !ok {
-					return "", &object.Error{Message: fmt.Sprintf(
+					return "", &object.Error{Message: strfmt.Sprintf(
 						"printf %s given by * must be an integer, got %s", part, typeName(arg))}
 				}
 				if n.Value > maxStringLength {
-					return "", &object.Error{Message: fmt.Sprintf("printf %s %d is too large", part, n.Value)}
+					return "", &object.Error{Message: strfmt.Sprintf("printf %s %d is too large", part, n.Value)}
 				}
 				if part == "width" {
 					width = int(n.Value)
@@ -91,7 +91,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 			}
 			if i > start {
 				if n, err := strconv.Atoi(format[start:i]); err != nil || n > maxStringLength {
-					return "", &object.Error{Message: fmt.Sprintf("printf %s %s is too large", part, format[start:i])}
+					return "", &object.Error{Message: strfmt.Sprintf("printf %s %s is too large", part, format[start:i])}
 				}
 			}
 			if part == "width" && i > start {
@@ -120,7 +120,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 		if err != nil {
 			return "", err
 		}
-		text := fmt.Sprintf(spec+string(verb), append(verbArgs, value)...)
+		text := strfmt.Sprintf(spec+string(verb), append(verbArgs, value)...)
 		if grouped {
 			text = groupThousands(text)
 		}
@@ -139,7 +139,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 	}
 
 	if next < len(args) {
-		return "", &object.Error{Message: fmt.Sprintf(
+		return "", &object.Error{Message: strfmt.Sprintf(
 			"too many arguments for printf: format uses %d of the %d given", next, len(args))}
 	}
 	return out.String(), nil
@@ -227,9 +227,9 @@ func printfValue(verb rune, arg object.Object) (interface{}, *object.Error) {
 			return b.Value, nil
 		}
 	default:
-		return nil, &object.Error{Message: fmt.Sprintf("unknown printf verb %%%c", verb)}
+		return nil, &object.Error{Message: strfmt.Sprintf("unknown printf verb %%%c", verb)}
 	}
 
-	return nil, &object.Error{Message: fmt.Sprintf(
+	return nil, &object.Error{Message: strfmt.Sprintf(
 		"printf verb %%%c does not accept %s", verb, typeName(arg))}
 }

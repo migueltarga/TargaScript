@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -18,7 +18,7 @@ func init() {
 // them first.
 func escapeHTMLBuiltin(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for escapeHTML. got=%d, want=1", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for escapeHTML. got=%d, want=1", len(args))}
 	}
 	text := objectToString(args[0])
 	var out strings.Builder
@@ -78,7 +78,7 @@ func decodeURLBuiltin(args ...object.Object) object.Object {
 			out.WriteByte(' ')
 		case c == '%':
 			if i+2 >= len(text) || unhex(text[i+1]) < 0 || unhex(text[i+2]) < 0 {
-				return &object.Error{Message: fmt.Sprintf("cannot decode %q: it has a %% not followed by two hex digits", text)}
+				return &object.Error{Message: strfmt.Sprintf("cannot decode %q: it has a %% not followed by two hex digits", text)}
 			}
 			out.WriteByte(byte(unhex(text[i+1])<<4 | unhex(text[i+2])))
 			i += 2

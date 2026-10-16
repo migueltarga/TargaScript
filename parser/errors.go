@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -16,7 +16,7 @@ type Error struct {
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("line %d:%d: %s", e.Line, e.Column, e.Message)
+	return strfmt.Sprintf("line %d:%d: %s", e.Line, e.Column, e.Message)
 }
 
 // Errors returns the syntax errors as "line L:C: message" strings.
@@ -34,7 +34,7 @@ func (p *Parser) Diagnostics() []Error {
 }
 
 func (p *Parser) errorAt(line, column int, format string, a ...interface{}) {
-	p.errors = append(p.errors, Error{Line: line, Column: column, Message: fmt.Sprintf(format, a...)})
+	p.errors = append(p.errors, Error{Line: line, Column: column, Message: strfmt.Sprintf(format, a...)})
 }
 
 // peekError reports that the next token isn't the expected one.
@@ -118,7 +118,7 @@ func describe(tok token.Token) string {
 	case token.STRING, token.TEMPLATE:
 		return "a string"
 	}
-	return fmt.Sprintf("%q", tok.Literal)
+	return strfmt.Sprintf("%q", tok.Literal)
 }
 
 // describeType names a kind of token for an error message.
@@ -136,9 +136,9 @@ func describeType(t token.TokenType) string {
 		return `"fn"`
 	}
 	if literal, ok := keywordLiterals[t]; ok {
-		return fmt.Sprintf("%q", literal)
+		return strfmt.Sprintf("%q", literal)
 	}
-	return fmt.Sprintf("%q", string(t))
+	return strfmt.Sprintf("%q", string(t))
 }
 
 var keywordLiterals = map[token.TokenType]string{

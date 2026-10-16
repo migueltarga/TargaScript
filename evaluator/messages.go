@@ -1,11 +1,11 @@
 package evaluator
 
 import (
-	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // Methods of each type, used to suggest a name when a method doesn't
@@ -191,7 +191,7 @@ func suggestion(name string, candidates []string) string {
 	limit := min(2, (len(name)+1)/4)
 	best, bestDistance := "", limit+1
 
-	sort.Strings(candidates)
+	slices.Sort(candidates)
 	for _, candidate := range candidates {
 		if candidate == name {
 			continue
@@ -206,7 +206,7 @@ func suggestion(name string, candidates []string) string {
 	if best == "" {
 		return ""
 	}
-	return fmt.Sprintf(". Did you mean %q?", best)
+	return strfmt.Sprintf(". Did you mean %q?", best)
 }
 
 // editDistance is the number of letters to insert, delete, replace or swap

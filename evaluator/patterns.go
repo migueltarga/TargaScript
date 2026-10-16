@@ -1,9 +1,8 @@
 package evaluator
 
 import (
-	"fmt"
-
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // RegexEngine compiles regular expressions. The command line uses Go's
@@ -99,7 +98,7 @@ func init() {
 		}
 		replacement, ok := args[1].(*object.String)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("replacement for string.replacePattern() must be a string or a function, got %s", typeName(args[1]))}
+			return &object.Error{Message: strfmt.Sprintf("replacement for string.replacePattern() must be a string or a function, got %s", typeName(args[1]))}
 		}
 		return &object.String{Value: re.ReplaceAllString(s, replacement.Value)}
 	}
@@ -116,11 +115,11 @@ func init() {
 // regexArg compiles the pattern in the first argument, caching it.
 func regexArg(name string, args []object.Object, count int) (Regex, *object.Error) {
 	if len(args) != count {
-		return nil, &object.Error{Message: fmt.Sprintf("wrong number of arguments for string.%s(): got %d, want %d", name, len(args), count)}
+		return nil, &object.Error{Message: strfmt.Sprintf("wrong number of arguments for string.%s(): got %d, want %d", name, len(args), count)}
 	}
 	pattern, ok := args[0].(*object.String)
 	if !ok {
-		return nil, &object.Error{Message: fmt.Sprintf("pattern for string.%s() must be a string, got %s", name, typeName(args[0]))}
+		return nil, &object.Error{Message: strfmt.Sprintf("pattern for string.%s() must be a string, got %s", name, typeName(args[0]))}
 	}
 	if regexEngine == nil {
 		return nil, &object.Error{Message: "patterns are not available here"}
@@ -130,7 +129,7 @@ func regexArg(name string, args []object.Object, count int) (Regex, *object.Erro
 	}
 	re, err := regexEngine.Compile(pattern.Value)
 	if err != nil {
-		return nil, &object.Error{Message: fmt.Sprintf("invalid pattern %q: %s", pattern.Value, err)}
+		return nil, &object.Error{Message: strfmt.Sprintf("invalid pattern %q: %s", pattern.Value, err)}
 	}
 	regexCache[pattern.Value] = re
 	return re, nil

@@ -2,13 +2,13 @@ package object
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unsafe"
 
 	"github.com/migueltarga/TargaScript/ast"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 type BuiltinFunction func(args ...Object) Object
@@ -75,7 +75,7 @@ func (f *Float) Inspect() string {
 	if math.IsInf(f.Value, 1) {
 		return "Inf"
 	}
-	return fmt.Sprintf("%g", f.Value)
+	return strfmt.Sprintf("%g", f.Value)
 }
 
 type Boolean struct {
@@ -121,7 +121,7 @@ type Call struct {
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
 func (e *Error) Inspect() string {
 	if e.Line > 0 && e.Column > 0 {
-		return fmt.Sprintf("ERROR at line %d, column %d: %s", e.Line, e.Column, e.Message)
+		return strfmt.Sprintf("ERROR at line %d, column %d: %s", e.Line, e.Column, e.Message)
 	}
 	return "ERROR: " + e.Message
 }
@@ -138,10 +138,10 @@ func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.E
 type String struct {
 	Value string
 
-	// The hash of Value, computed the first time it's needed. Strings are
-	// never changed in place, so it stays valid.
-	hash   uint64
-	hashed bool
+	// The hash of Value, computed the first time it's needed, or 0 before.
+	// Strings are never changed in place, so it stays valid. A hash that
+	// is 0 is computed every time, which keeps String small.
+	hash uint64
 
 	// buffer holds Value, and room after it, when the string was made by
 	// Concat; see there
@@ -175,14 +175,14 @@ func Concat(s *String, more string) *String {
 func (s *String) Type() ObjectType { return STRING_OBJ }
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) HashKey() HashKey {
-	if !s.hashed {
+	if s.hash == 0 {
 		// FNV-1a, inline to avoid allocating a hasher and a byte slice
 		h := uint64(14695981039346656037)
 		for i := 0; i < len(s.Value); i++ {
 			h ^= uint64(s.Value[i])
 			h *= 1099511628211
 		}
-		s.hash, s.hashed = h, true
+		s.hash = h
 	}
 	return HashKey{Kind: StringKey, Value: s.hash}
 }
@@ -195,13 +195,49 @@ type Builtin struct {
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string {
 	if b.Name != "" {
-		return fmt.Sprintf("builtin function: %s", b.Name)
+		return strfmt.Sprintf("builtin function: %s", b.Name)
 	}
 	return "builtin function"
 }
 
 type Array struct {
 	Elements []Object
+}
+
+// NewArray returns an array of n elements, all nil, which for small arrays
+// come in the same allocation as the array.
+func NewArray(n int) *Array {
+	switch n {
+	case 1:
+		b := &struct {
+			a Array
+			e [1]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 2:
+		b := &struct {
+			a Array
+			e [2]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 3:
+		b := &struct {
+			a Array
+			e [3]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 4:
+		b := &struct {
+			a Array
+			e [4]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	}
+	return &Array{Elements: make([]Object, n)}
 }
 
 func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
@@ -248,7 +284,7 @@ func (h *Hash) inspect(parents []Object) string {
 
 	pairs := []string{}
 	for _, pair := range h.OrderedPairs() {
-		pairs = append(pairs, fmt.Sprintf("%s: %s",
+		pairs = append(pairs, strfmt.Sprintf("%s: %s",
 			inspectNested(pair.Key, parents), inspectNested(pair.Value, parents)))
 	}
 

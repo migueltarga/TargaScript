@@ -81,6 +81,10 @@ type functionScope struct {
 	captured  map[int]bool
 	recompile bool
 
+	// implicitIt is set for the function of an argument that uses it, as
+	// in xs.map(it * 2)
+	implicitIt bool
+
 	loops int // loops open in this function, for break and continue
 	tries []openTry
 

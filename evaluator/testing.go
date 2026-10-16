@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // Counts of the tests run with test since the last ResetTests
@@ -37,14 +37,14 @@ func init() {
 // tests for -run.
 func describeBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for describe. got=%d, want=2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for describe. got=%d, want=2", len(args))}
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("first argument to `describe` must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("first argument to `describe` must be a string, got %s", typeName(args[0]))}
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: fmt.Sprintf("second argument to `describe` must be a function, got %s", typeName(args[1]))}
+		return &object.Error{Message: strfmt.Sprintf("second argument to `describe` must be a function, got %s", typeName(args[1]))}
 	}
 
 	testGroups = append(testGroups, name.Value)
@@ -81,14 +81,14 @@ func testIndent() string {
 // passed. A failing test doesn't stop the program, so the rest still run.
 func testBuiltin(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for test. got=%d, want=2", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for test. got=%d, want=2", len(args))}
 	}
 	name, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("first argument to `test` must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("first argument to `test` must be a string, got %s", typeName(args[0]))}
 	}
 	if !isCallable(args[1]) {
-		return &object.Error{Message: fmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
+		return &object.Error{Message: strfmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
 	}
 
 	fullName := strings.Join(append(append([]string{}, testGroups...), name.Value), " ")
@@ -124,20 +124,20 @@ func testBuiltin(args ...object.Object) object.Object {
 // reportTest prints whether a test passed, and counts it.
 func reportTest(name string, err *object.Error) {
 	for ; groupsShown < len(testGroups); groupsShown++ {
-		fmt.Fprintf(output, "%s%s\n", strings.Repeat("  ", groupsShown), testGroups[groupsShown])
+		strfmt.Fprintf(output, "%s%s\n", strings.Repeat("  ", groupsShown), testGroups[groupsShown])
 	}
 	if err == nil {
 		testsPassed++
-		fmt.Fprintf(output, "%s✓ %s\n", testIndent(), name)
+		strfmt.Fprintf(output, "%s✓ %s\n", testIndent(), name)
 		return
 	}
 	testsFailed++
 	where := ""
 	if err.Line > 0 {
-		where = fmt.Sprintf(" (line %d)", err.Line)
+		where = strfmt.Sprintf(" (line %d)", err.Line)
 	}
 	indent := testIndent()
-	fmt.Fprintf(output, "%s✗ %s\n%s    %s%s\n", indent, name, indent, err.Message, where)
+	strfmt.Fprintf(output, "%s✗ %s\n%s    %s%s\n", indent, name, indent, err.Message, where)
 }
 
 // TestResults returns how many tests passed, failed and were left out by

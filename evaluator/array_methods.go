@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"cmp"
-	"slices"
 
 	"github.com/migueltarga/TargaScript/object"
 )
@@ -115,7 +114,7 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 
 	var sortErr *object.Error
 	cb := newCallback(args[0])
-	slices.SortStableFunc(arr.Elements, func(a, b object.Object) int {
+	mergeSort(arr.Elements, func(a, b object.Object) int {
 		if sortErr != nil {
 			return 0
 		}
@@ -130,7 +129,7 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 			sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
 		}
 		return 0
-	})
+	}, func() bool { return sortErr != nil })
 	return sortErr
 }
 

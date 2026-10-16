@@ -2,9 +2,10 @@
 package diag
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // Diagnostic is an error at a position in the source. A Line of 0 means
@@ -43,18 +44,18 @@ func Format(source string, d Diagnostic) string {
 	lines := strings.Split(source, "\n")
 	if d.Line <= 0 || d.Line > len(lines) {
 		if d.Line > 0 {
-			fmt.Fprintf(&b, " (line %d, column %d)", d.Line, d.Column)
+			strfmt.Fprintf(&b, " (line %d, column %d)", d.Line, d.Column)
 		}
 		return b.String()
 	}
 
-	fmt.Fprintf(&b, "\n  --> line %d, column %d\n\n", d.Line, d.Column)
+	strfmt.Fprintf(&b, "\n  --> line %d, column %d\n\n", d.Line, d.Column)
 
 	text := strings.TrimRight(lines[d.Line-1], "\r")
 	number := strconv.Itoa(d.Line)
 	gutter := strings.Repeat(" ", len(number))
-	fmt.Fprintf(&b, " %s | %s\n", number, text)
-	fmt.Fprintf(&b, " %s | %s^", gutter, caretIndent(text, d.Column))
+	strfmt.Fprintf(&b, " %s | %s\n", number, text)
+	strfmt.Fprintf(&b, " %s | %s^", gutter, caretIndent(text, d.Column))
 	writeTrace(&b, d.Trace)
 	return b.String()
 }
@@ -97,7 +98,7 @@ func writeTrace(b *strings.Builder, trace []Call) {
 	b.WriteString("\n")
 	for i, g := range groups {
 		if i == shownFirst && skipped > 0 {
-			fmt.Fprintf(b, "\n  ... %d more calls", skipped)
+			strfmt.Fprintf(b, "\n  ... %d more calls", skipped)
 		}
 		b.WriteString("\n  ")
 		if i == 0 {
@@ -106,12 +107,12 @@ func writeTrace(b *strings.Builder, trace []Call) {
 			b.WriteString("called from ")
 		}
 		if g.call.Function == "" {
-			fmt.Fprintf(b, "line %d", g.call.Line)
+			strfmt.Fprintf(b, "line %d", g.call.Line)
 		} else {
-			fmt.Fprintf(b, "%s (line %d)", g.call.Function, g.call.Line)
+			strfmt.Fprintf(b, "%s (line %d)", g.call.Function, g.call.Line)
 		}
 		if g.times > 1 {
-			fmt.Fprintf(b, ", %d times", g.times)
+			strfmt.Fprintf(b, ", %d times", g.times)
 		}
 	}
 }
@@ -125,7 +126,7 @@ func FormatAll(source string, diagnostics []Diagnostic) string {
 			if rest == 1 {
 				parts = append(parts, "...and 1 more error")
 			} else {
-				parts = append(parts, fmt.Sprintf("...and %d more errors", rest))
+				parts = append(parts, strfmt.Sprintf("...and %d more errors", rest))
 			}
 			break
 		}

@@ -2,7 +2,6 @@ package ast
 
 import (
 	"bytes"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -181,10 +180,16 @@ func (pe *PrefixExpression) String() string {
 
 // nodeString is the String of a node, or "" for one missing because of a
 // syntax error, so error messages can show a partly parsed expression.
-func nodeString(node Node) string {
-	if node == nil || reflect.ValueOf(node).IsNil() {
+func nodeString(node Node) (s string) {
+	if node == nil {
 		return ""
 	}
+	// A nil pointer in the interface panics on its fields
+	defer func() {
+		if recover() != nil {
+			s = ""
+		}
+	}()
 	return node.String()
 }
 
@@ -301,6 +306,10 @@ type FunctionLiteral struct {
 
 	// Arrow is set for functions written x => body
 	Arrow bool
+
+	// ImplicitIt is set for an argument that uses it without defining it,
+	// as in xs.map(it * 2): a function of it, unless it is a variable
+	ImplicitIt bool
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -310,6 +319,9 @@ func (fl *FunctionLiteral) String() string {
 
 	params := ParameterStrings(fl.Parameters, fl.Defaults, fl.Rest)
 
+	if fl.ImplicitIt {
+		return fl.Body.String()
+	}
 	if fl.Arrow {
 		return "(" + strings.Join(params, ", ") + ") => " + fl.Body.String()
 	}

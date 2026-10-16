@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 // TimeHost tells the time. Go's time package is large in the WebAssembly
@@ -43,7 +43,7 @@ func parseTimeBuiltin(args ...object.Object) object.Object {
 	}
 	unix, ok := readTime(values[0], values[1])
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("cannot read %q as a time in the layout %q", values[0], values[1])}
+		return &object.Error{Message: strfmt.Sprintf("cannot read %q as a time in the layout %q", values[0], values[1])}
 	}
 	return &object.Integer{Value: unix}
 }
@@ -222,7 +222,7 @@ var (
 // timing code.
 func clockBuiltin(args ...object.Object) object.Object {
 	if len(args) != 0 {
-		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for clock. got=%d, want=0", len(args))}
+		return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for clock. got=%d, want=0", len(args))}
 	}
 	return &object.Float{Value: float64(int64((timeHost.Now()-started)*1e6)) / 1000}
 }

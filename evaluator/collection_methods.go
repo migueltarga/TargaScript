@@ -1,9 +1,8 @@
 package evaluator
 
 import (
-	"fmt"
-
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -18,21 +17,23 @@ func init() {
 var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) object.Object{
 	"entries": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 0 {
-			return &object.Error{Message: fmt.Sprintf("wrong number of arguments for object.entries(): got %d, want 0", len(args))}
+			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.entries(): got %d, want 0", len(args))}
 		}
 		entries := []object.Object{}
 		for _, pair := range h.OrderedPairs() {
-			entries = append(entries, &object.Array{Elements: []object.Object{pair.Key, pair.Value}})
+			entry := object.NewArray(2)
+			entry.Elements[0], entry.Elements[1] = pair.Key, pair.Value
+			entries = append(entries, entry)
 		}
 		return &object.Array{Elements: entries}
 	},
 	"get": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 && len(args) != 2 {
-			return &object.Error{Message: fmt.Sprintf("wrong number of arguments for object.get(): got %d, want 1 or 2", len(args))}
+			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.get(): got %d, want 1 or 2", len(args))}
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
 		}
 		if pair, ok := h.Get(key.HashKey()); ok {
 			return pair.Value
@@ -44,11 +45,11 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 	},
 	"remove": func(h *object.Hash, args []object.Object) object.Object {
 		if len(args) != 1 {
-			return &object.Error{Message: fmt.Sprintf("wrong number of arguments for object.remove(): got %d, want 1", len(args))}
+			return &object.Error{Message: strfmt.Sprintf("wrong number of arguments for object.remove(): got %d, want 1", len(args))}
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: fmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
 		}
 		var value object.Object = NULL
 		if pair, ok := h.Get(key.HashKey()); ok {
@@ -123,7 +124,7 @@ func format(args ...object.Object) object.Object {
 	}
 	text, ok := args[0].(*object.String)
 	if !ok {
-		return &object.Error{Message: fmt.Sprintf("first argument to format must be a string, got %s", typeName(args[0]))}
+		return &object.Error{Message: strfmt.Sprintf("first argument to format must be a string, got %s", typeName(args[0]))}
 	}
 	formatted, err := formatPrintf(text.Value, args[1:])
 	if err != nil {

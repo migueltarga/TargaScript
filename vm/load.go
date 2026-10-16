@@ -1,7 +1,7 @@
 package vm
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/evaluator"
@@ -56,7 +56,7 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 	}
 
 	names := append([]string{}, c.Globals().Names()...)
-	sort.Strings(names)
+	slices.Sort(names)
 	exports := object.NewHash()
 	for _, name := range names {
 		if value := module.global(name); value != nil {
