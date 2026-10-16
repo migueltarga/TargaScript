@@ -334,14 +334,17 @@ nextButton.addEventListener("click", fn(event) {
 // SECTION 5: Start
 // ----------------
 
+// A link cut short or edited by hand can't be read; the welcome code opens
+// instead of nothing
 let hash = js.location.hash
-if hash.startsWith("#code=") {
-    setCode(decompress(hash.replace("#code=", "")))
-} else {
-    setCode(fetchText("welcome.tg"))
+let shared = try {
+    if hash.startsWith("#code=") { decompress(hash.replace("#code=", "")) }
+} catch {
+    null
 }
+setCode(shared ?? fetchText("welcome.tg"))
 runButton.disabled = false
-status.textContent = "Ready"
+status.textContent = if hash.startsWith("#code=") && shared == null { "Couldn't read the shared code" } else { "Ready" }
 
 let tour = []
 repeat line in fetchText("tour/index.txt").lines() {
