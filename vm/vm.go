@@ -363,6 +363,16 @@ func (vm *VM) loop(base int) object.Object {
 			code.OpLessThan, code.OpLessEqual, code.OpRange, code.OpIn:
 			right := vm.stack[vm.sp-1]
 			left := vm.stack[vm.sp-2]
+			// Integers first, without a call, as most arithmetic is on them
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+						vm.sp--
+						vm.stack[vm.sp-1] = result
+						continue
+					}
+				}
+			}
 			vm.sp -= 2
 			result := vm.binary(f, ip, op, left, right)
 			if err, ok := result.(*object.Error); ok {
@@ -970,39 +980,10 @@ func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
 }
 
 func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object) object.Object {
-	// Fast paths for small integers, which can't overflow
 	if l, ok := left.(*object.Integer); ok {
-		if r, ok := right.(*object.Integer); ok && smallInt(l.Value) && smallInt(r.Value) {
-			a, b := l.Value, r.Value
-			switch op {
-			case code.OpAdd:
-				return vm.ints.get(a + b)
-			case code.OpSub:
-				return vm.ints.get(a - b)
-			case code.OpMul:
-				if a > -(1<<30) && a < 1<<30 && b > -(1<<30) && b < 1<<30 {
-					return vm.ints.get(a * b)
-				}
-			case code.OpDiv:
-				if b != 0 {
-					return vm.ints.get(a / b)
-				}
-			case code.OpMod:
-				if b != 0 {
-					return vm.ints.get(a % b)
-				}
-			case code.OpLessThan:
-				return nativeBool(a < b)
-			case code.OpLessEqual:
-				return nativeBool(a <= b)
-			case code.OpGreaterThan:
-				return nativeBool(a > b)
-			case code.OpGreaterEqual:
-				return nativeBool(a >= b)
-			case code.OpEqual:
-				return nativeBool(a == b)
-			case code.OpNotEqual:
-				return nativeBool(a != b)
+		if r, ok := right.(*object.Integer); ok {
+			if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+				return result
 			}
 		}
 	}
@@ -1012,6 +993,45 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// intBinary is the fast path of binary for integers small enough not to
+// overflow. It returns nil for the cases it leaves to the slow path.
+func (vm *VM) intBinary(op code.Opcode, a, b int64) object.Object {
+	if !smallInt(a) || !smallInt(b) {
+		return nil
+	}
+	switch op {
+	case code.OpAdd:
+		return vm.ints.get(a + b)
+	case code.OpSub:
+		return vm.ints.get(a - b)
+	case code.OpMul:
+		if a > -(1<<30) && a < 1<<30 && b > -(1<<30) && b < 1<<30 {
+			return vm.ints.get(a * b)
+		}
+	case code.OpDiv:
+		if b != 0 {
+			return vm.ints.get(a / b)
+		}
+	case code.OpMod:
+		if b != 0 {
+			return vm.ints.get(a % b)
+		}
+	case code.OpLessThan:
+		return nativeBool(a < b)
+	case code.OpLessEqual:
+		return nativeBool(a <= b)
+	case code.OpGreaterThan:
+		return nativeBool(a > b)
+	case code.OpGreaterEqual:
+		return nativeBool(a >= b)
+	case code.OpEqual:
+		return nativeBool(a == b)
+	case code.OpNotEqual:
+		return nativeBool(a != b)
+	}
+	return nil
 }
 
 // operators are the text of the binary operators, by opcode.
