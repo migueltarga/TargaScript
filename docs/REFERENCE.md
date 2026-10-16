@@ -373,7 +373,7 @@ Scripts see their arguments in `args`, and can use `readFile(path)`, `writeFile(
 
 ### Web servers
 
-`serve(port, handler)` starts an HTTP server and calls `handler` for each request, one at a time. The request is an object with `method`, `path`, `query` (an object), `headers` (with lowercase names) and `body` (a string). What the handler returns is the reply:
+`serve(port, handler)` starts an HTTP server and returns; the program then keeps running to answer requests. `handler` is called for each request and can `await`, and other requests are answered while it waits. The request is an object with `method`, `path`, `query` (an object), `headers` (with lowercase names) and `body` (a string). What the handler returns is the reply:
 
 | Handler returns | Reply |
 |---|---|
@@ -400,7 +400,15 @@ serve(8080, fn(req) {
 })
 ```
 
-Handlers can't use `await` yet.
+A handler that awaits can call other services:
+
+```text
+serve(8080, fn(req) {
+    let res = await fetch("https://api.github.com/repos/${req.query.repo}")
+    let repo = res.json()
+    return {name: repo.full_name, stars: repo.stargazers_count}
+})
+```
 
 ## Web pages
 
