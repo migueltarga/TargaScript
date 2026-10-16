@@ -3,12 +3,30 @@ package evaluator
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/migueltarga/TargaScript/object"
 )
 
-var started = time.Now()
+// TimeHost tells the time. Go's time package is large in the WebAssembly
+// build, which asks JavaScript's Date instead and does the calendar here.
+type TimeHost interface {
+	// Now returns the Unix time in seconds
+	Now() float64
+	// Offset returns how many seconds the local time zone is ahead of UTC
+	// at a Unix time
+	Offset(unix int64) int64
+}
+
+var (
+	timeHost TimeHost
+	started  float64 // when the time host was set, for clock
+)
+
+// SetTimeHost sets what now, clock, timeFormat and parseTime use.
+func SetTimeHost(host TimeHost) {
+	timeHost = host
+	started = host.Now()
+}
 
 func init() {
 	builtins["clock"] = &object.Builtin{Name: "clock", Fn: clockBuiltin}
@@ -23,17 +41,16 @@ func parseTimeBuiltin(args ...object.Object) object.Object {
 	if err != nil {
 		return err
 	}
-	t, ok := readTime(values[0], values[1])
+	unix, ok := readTime(values[0], values[1])
 	if !ok {
 		return &object.Error{Message: fmt.Sprintf("cannot read %q as a time in the layout %q", values[0], values[1])}
 	}
-	return &object.Integer{Value: t.Unix()}
+	return &object.Integer{Value: unix}
 }
 
 // readTime reads text written in a layout of timeFormat's tokens, in the
-// local time zone. It reads the tokens itself instead of using time.Parse,
-// which would add 15 KB to the WebAssembly build.
-func readTime(text, layout string) (time.Time, bool) {
+// local time zone, and returns its Unix time.
+func readTime(text, layout string) (int64, bool) {
 	year, month, day, hour, minute, second := 1970, 1, 1, 0, 0, 0
 	pm, hasAMPM := false, false
 
@@ -76,7 +93,7 @@ func readTime(text, layout string) (time.Time, bool) {
 		case "":
 			// Text outside the tokens must be there as written
 			if len(text) == 0 || text[0] != layout[0] {
-				return time.Time{}, false
+				return 0, false
 			}
 			text, layout = text[1:], layout[1:]
 			continue
@@ -115,17 +132,17 @@ func readTime(text, layout string) (time.Time, bool) {
 			pm, hasAMPM = i == 1, true
 		}
 		if !ok {
-			return time.Time{}, false
+			return 0, false
 		}
 		layout = layout[len(token):]
 	}
 	if len(text) > 0 {
-		return time.Time{}, false
+		return 0, false
 	}
 
 	if hasAMPM {
 		if hour < 1 || hour > 12 {
-			return time.Time{}, false
+			return 0, false
 		}
 		hour %= 12
 		if pm {
@@ -133,14 +150,65 @@ func readTime(text, layout string) (time.Time, bool) {
 		}
 	}
 	if month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59 {
-		return time.Time{}, false
+		return 0, false
 	}
-	t := time.Date(year, time.Month(month), day, hour, minute, second, 0, time.Local)
-	// time.Date moves 31 February to March; that date doesn't exist
-	if t.Day() != day {
-		return time.Time{}, false
+	days := daysFromCivil(int64(year), int64(month), int64(day))
+	// 31 February would be read as a day in March; that date doesn't exist
+	if _, _, d, _ := civilFromDays(days); d != day {
+		return 0, false
 	}
-	return t, true
+	local := days*86400 + int64(hour*3600+minute*60+second)
+	// The offset at the local time is a guess, right but near a change of
+	// daylight saving time; the offset at the guess is right
+	unix := local - timeHost.Offset(local)
+	return local - timeHost.Offset(unix), true
+}
+
+// civilFromDays returns the date and the weekday (0 is Sunday) of a number
+// of days since 1 January 1970, with the algorithms in
+// https://howardhinnant.github.io/date_algorithms.html.
+func civilFromDays(days int64) (year int64, month, day, weekday int) {
+	weekday = int(floorMod(days+4, 7))
+	z := days + 719468
+	era := floorDiv(z, 146097)
+	doe := z - era*146097
+	yoe := (doe - doe/1460 + doe/36524 - doe/146096) / 365
+	doy := doe - (365*yoe + yoe/4 - yoe/100)
+	mp := (5*doy + 2) / 153
+	day = int(doy - (153*mp+2)/5 + 1)
+	month = int(mp + 3)
+	if month > 12 {
+		month -= 12
+	}
+	year = yoe + era*400
+	if month <= 2 {
+		year++
+	}
+	return year, month, day, weekday
+}
+
+// daysFromCivil is the opposite of civilFromDays.
+func daysFromCivil(year, month, day int64) int64 {
+	if month <= 2 {
+		year--
+	}
+	era := floorDiv(year, 400)
+	yoe := year - era*400
+	doy := (153*((month+9)%12)+2)/5 + day - 1
+	doe := yoe*365 + yoe/4 - yoe/100 + doy
+	return era*146097 + doe - 719468
+}
+
+func floorDiv(a, b int64) int64 {
+	q := a / b
+	if a%b != 0 && (a < 0) != (b < 0) {
+		q--
+	}
+	return q
+}
+
+func floorMod(a, b int64) int64 {
+	return a - floorDiv(a, b)*b
 }
 
 var (
@@ -156,17 +224,21 @@ func clockBuiltin(args ...object.Object) object.Object {
 	if len(args) != 0 {
 		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for clock. got=%d, want=0", len(args))}
 	}
-	return &object.Float{Value: float64(time.Since(started).Microseconds()) / 1000}
+	return &object.Float{Value: float64(int64((timeHost.Now()-started)*1e6)) / 1000}
 }
 
 // dateTokens are the parts of a layout that timeFormat and parseTime
 // understand, longest first so "YYYY" wins over "YY".
 var dateTokens = []string{"YYYY", "YY", "MMMM", "MMM", "MM", "DD", "dddd", "ddd", "HH", "hh", "mm", "ss", "A"}
 
-// formatTime writes t in a layout like "YYYY-MM-DD HH:mm", keeping the text
-// between the tokens. It doesn't use time.Format, which would add 10 KB to
-// the WebAssembly build.
-func formatTime(t time.Time, layout string) string {
+// formatTime writes a Unix time in the local time zone, in a layout like
+// "YYYY-MM-DD HH:mm", keeping the text between the tokens.
+func formatTime(unix int64, layout string) string {
+	local := unix + timeHost.Offset(unix)
+	days := floorDiv(local, 86400)
+	seconds := int(local - days*86400)
+	year, month, day, weekday := civilFromDays(days)
+	hour, minute, second := seconds/3600, seconds/60%60, seconds%60
 	var out strings.Builder
 	two := func(n int) {
 		out.WriteByte(byte('0' + n/10%10))
@@ -186,32 +258,32 @@ func formatTime(t time.Time, layout string) string {
 			layout = layout[1:]
 			continue
 		case "YYYY":
-			two(t.Year() / 100)
-			two(t.Year())
+			two(int(year / 100))
+			two(int(year))
 		case "YY":
-			two(t.Year())
+			two(int(year))
 		case "MMMM":
-			out.WriteString(monthNames[t.Month()-1])
+			out.WriteString(monthNames[month-1])
 		case "MMM":
-			out.WriteString(shortMonthNames[t.Month()-1])
+			out.WriteString(shortMonthNames[month-1])
 		case "MM":
-			two(int(t.Month()))
+			two(month)
 		case "DD":
-			two(t.Day())
+			two(day)
 		case "dddd":
-			out.WriteString(dayNames[t.Weekday()])
+			out.WriteString(dayNames[weekday])
 		case "ddd":
-			out.WriteString(shortDayNames[t.Weekday()])
+			out.WriteString(shortDayNames[weekday])
 		case "HH":
-			two(t.Hour())
+			two(hour)
 		case "hh":
-			two((t.Hour()+11)%12 + 1)
+			two((hour+11)%12 + 1)
 		case "mm":
-			two(t.Minute())
+			two(minute)
 		case "ss":
-			two(t.Second())
+			two(second)
 		case "A":
-			if t.Hour() < 12 {
+			if hour < 12 {
 				out.WriteString("AM")
 			} else {
 				out.WriteString("PM")

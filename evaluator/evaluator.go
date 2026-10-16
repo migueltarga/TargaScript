@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -16,8 +15,8 @@ var (
 	TRUE  = &object.Boolean{Value: true}
 	FALSE = &object.Boolean{Value: false}
 
-	// Default output to stdout
-	output io.Writer = os.Stdout
+	// Where print writes; standard output outside the browser
+	output = defaultOutput
 )
 
 // maxCallDepth limits recursion so runaway calls fail with an error

@@ -7,8 +7,16 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
+// utc is a time host in UTC, so tests don't depend on the machine's zone
+func utc(t *testing.T) {
+	previous := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = previous })
+}
+
 func TestFormatTime(t *testing.T) {
-	stamp := time.Date(2026, time.March, 5, 14, 7, 9, 0, time.UTC)
+	utc(t)
+	stamp := time.Date(2026, time.March, 5, 14, 7, 9, 0, time.UTC).Unix()
 	tests := []struct{ format, want string }{
 		{"YYYY-MM-DD", "2026-03-05"},
 		{"DD/MM/YY HH:mm:ss", "05/03/26 14:07:09"},
@@ -36,9 +44,7 @@ func TestClock(t *testing.T) {
 }
 
 func TestParseTime(t *testing.T) {
-	previous := time.Local
-	time.Local = time.UTC
-	defer func() { time.Local = previous }()
+	utc(t)
 
 	tests := []struct {
 		text, layout string
@@ -70,8 +76,46 @@ func TestParseTime(t *testing.T) {
 
 	// timeFormat and parseTime are opposites
 	stamp := int64(1_760_000_000)
-	formatted := formatTime(time.Unix(stamp, 0), "YYYY-MM-DD HH:mm:ss")
+	formatted := formatTime(stamp, "YYYY-MM-DD HH:mm:ss")
 	if n := parseTimeBuiltin(&object.String{Value: formatted}, &object.String{Value: "YYYY-MM-DD HH:mm:ss"}).(*object.Integer); n.Value != stamp {
 		t.Errorf("round trip: got %d, want %d", n.Value, stamp)
+	}
+}
+
+// The calendar arithmetic agrees with Go's time package, across leap years
+// and before 1970
+func TestCivilDays(t *testing.T) {
+	for days := int64(-800_000); days <= 800_000; days += 37 {
+		want := time.Unix(days*86400, 0).UTC()
+		year, month, day, weekday := civilFromDays(days)
+		if year != int64(want.Year()) || month != int(want.Month()) || day != want.Day() || weekday != int(want.Weekday()) {
+			t.Fatalf("%d: got %d-%d-%d (%d), want %s", days, year, month, day, weekday, want.Format("2006-01-02 Mon"))
+		}
+		if back := daysFromCivil(year, int64(month), int64(day)); back != days {
+			t.Fatalf("%d: back to %d", days, back)
+		}
+	}
+}
+
+// parseTime finds the right offset on both sides of a change of daylight
+// saving time
+func TestParseTimeZone(t *testing.T) {
+	zone, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		t.Skip(err)
+	}
+	previous := time.Local
+	time.Local = zone
+	defer func() { time.Local = previous }()
+
+	for _, text := range []string{"2026-03-08 01:30", "2026-03-08 03:30", "2026-11-01 00:30", "2026-07-01 12:00"} {
+		want, _ := time.ParseInLocation("2006-01-02 15:04", text, zone)
+		got, ok := readTime(text, "YYYY-MM-DD HH:mm")
+		if !ok || got != want.Unix() {
+			t.Errorf("%s: got %d, want %d", text, got, want.Unix())
+		}
+		if back := formatTime(got, "YYYY-MM-DD HH:mm"); back != text {
+			t.Errorf("%s: formats as %s", text, back)
+		}
 	}
 }

@@ -5,7 +5,6 @@
 package main
 
 import (
-	"io/fs"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/compiler"
@@ -202,6 +201,7 @@ func init() {
 	evaluator.SetHost(jsbridge.Host{})
 	evaluator.SetRegexEngine(jsbridge.Regex{})
 	evaluator.SetMathHost(jsbridge.Math{})
+	evaluator.SetTimeHost(jsbridge.Time{})
 	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }
@@ -214,5 +214,5 @@ func readFile(path string) ([]byte, error) {
 	if content, ok := jsbridge.Global().CallMethod("targascriptReadFile", []object.Object{&object.String{Value: path}}).(*object.String); ok {
 		return []byte(content.Value), nil
 	}
-	return nil, fs.ErrNotExist
+	return nil, compiler.ErrNotExist
 }

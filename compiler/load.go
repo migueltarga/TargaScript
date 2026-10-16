@@ -1,9 +1,7 @@
 package compiler
 
 import (
-	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -34,10 +32,10 @@ func ResolveLoadPath(dir, file string) (string, error) {
 		}
 		return origin(dir) + path.Clean(dir[len(origin(dir)):]+"/"+file), nil
 	}
-	if !filepath.IsAbs(file) {
-		file = filepath.Join(dir, file)
+	if !isAbs(file) {
+		file = joinPath(dir, file)
 	}
-	return filepath.Abs(file)
+	return absPath(file)
 }
 
 // IsURL reports whether a load path is a web address.
@@ -63,19 +61,15 @@ func ModuleDir(file string) string {
 		}
 		return origin(file)
 	}
-	return filepath.Dir(file)
+	return dirOf(file)
 }
-
-// ReadFile reads the files programs load. The browser build replaces it, as
-// files there come from the page's server.
-var ReadFile = os.ReadFile
 
 // ReadModule reads and parses a loaded file, returning the error message the
 // load fails with when it can't.
 func ReadModule(path, shown string) (*ast.Program, string) {
 	source, err := ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if isNotExist(err) {
 			return nil, "cannot load " + quote(shown) + ": file not found"
 		}
 		return nil, "cannot load " + quote(shown) + ": " + err.Error()
