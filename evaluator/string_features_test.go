@@ -86,7 +86,7 @@ func TestStringSearchMethods(t *testing.T) {
 	}{
 		{`"a".contains(1)`, "argument to string.contains() must be STRING, got INTEGER"},
 		{`"a".indexOf()`, "wrong number of arguments for string.indexOf(): got 0, want 1"},
-		{`"abc"["x"]`, "index operator not supported: STRING"},
+		{`"abc"["x"]`, `cannot use [] on a string`},
 	}
 
 	for _, tt := range errorTests {

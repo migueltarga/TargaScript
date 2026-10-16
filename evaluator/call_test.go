@@ -39,7 +39,7 @@ func TestCallErrorsHavePosition(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected error, got=%T (%+v)", evaluated, evaluated)
 	}
-	if errObj.Message != "not a function: INTEGER" {
+	if errObj.Message != "cannot call an integer, it is not a function" {
 		t.Errorf("wrong error message: %q", errObj.Message)
 	}
 	if errObj.Line != 3 {

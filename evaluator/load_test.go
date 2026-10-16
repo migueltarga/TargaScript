@@ -77,7 +77,7 @@ func TestLoadErrors(t *testing.T) {
 		{"const PI = 1\nload \"math.tg\"", "it defines PI, which is a constant here"},
 		{"load \"nope.tg\"", `cannot load "nope.tg": file not found`},
 		{"load \"a.tg\"", `circular load of "a.tg"`},
-		{"load \"broken.tg\"", "broken.tg:2:7: identifier not found: missing"},
+		{"load \"broken.tg\"", `broken.tg:2:7: "missing" is not defined`},
 		{"load \"syntax.tg\"", `cannot load "syntax.tg": line 1:5`},
 	}
 

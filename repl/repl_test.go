@@ -15,7 +15,7 @@ func TestStartKeepsStateBetweenLines(t *testing.T) {
 	if !strings.Contains(out.String(), "42") {
 		t.Fatalf("expected output to contain 42, got %q", out.String())
 	}
-	if strings.Contains(out.String(), "identifier not found") {
+	if strings.Contains(out.String(), "is not defined") {
 		t.Fatalf("variables were lost between lines: %q", out.String())
 	}
 }

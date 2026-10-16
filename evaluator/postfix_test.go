@@ -37,7 +37,7 @@ func TestPostfixErrors(t *testing.T) {
 		expected string
 	}{
 		{"const c = 1\nc++", "cannot reassign constant: c"},
-		{"missing++", "identifier not found: missing"},
+		{"missing++", `"missing" is not defined`},
 		{"let s = \"a\"\ns++", "operator ++ not supported for STRING"},
 		{"let b = true\nb--", "operator -- not supported for BOOLEAN"},
 		{"5++", "invalid assignment target: *ast.IntegerLiteral"},

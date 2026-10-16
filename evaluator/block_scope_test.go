@@ -49,8 +49,8 @@ func TestBlockScopesDoNotLeak(t *testing.T) {
 
 	for _, input := range tests {
 		errObj, ok := testEval(input).(*object.Error)
-		if !ok || !strings.HasPrefix(errObj.Message, "identifier not found") {
-			t.Errorf("%q: expected identifier not found, got %s", input, testEval(input).Inspect())
+		if !ok || !strings.Contains(errObj.Message, "is not defined") {
+			t.Errorf("%q: expected a not defined error, got %s", input, testEval(input).Inspect())
 		}
 	}
 }

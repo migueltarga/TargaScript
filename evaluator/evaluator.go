@@ -336,7 +336,7 @@ func assign(target ast.Expression, val object.Object, env *object.Environment, l
 		}
 
 		if _, ok := env.Get(left.Value); !ok {
-			return newError(line, column, "identifier not found: %s", left.Value)
+			return notDefinedError(line, column, left.Value, env)
 		}
 		result, _ := env.Set(left.Value, val)
 		return result
@@ -472,7 +472,7 @@ func evalPrefixExpression(operator string, right object.Object, line, column int
 	case "-":
 		return evalMinusPrefixOperatorExpression(right, line, column)
 	default:
-		return newError(line, column, "unknown operator: %s%s", operator, right.Type())
+		return newError(line, column, "cannot use %q on %s", operator, typeName(right))
 	}
 }
 
@@ -512,11 +512,9 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	case operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return newError(line, column, "type mismatch: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	default:
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	}
 }
 
@@ -549,7 +547,7 @@ func evalMinusPrefixOperatorExpression(right object.Object, line, column int) ob
 		value := right.(*object.Float).Value
 		return &object.Float{Value: -value}
 	default:
-		return newError(line, column, "unknown operator: -%s", right.Type())
+		return newError(line, column, "cannot use \"-\" on %s", typeName(right))
 	}
 }
 
@@ -587,8 +585,7 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
 	default:
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	}
 }
 
@@ -620,8 +617,7 @@ func evalFloatInfixExpression(operator string, left, right object.Object, line, 
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
 	default:
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	}
 }
 
@@ -654,7 +650,7 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 		return builtin
 	}
 
-	return newError(node.Token.Line, node.Token.Column, "identifier not found: %s", node.Value)
+	return notDefinedError(node.Token.Line, node.Token.Column, node.Value, env)
 }
 
 func isTruthy(obj object.Object) bool {
@@ -754,7 +750,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case object.External:
 		return fn.Call(args)
 	default:
-		return newError(0, 0, "not a function: %s", fn.Type())
+		return newError(0, 0, "cannot call %s, it is not a function", typeName(fn))
 	}
 }
 
@@ -822,7 +818,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		}
 		return &object.String{Value: string(chars[idx])}
 	default:
-		return newError(line, column, "index operator not supported: %s", left.Type())
+		return newError(line, column, "cannot use [] on %s", typeName(left))
 	}
 }
 
@@ -896,7 +892,7 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 		case "length":
 			return &object.Integer{Value: int64(len(obj.Elements))}
 		default:
-			return newError(node.Token.Line, node.Token.Column, "array has no property '%s'", propertyName)
+			return newError(node.Token.Line, node.Token.Column, "arrays have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
 	case *object.String:
 		propertyName := node.Property.Value
@@ -904,7 +900,7 @@ func evalDotExpression(obj object.Object, node *ast.DotExpression, env *object.E
 		case "length":
 			return &object.Integer{Value: int64(utf8.RuneCountInString(obj.Value))}
 		default:
-			return newError(node.Token.Line, node.Token.Column, "string has no property '%s'", propertyName)
+			return newError(node.Token.Line, node.Token.Column, "strings have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
 	case *object.Hash:
 		propertyName := node.Property.Value
@@ -1013,7 +1009,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 		default:
-			return newError(line, column, "string has no method '%s'", method)
+			return newError(line, column, "strings have no method %q%s", method, suggestion(method, stringMethods))
 		}
 	case *object.Array:
 		switch method {
@@ -1137,7 +1133,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			if result, ok := evalArraySearchMethod(obj, method, args, line, column); ok {
 				return result
 			}
-			return newError(line, column, "array has no method '%s'", method)
+			return newError(line, column, "arrays have no method %q%s", method, suggestion(method, arrayMethods))
 		}
 	case *object.Hash:
 		switch method {
@@ -1195,14 +1191,20 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				} else if builtin, ok := pair.Value.(*object.Builtin); ok {
 					return builtin.Fn(args...)
 				} else {
-					return newError(line, column, "property '%s' is not a function or method", method)
+					return newError(line, column, "property %q is %s, not a function", method, typeName(pair.Value))
 				}
 			}
 
-			return newError(line, column, "object has no method '%s'", method)
+			candidates := append([]string{}, hashMethods...)
+			for _, pair := range obj.Pairs {
+				if name, ok := pair.Key.(*object.String); ok && isCallable(pair.Value) {
+					candidates = append(candidates, name.Value)
+				}
+			}
+			return newError(line, column, "object has no method %q%s", method, suggestion(method, candidates))
 		}
 	default:
-		return newError(line, column, "method call not supported for %s", obj.Type())
+		return newError(line, column, "cannot call method %q on %s", method, typeName(obj))
 	}
 }
 
@@ -1442,8 +1444,7 @@ func evalBooleanInfixExpression(operator string, left, right object.Object, line
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	}
 }
 
@@ -1467,7 +1468,6 @@ func evalStringInfixExpression(operator string, left, right object.Object, line,
 	case ">=":
 		return nativeBoolToBooleanObject(leftVal >= rightVal)
 	default:
-		return newError(line, column, "unknown operator: %s %s %s",
-			left.Type(), operator, right.Type())
+		return operatorError(line, column, operator, left, right)
 	}
 }
