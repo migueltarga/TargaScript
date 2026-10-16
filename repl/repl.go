@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/compiler"
@@ -18,6 +19,10 @@ import (
 )
 
 const PROMPT = ">> "
+
+// CONTINUE is the prompt for the next line of unfinished code, like a
+// function whose body isn't closed yet.
+const CONTINUE = ".. "
 
 // mainDir is the directory load paths are relative to in the main program.
 var mainDir string
@@ -150,17 +155,54 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 	scanner := bufio.NewScanner(in)
 	sess := newSession()
+	var code strings.Builder
 
 	for {
-		fmt.Fprint(out, PROMPT)
-		scanned := scanner.Scan()
-		if !scanned {
+		if code.Len() == 0 {
+			fmt.Fprint(out, PROMPT)
+		} else {
+			fmt.Fprint(out, CONTINUE)
+		}
+		if !scanner.Scan() {
+			if code.Len() > 0 {
+				evalSource(code.String(), sess, out, noColor, debug, true)
+			}
 			return
 		}
 
 		line := scanner.Text()
-		evalSource(line, sess, out, noColor, debug, true)
+		code.WriteString(line + "\n")
+		if strings.TrimSpace(code.String()) == "" {
+			code.Reset()
+			continue
+		}
+		// Keep reading unfinished code; an empty line runs it anyway, to
+		// show what is wrong
+		if line != "" && unfinished(code.String()) {
+			continue
+		}
+		evalSource(code.String(), sess, out, noColor, debug, true)
+		code.Reset()
 	}
+}
+
+// unfinished reports whether code stops in the middle of something, like a
+// block or a string that isn't closed, or an operator with nothing after it.
+func unfinished(code string) bool {
+	p := parser.New(lexer.New(code))
+	p.ParseProgram()
+	for _, err := range p.Diagnostics() {
+		if strings.Contains(err.Message, "never closed") || strings.Contains(err.Message, "the file ended") {
+			return true
+		}
+		// An error right after the last character, like `let x = 1 +`
+		lines := strings.Split(strings.TrimRight(code, "\n"), "\n")
+		last := lines[len(lines)-1]
+		if err.Line == len(lines) && err.Column > len([]rune(last)) {
+			return true
+		}
+	}
+	return false
 }
 
 // printError writes an error, in red unless noColor is set.
