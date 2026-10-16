@@ -39,7 +39,9 @@ func evalArrayShapeMethod(arr *object.Array, method string, args []object.Object
 		length := min(len(arr.Elements), len(other.Elements))
 		pairs := make([]object.Object, length)
 		for i := range length {
-			pairs[i] = &object.Array{Elements: []object.Object{arr.Elements[i], other.Elements[i]}}
+			pair := object.NewArray(2)
+			pair.Elements[0], pair.Elements[1] = arr.Elements[i], other.Elements[i]
+			pairs[i] = pair
 		}
 		return &object.Array{Elements: pairs}, true
 

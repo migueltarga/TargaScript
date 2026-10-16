@@ -688,9 +688,9 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		set(w.A(), result)
 
 	case code.RArray:
-		elements := make([]object.Object, w.C())
-		copy(elements, vm.stack[regs+w.B():regs+w.B()+w.C()])
-		set(w.A(), &object.Array{Elements: elements})
+		array := object.NewArray(w.C())
+		copy(array.Elements, vm.stack[regs+w.B():regs+w.B()+w.C()])
+		set(w.A(), array)
 
 	case code.RHash:
 		start := regs + w.B()
@@ -794,11 +794,11 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 
 	case code.RClosure:
 		fn := vm.constants[w.B()].(*object.CompiledFunction)
-		free := make([]*object.Cell, w.C())
-		for i := range free {
-			free[i] = r(w.A() + i).(*object.Cell)
+		cl := object.NewClosure(fn, w.C(), vm)
+		for i := range cl.Free {
+			cl.Free[i] = r(w.A() + i).(*object.Cell)
 		}
-		set(w.A(), &object.Closure{Fn: fn, Free: free, Runner: vm})
+		set(w.A(), cl)
 
 	case code.RLoad:
 		path := vm.constants[w.B()].(*object.String).Value

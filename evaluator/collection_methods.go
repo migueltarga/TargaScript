@@ -22,7 +22,9 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 		}
 		entries := []object.Object{}
 		for _, pair := range h.OrderedPairs() {
-			entries = append(entries, &object.Array{Elements: []object.Object{pair.Key, pair.Value}})
+			entry := object.NewArray(2)
+			entry.Elements[0], entry.Elements[1] = pair.Key, pair.Value
+			entries = append(entries, entry)
 		}
 		return &object.Array{Elements: entries}
 	},

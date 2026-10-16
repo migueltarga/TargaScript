@@ -204,6 +204,42 @@ type Array struct {
 	Elements []Object
 }
 
+// NewArray returns an array of n elements, all nil, which for small arrays
+// come in the same allocation as the array.
+func NewArray(n int) *Array {
+	switch n {
+	case 1:
+		b := &struct {
+			a Array
+			e [1]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 2:
+		b := &struct {
+			a Array
+			e [2]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 3:
+		b := &struct {
+			a Array
+			e [3]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	case 4:
+		b := &struct {
+			a Array
+			e [4]Object
+		}{}
+		b.a.Elements = b.e[:]
+		return &b.a
+	}
+	return &Array{Elements: make([]Object, n)}
+}
+
 func (ao *Array) Type() ObjectType { return ARRAY_OBJ }
 func (ao *Array) Inspect() string  { return ao.inspect(nil) }
 

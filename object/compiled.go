@@ -93,6 +93,28 @@ type ClosureRunner interface {
 
 // Closure is a compiled function with the variables it captured. Scripts see
 // it as a function.
+// NewClosure returns a closure of fn with room for n cells, which for
+// closures of one or two come in the same allocation.
+func NewClosure(fn *CompiledFunction, n int, runner ClosureRunner) *Closure {
+	switch n {
+	case 1:
+		b := &struct {
+			c Closure
+			f [1]*Cell
+		}{}
+		b.c = Closure{Fn: fn, Free: b.f[:], Runner: runner}
+		return &b.c
+	case 2:
+		b := &struct {
+			c Closure
+			f [2]*Cell
+		}{}
+		b.c = Closure{Fn: fn, Free: b.f[:], Runner: runner}
+		return &b.c
+	}
+	return &Closure{Fn: fn, Free: make([]*Cell, n), Runner: runner}
+}
+
 type Closure struct {
 	Fn     *CompiledFunction
 	Free   []*Cell
