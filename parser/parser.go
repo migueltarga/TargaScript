@@ -87,6 +87,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FLOAT, p.parseFloatLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
+	p.registerPrefix(token.SPREAD, p.parseSpreadExpression)
 	p.registerPrefix(token.TRY, p.parseTryExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
@@ -487,6 +488,13 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 	return lit
 }
 
+func (p *Parser) parseSpreadExpression() ast.Expression {
+	expression := &ast.SpreadExpression{Token: p.curToken}
+	p.nextToken()
+	expression.Value = p.parseExpression(PREFIX)
+	return expression
+}
+
 func (p *Parser) parseAwaitExpression() ast.Expression {
 	expression := &ast.AwaitExpression{Token: p.curToken}
 	p.nextToken()
@@ -849,6 +857,16 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 
 		key := p.parseExpression(LOWEST)
+		if spread, ok := key.(*ast.SpreadExpression); ok {
+			name := fmt.Sprintf("\x00spread%d", len(hash.Order))
+			hash.Order = append(hash.Order, name)
+			hash.Pairs[name] = ast.HashPair{Key: spread}
+			if !p.peekTokenIs(token.COMMA) {
+				break
+			}
+			p.nextToken()
+			continue
+		}
 		if !p.expectPeek(token.COLON) {
 			return nil
 		}

@@ -97,6 +97,14 @@ let [lowest, highest] = minmax([5, 1, 9])
 
 Missing elements and properties are null.
 
+`...` spreads arrays into arrays and calls, and objects into objects:
+
+```
+let all = [...first, ...second, 99]
+let config = {...defaults, "port": 8080}
+print(max(...numbers))
+```
+
 ## 🫥 Working with null
 
 `a ?? b` is `b` when `a` is null, and `a?.b` is null when `a` is null instead of an error. A `?.` skips the rest of the chain, so `user?.name.upper()` is null when there's no user:

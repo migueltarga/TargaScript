@@ -704,6 +704,13 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 			return err
 		}
 		c.optionalJump(node.Optional)
+		if hasSpread(node.Arguments) {
+			if err := c.compileSpreadArgs(node.Token, node.Arguments); err != nil {
+				return err
+			}
+			c.emit(node.Token, code.OpCallMethodArray, c.addConstant(&object.String{Value: node.Method.Value}))
+			return nil
+		}
 		for _, arg := range node.Arguments {
 			if err := c.compileOperand(arg); err != nil {
 				return err
@@ -714,6 +721,13 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 	case *ast.CallExpression:
 		if err := c.compileExpression(node.Function); err != nil {
 			return err
+		}
+		if hasSpread(node.Arguments) {
+			if err := c.compileSpreadArgs(node.Token, node.Arguments); err != nil {
+				return err
+			}
+			c.emit(node.Token, code.OpCallArray)
+			return nil
 		}
 		for _, arg := range node.Arguments {
 			if err := c.compileOperand(arg); err != nil {
@@ -755,6 +769,9 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		c.emit(node.Token, code.OpTemplate, len(node.Parts))
 
 	case *ast.ArrayLiteral:
+		if hasSpread(node.Elements) {
+			return c.compileSpreadList(node.Token, node.Elements)
+		}
 		for _, el := range node.Elements {
 			if err := c.compileExpression(el); err != nil {
 				return err
@@ -762,7 +779,13 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		}
 		c.emit(node.Token, code.OpArray, len(node.Elements))
 
+	case *ast.SpreadExpression:
+		c.emitError(node.Token, "... can only be used in arrays, objects and the arguments of calls")
+
 	case *ast.HashLiteral:
+		if hashHasSpread(node) {
+			return c.compileSpreadHash(node)
+		}
 		for _, key := range node.Order {
 			pair := node.Pairs[key]
 			if ident, ok := pair.Key.(*ast.Identifier); ok {
@@ -1055,4 +1078,75 @@ func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
 func (c *Compiler) changeOperands(pos int, operands ...int) {
 	op := code.Opcode(c.scope.instructions[pos])
 	copy(c.scope.instructions[pos:], code.Make(op, operands...))
+}
+
+func hasSpread(expressions []ast.Expression) bool {
+	for _, e := range expressions {
+		if _, ok := e.(*ast.SpreadExpression); ok {
+			return true
+		}
+	}
+	return false
+}
+
+func hashHasSpread(hash *ast.HashLiteral) bool {
+	for _, name := range hash.Order {
+		if hash.Pairs[name].Value == nil {
+			return true
+		}
+	}
+	return false
+}
+
+// compileSpreadList builds an array element by element, adding all the
+// elements of each spread.
+func (c *Compiler) compileSpreadList(tok token.Token, elements []ast.Expression) error {
+	c.emit(token.Token{}, code.OpArray, 0)
+	for _, el := range elements {
+		if spread, ok := el.(*ast.SpreadExpression); ok {
+			if err := c.compileOperand(spread.Value); err != nil {
+				return err
+			}
+			c.emit(spread.Token, code.OpAppend, 1)
+			continue
+		}
+		if err := c.compileOperand(el); err != nil {
+			return err
+		}
+		c.emit(tok, code.OpAppend, 0)
+	}
+	return nil
+}
+
+// compileSpreadArgs builds the arguments of a call with a spread as an
+// array.
+func (c *Compiler) compileSpreadArgs(tok token.Token, args []ast.Expression) error {
+	return c.compileSpreadList(tok, args)
+}
+
+// compileSpreadHash builds an object pair by pair, copying the properties of
+// each spread.
+func (c *Compiler) compileSpreadHash(node *ast.HashLiteral) error {
+	c.emit(token.Token{}, code.OpHash, 0)
+	for _, name := range node.Order {
+		pair := node.Pairs[name]
+		if pair.Value == nil {
+			spread := pair.Key.(*ast.SpreadExpression)
+			if err := c.compileOperand(spread.Value); err != nil {
+				return err
+			}
+			c.emit(spread.Token, code.OpHashMerge)
+			continue
+		}
+		if ident, ok := pair.Key.(*ast.Identifier); ok {
+			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.String{Value: ident.Value}))
+		} else if err := c.compileOperand(pair.Key); err != nil {
+			return err
+		}
+		if err := c.compileOperand(pair.Value); err != nil {
+			return err
+		}
+		c.emit(node.Token, code.OpHashSet)
+	}
+	return nil
 }
