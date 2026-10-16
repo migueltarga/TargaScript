@@ -11,7 +11,14 @@ func TestImplicitIt(t *testing.T) {
 		{`[{name: "Ana", age: 30}, {name: "Bo", age: 20}].filter(it.age > 25).map(it.name)`, `["Ana"]`},
 		// The innermost argument has its own it
 		{"[[1, 2], [3]].map(it.map(it * 10))", "[[10, 20], [30]]"},
-		{"[[1, 2], [3]].map(it.length + it.map(it).length)", "[4, 2]"},
+		{"[[1, 2], [3]].map(it.length + it.sum())", "[5, 4]"},
+		// it alone as an argument is the it around it
+		{"[1, 5].map(max(it, 2))", "[2, 5]"},
+		// The right side of |> that uses it is a function of the value
+		{"(1..6) |> it.map(n => n * n) |> it.filter(it % 2 == 0)", "[4, 16, 36]"},
+		{`"  Hi There " |> it.trim().lower() |> it.split(" ")`, `["hi", "there"]`},
+		{"[1, 2, 3] |> it.length + it.sum()", "9"},
+		{"5 |> max(it, 3)", "5"},
 		// Functions written out keep their parameters, even one named it
 		{"[1, 2].map(x => x + 1)", "[2, 3]"},
 		{"[1, 2].map((it) => it + 1)", "[2, 3]"},

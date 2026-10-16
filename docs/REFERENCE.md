@@ -53,7 +53,7 @@ From loosest to tightest:
 | Operators | Meaning |
 |---|---|
 | `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` | assignment |
-| `\|>` | pipe: `x \|> f` is `f(x)`, and `x \|> f(a)` is `f(x, a)` |
+| `\|>` | pipe: `x \|> f` is `f(x)`, `x \|> f(a)` is `f(x, a)`, and `x \|> it.trim()` uses `it` for `x` |
 | `??` | the right side when the left is null |
 | `\|\|` | or: the left side if truthy, else the right side |
 | `&&` | and: the left side if falsy, else the right side |
@@ -163,7 +163,7 @@ print([3, 1, 2].sortBy(-it))                     // → [3, 2, 1]
 print([[1, 2], [3]].map(it.map(it * 10)))        // the innermost argument has its own it → [[10, 20], [30]]
 ```
 
-Only the argument that uses `it` itself becomes the function, not one around the call it's in, and an `it` inside a function written out is that function's. Where `it` is a variable, it's the variable.
+Only the argument that uses `it` itself becomes the function, not one around the call it's in, and an `it` inside a function written out is that function's. `it` alone as an argument, as in `max(it, 0)`, is the `it` around the call. After `|>`, `it` is the value going through: `"  Hi " |> it.trim().lower()`. Where `it` is a variable, it's the variable.
 
 Functions given to `map`, `filter`, `find`, `some`, `every`, `count`, `sortBy` and `groupBy` get the position too when they take a second parameter, as in `list.map((item, i) => "${i + 1}. ${item}")`; `reduce` passes it third.
 
