@@ -1670,23 +1670,39 @@ func (p *Parser) parseTemplateLiteral() ast.Expression {
 		}
 	}
 
+	// Where raw[i] is in the file, after the opening quote
+	line, column := p.curToken.Line, p.curToken.Column+1
+	advance := func(from, to int) {
+		for _, ch := range raw[from:to] {
+			if ch == '\n' {
+				line, column = line+1, 1
+			} else {
+				column++
+			}
+		}
+	}
+
 	for i := 0; i < len(raw); i++ {
 		ch := raw[i]
 		switch {
 		case ch == '\\' && i+1 < len(raw):
+			advance(i, i+2)
 			i++
 			text.WriteString(unescape(raw[i]))
 		case ch == '$' && i+1 < len(raw) && raw[i+1] == '{':
 			end := matchingBrace(raw, i+1)
 			source := string(raw[i+2 : end])
-			expr := p.parseInterpolation(source)
+			advance(i, i+2)
+			expr := p.parseInterpolation(source, line, column)
 			if expr == nil {
 				return nil
 			}
 			flushText()
 			tmpl.Parts = append(tmpl.Parts, expr)
+			advance(i+2, end+1)
 			i = end
 		default:
+			advance(i, i+1)
 			text.WriteRune(ch)
 		}
 	}
@@ -1695,7 +1711,9 @@ func (p *Parser) parseTemplateLiteral() ast.Expression {
 	return tmpl
 }
 
-func (p *Parser) parseInterpolation(source string) ast.Expression {
+// parseInterpolation parses the code of a ${...}, which starts at line and
+// column in the file.
+func (p *Parser) parseInterpolation(source string, line, column int) ast.Expression {
 	if strings.TrimSpace(source) == "" {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "empty ${} in string")
 		return nil
@@ -1707,22 +1725,24 @@ func (p *Parser) parseInterpolation(source string) ast.Expression {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "in ${%s}: %q is not a format like .2f, 5d or -10s", source, spec)
 			return nil
 		}
-		value := p.parseInterpolation(expression)
+		value := p.parseInterpolation(expression, line, column)
 		if value == nil {
 			return nil
 		}
 		return &ast.FormatExpression{Token: p.curToken, Value: value, Spec: spec}
 	}
 
-	sub := New(lexer.New(source))
+	sub := New(lexer.NewAt(source, line, column))
 	expr := sub.parseExpression(LOWEST)
 	if len(sub.errors) == 0 && !sub.peekTokenIs(token.EOF) {
 		sub.errorAt(0, 0, "unexpected %s", describe(sub.peekToken))
 	}
-	// Positions inside the interpolation are meaningless to the user, so
-	// errors point at the string
 	for _, err := range sub.errors {
-		p.errorAt(p.curToken.Line, p.curToken.Column, "in ${%s}: %s", source, err.Message)
+		errLine, errColumn := err.Line, err.Column
+		if errLine == 0 {
+			errLine, errColumn = line, column
+		}
+		p.errorAt(errLine, errColumn, "in ${%s}: %s", source, err.Message)
 	}
 	if len(sub.errors) > 0 {
 		return nil
