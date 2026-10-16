@@ -99,6 +99,9 @@ func TestErrorsOutputAndLimits(t *testing.T) {
 	if _, err := script.Run("repeat true {}"); err == nil || !strings.Contains(err.Error(), "more than 1000 steps") {
 		t.Errorf("an endless loop: %v", err)
 	}
+	if _, err := script.Run("repeat i in 1..1000000000 {}"); err == nil || !strings.Contains(err.Error(), "more than 1000 steps") {
+		t.Errorf("a long loop over a range: %v", err)
+	}
 
 	// Scripts can't touch files
 	if _, err := script.Run(`readFile("/etc/passwd")`); err == nil {

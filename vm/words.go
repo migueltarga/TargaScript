@@ -425,16 +425,48 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 			r[w.A()] = &rangeIterator{next: s.Value, end: e.Value, ints: &vm.ints}
 
-		case code.RIterNext:
+		case code.RIterNext, code.RIterLoop:
+			if op == code.RIterLoop && vm.MaxSteps > 0 {
+				if err := vm.step(f, pc-1); err != nil {
+					f.ip = pc
+					return err
+				}
+			}
+			if it, ok := r[w.A()].(*rangeIterator); ok {
+				// Ranges, the usual loops, count here
+				if it.done || it.next > it.end {
+					if op == code.RIterNext {
+						pc = w.C()
+					}
+					continue
+				}
+				r[w.B()] = vm.ints.get(it.next)
+				it.index++
+				if it.next == it.end {
+					it.done = true
+				} else {
+					it.next++
+				}
+				if op == code.RIterLoop {
+					pc = w.C()
+				}
+				continue
+			}
 			it := r[w.A()].(iterator)
 			key, value, ok := it.Next(it.KeysFirst())
-			switch {
-			case !ok:
-				pc = w.C()
-			case it.KeysFirst():
+			if !ok {
+				if op == code.RIterNext {
+					pc = w.C()
+				}
+				continue
+			}
+			if it.KeysFirst() {
 				r[w.B()] = key
-			default:
+			} else {
 				r[w.B()] = value
+			}
+			if op == code.RIterLoop {
+				pc = w.C()
 			}
 
 		case code.RIterNextPair:

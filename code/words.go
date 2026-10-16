@@ -114,6 +114,7 @@ const (
 	RRangeIter    // R[A] = an iterator over R[B]..R[C]
 	RIterNext     // R[B] = the next value of iterator R[A]; go to C when done
 	RIterNextPair // R[B], R[B+1] = the next key and value of iterator R[A]; go to C when done
+	RIterLoop     // R[B] = the next value of iterator R[A] and go to C, unless done
 
 	// Values
 	RArray     // R[A] = [R[B], ..., R[B+C-1]]
@@ -161,7 +162,7 @@ var opNames = [...]string{
 	RJumpLess: "JLT", RJumpLessEqual: "JLE", RJumpGreater: "JGT", RJumpGreaterEqual: "JGE", RJumpEqual: "JEQ",
 	RJumpNotEqual: "JNE", RJumpLessI: "JLTI", RJumpLessEqualI: "JLEI", RJumpGreaterI: "JGTI",
 	RJumpGreaterEqualI: "JGEI", RJumpEqualI: "JEQI", RJumpNotEqualI: "JNEI", RJumpEqualK: "JEQK", RJumpNotEqualK: "JNEK",
-	RIterStart: "ITERSTART", RRangeIter: "RANGEITER", RIterNext: "ITERNEXT", RIterNextPair: "ITERNEXT2",
+	RIterStart: "ITERSTART", RRangeIter: "RANGEITER", RIterNext: "ITERNEXT", RIterNextPair: "ITERNEXT2", RIterLoop: "ITERLOOP",
 	RArray: "ARRAY", RHash: "HASH", RTemplate: "TEMPLATE", RAppend: "APPEND", RHashSet: "HASHSET",
 	RHashMerge: "HASHMERGE", RWithout: "WITHOUT", RIndex: "INDEX", RSetIndex: "SETINDEX", RGetProp: "GETPROP",
 	RSetProp: "SETPROP", RCall: "CALL", RCallGlobal: "CALLGLOBAL", RCallMethod: "CALLMETHOD", RCallSpread: "CALLSPREAD",
