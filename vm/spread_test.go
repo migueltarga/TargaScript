@@ -21,7 +21,7 @@ func TestSpread(t *testing.T) {
 		{"[...5]", "ERROR at line 1, column 2: cannot spread an integer into a list, only arrays and strings"},
 		{`{...[1]}`, "ERROR at line 1, column 2: cannot spread an array into an object, only objects"},
 		{"let x = ...[1]", "ERROR at line 1, column 9: ... can only be used in arrays, objects and the arguments of calls"},
-		{"fn f(...) { }", "ERROR: parser errors: line 1:6: expected a parameter name, found \"...\""},
+		{"fn f(...) { }", "ERROR: parser errors: line 1:9: expected a parameter name, found \")\""},
 		{"let a = null\n[...(a ?? [])]", "[]"},
 		{"let parts = [[1], [2, 3]]\n[...parts[1], ...parts[0]]", "[2, 3, 1]"},
 	}

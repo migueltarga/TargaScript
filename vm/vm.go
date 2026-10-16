@@ -712,6 +712,21 @@ func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
 	}
 
 	fn := cl.Fn
+	if fn.Variadic {
+		// The extra arguments go in an array, as the last parameter
+		fixed := fn.NumParams - 1
+		rest := []object.Object{}
+		if argc > fixed {
+			rest = append(rest, vm.stack[vm.sp-(argc-fixed):vm.sp]...)
+			vm.sp -= argc - fixed
+			argc = fixed
+		}
+		for ; argc < fixed; argc++ {
+			vm.push(NULL)
+		}
+		vm.push(&object.Array{Elements: rest})
+		argc++
+	}
 	// Missing arguments are null and extra ones are dropped
 	for ; argc < fn.NumParams; argc++ {
 		vm.push(NULL)
