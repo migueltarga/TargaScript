@@ -3,6 +3,7 @@ package vm
 
 import (
 	"io"
+	"sync"
 
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/compiler"
@@ -77,6 +78,7 @@ type VM struct {
 }
 
 func New(globals *compiler.GlobalTable) *VM {
+	smallIntsOnce.Do(makeSmallInts)
 	vm := &VM{
 		names:   globals,
 		stack:   make([]object.Object, initialStackSize),
@@ -431,7 +433,7 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		}
 	}
 
-	result := evaluator.Infix(operators[op], left, right, 0, 0)
+	result := evaluator.Infix(operator(op), left, right, 0, 0)
 	if err, ok := result.(*object.Error); ok {
 		return vm.positioned(f, ip, err)
 	}
@@ -525,18 +527,42 @@ func (vm *VM) intBinary(op code.Opcode, a, b int64) object.Object {
 	return nil
 }
 
-// operators are the text of the binary operators, by opcode.
-var operators = func() (names [256]string) {
-	for op, name := range map[code.Opcode]string{
-		code.OpAdd: "+", code.OpSub: "-", code.OpMul: "*", code.OpDiv: "/",
-		code.OpMod: "%", code.OpPow: "**", code.OpXor: "^", code.OpEqual: "==", code.OpNotEqual: "!=",
-		code.OpGreaterThan: ">", code.OpGreaterEqual: ">=", code.OpLessThan: "<",
-		code.OpLessEqual: "<=", code.OpRange: "..", code.OpIn: "in",
-	} {
-		names[op] = name
+// operator is the text of a binary operator.
+func operator(op code.Opcode) string {
+	switch op {
+	case code.OpAdd:
+		return "+"
+	case code.OpSub:
+		return "-"
+	case code.OpMul:
+		return "*"
+	case code.OpDiv:
+		return "/"
+	case code.OpMod:
+		return "%"
+	case code.OpPow:
+		return "**"
+	case code.OpXor:
+		return "^"
+	case code.OpEqual:
+		return "=="
+	case code.OpNotEqual:
+		return "!="
+	case code.OpGreaterThan:
+		return ">"
+	case code.OpGreaterEqual:
+		return ">="
+	case code.OpLessThan:
+		return "<"
+	case code.OpLessEqual:
+		return "<="
+	case code.OpRange:
+		return ".."
+	case code.OpIn:
+		return "in"
 	}
-	return names
-}()
+	return ""
+}
 
 // Integers from smallIntMin to smallIntMax are shared, so loops and
 // counters don't allocate a new one for every value. Integers are never
@@ -546,12 +572,20 @@ const (
 	smallIntMax = 1024
 )
 
-var smallInts = func() (ints [smallIntMax - smallIntMin + 1]*object.Integer) {
-	for i := range ints {
-		ints[i] = &object.Integer{Value: int64(i + smallIntMin)}
+// smallInts are made when the first VM is, in one allocation. Made while
+// the program starts, they would be data in the WebAssembly build.
+var (
+	smallInts     [smallIntMax - smallIntMin + 1]*object.Integer
+	smallIntsOnce sync.Once
+)
+
+func makeSmallInts() {
+	values := make([]object.Integer, len(smallInts))
+	for i := range values {
+		values[i].Value = int64(i + smallIntMin)
+		smallInts[i] = &values[i]
 	}
-	return ints
-}()
+}
 
 // intBlock is how many integers ints allocates at a time.
 const intBlock = 128

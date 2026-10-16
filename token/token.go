@@ -90,32 +90,57 @@ type Token struct {
 	Column  int
 }
 
-var keywords = map[string]TokenType{
-	"fn":       FUNCTION,
-	"let":      LET,
-	"const":    CONST,
-	"true":     TRUE,
-	"false":    FALSE,
-	"if":       IF,
-	"else":     ELSE,
-	"return":   RETURN,
-	"load":     LOAD,
-	"as":       AS,
-	"repeat":   REPEAT,
-	"in":       IN,
-	"null":     NULL,
-	"break":    BREAK,
-	"continue": CONTINUE,
-	"await":    AWAIT,
-	"try":      TRY,
-	"catch":    CATCH,
-	"finally":  FINALLY,
-	"throw":    THROW,
-	"match":    MATCH,
+// keyword is the token type of a keyword.
+func keyword(k string) (TokenType, bool) {
+	switch k {
+	case "fn":
+		return FUNCTION, true
+	case "let":
+		return LET, true
+	case "const":
+		return CONST, true
+	case "true":
+		return TRUE, true
+	case "false":
+		return FALSE, true
+	case "if":
+		return IF, true
+	case "else":
+		return ELSE, true
+	case "return":
+		return RETURN, true
+	case "load":
+		return LOAD, true
+	case "as":
+		return AS, true
+	case "repeat":
+		return REPEAT, true
+	case "in":
+		return IN, true
+	case "null":
+		return NULL, true
+	case "break":
+		return BREAK, true
+	case "continue":
+		return CONTINUE, true
+	case "await":
+		return AWAIT, true
+	case "try":
+		return TRY, true
+	case "catch":
+		return CATCH, true
+	case "finally":
+		return FINALLY, true
+	case "throw":
+		return THROW, true
+	case "match":
+		return MATCH, true
+	}
+	return "", false
 }
 
 func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
+	if tok, ok := keyword(ident); ok {
 		return tok
 	}
 	return IDENT
@@ -123,6 +148,6 @@ func LookupIdent(ident string) TokenType {
 
 // IsKeyword reports whether a token is a keyword, like repeat or in.
 func IsKeyword(tok Token) bool {
-	keyword, ok := keywords[tok.Literal]
-	return ok && keyword == tok.Type
+	kind, ok := keyword(tok.Literal)
+	return ok && kind == tok.Type
 }

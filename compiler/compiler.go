@@ -1173,22 +1173,41 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 	return nil
 }
 
-var infixOpcodes = map[string]code.Opcode{
-	"+":  code.OpAdd,
-	"-":  code.OpSub,
-	"*":  code.OpMul,
-	"/":  code.OpDiv,
-	"%":  code.OpMod,
-	"**": code.OpPow,
-	"^":  code.OpXor,
-	"in": code.OpIn,
-	"==": code.OpEqual,
-	"!=": code.OpNotEqual,
-	">":  code.OpGreaterThan,
-	">=": code.OpGreaterEqual,
-	"<":  code.OpLessThan,
-	"<=": code.OpLessEqual,
-	"..": code.OpRange,
+// infixOpcode is the instruction of an infix operator.
+func infixOpcode(k string) (code.Opcode, bool) {
+	switch k {
+	case "+":
+		return code.OpAdd, true
+	case "-":
+		return code.OpSub, true
+	case "*":
+		return code.OpMul, true
+	case "/":
+		return code.OpDiv, true
+	case "%":
+		return code.OpMod, true
+	case "**":
+		return code.OpPow, true
+	case "^":
+		return code.OpXor, true
+	case "in":
+		return code.OpIn, true
+	case "==":
+		return code.OpEqual, true
+	case "!=":
+		return code.OpNotEqual, true
+	case ">":
+		return code.OpGreaterThan, true
+	case ">=":
+		return code.OpGreaterEqual, true
+	case "<":
+		return code.OpLessThan, true
+	case "<=":
+		return code.OpLessEqual, true
+	case "..":
+		return code.OpRange, true
+	}
+	return 0, false
 }
 
 func (c *Compiler) compileInfix(node *ast.InfixExpression) error {
@@ -1222,7 +1241,7 @@ func (c *Compiler) compileInfix(node *ast.InfixExpression) error {
 		return nil
 	}
 
-	op, ok := infixOpcodes[node.Operator]
+	op, ok := infixOpcode(node.Operator)
 	if !ok {
 		return strfmt.Errorf("unknown operator %s", node.Operator)
 	}
@@ -1639,7 +1658,7 @@ func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) err
 		return nil
 	}
 
-	op, ok := infixOpcodes[node.Operator]
+	op, ok := infixOpcode(node.Operator)
 	if !ok {
 		return strfmt.Errorf("unknown operator %s=", node.Operator)
 	}

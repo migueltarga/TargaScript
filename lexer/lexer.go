@@ -233,7 +233,7 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	// x += 1 and the like: an operator followed by =
-	if compoundable[tok.Type] && l.peekChar() == '=' {
+	if compoundable(tok.Type) && l.peekChar() == '=' {
 		l.readChar()
 		tok = l.newToken(token.OP_ASSIGN, tok.Literal+"=", tokenLine, tokenColumn)
 	}
@@ -242,10 +242,13 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
-// compoundable are the operators that form compound assignments, like +=.
-var compoundable = map[token.TokenType]bool{
-	token.PLUS: true, token.MINUS: true, token.ASTERISK: true, token.SLASH: true,
-	token.MODULO: true, token.POWER: true, token.NULLISH: true,
+// compoundable reports the operators that form compound assignments, like +=.
+func compoundable(t token.TokenType) bool {
+	switch t {
+	case token.PLUS, token.MINUS, token.ASTERISK, token.SLASH, token.MODULO, token.POWER, token.NULLISH:
+		return true
+	}
+	return false
 }
 
 func (l *Lexer) skipWhitespace() {
