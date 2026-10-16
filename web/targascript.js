@@ -8,11 +8,12 @@
 // pauses at an await, it returns a promise of one of those instead.
 //
 // targascriptCheck(source) returns the errors it can find without running
-// it, as objects with line, column and message.
+// it, as objects with line, column and message, and targascriptFormat(source)
+// returns it laid out like targascript fmt does.
 //
 // In Node, require() returns a function that takes the bytes of
-// targascript.wasm and resolves to targascriptRun, with the check function
-// as its check property.
+// targascript.wasm and resolves to targascriptRun, with the check and
+// format functions as its check and format properties.
 (() => {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -187,11 +188,22 @@
     return problems;
   };
 
+  // Lays out source like targascript fmt.
+  const format = (source) => {
+    const s = handle(String(source));
+    const result = wasm.format(s);
+    release(s);
+    const formatted = values[result];
+    release(result);
+    return formatted;
+  };
+
   const start = (instance) => {
     wasm = instance.exports;
     wasm._initialize();
     const run = (source, onOutput = () => {}) => evaluate(source, onOutput, true);
     run.check = check;
+    run.format = format;
     return run;
   };
 
@@ -262,6 +274,7 @@
     .then(async ([{ instance }]) => {
       globalThis.targascriptRun = start(instance);
       globalThis.targascriptCheck = check;
+      globalThis.targascriptFormat = format;
       for (const script of scripts()) {
         const source = await script.load();
         await fetchLoads(source, script.base);

@@ -86,7 +86,19 @@ async function activate(context) {
     terminal.sendText(command ? `${program} ${command} ${file}` : `${program} ${file}`);
   };
 
+  // Format Document lays the file out like targascript fmt
+  const formatter = {
+    provideDocumentFormattingEdits(document) {
+      const text = document.getText();
+      const formatted = run.format(text);
+      if (formatted === text) return [];
+      const all = new vscode.Range(document.positionAt(0), document.positionAt(text.length));
+      return [vscode.TextEdit.replace(all, formatted)];
+    },
+  };
+
   context.subscriptions.push(
+    vscode.languages.registerDocumentFormattingEditProvider("targascript", formatter),
     vscode.commands.registerCommand("targascript.runFile", runIn("")),
     vscode.commands.registerCommand("targascript.testFile", runIn("test")),
     vscode.languages.registerHoverProvider("targascript", hover),
