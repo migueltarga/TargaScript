@@ -436,6 +436,11 @@ type RepeatStatement struct {
 	Iterator   *Identifier
 	Collection Expression
 	Body       *BlockStatement
+
+	// Key is set in `repeat key, value in collection`, where Iterator is
+	// the value: the index for arrays, strings and ranges, the key for
+	// objects
+	Key *Identifier
 }
 
 func (rs *RepeatStatement) statementNode()       {}
@@ -445,6 +450,10 @@ func (rs *RepeatStatement) String() string {
 
 	out.WriteString(rs.TokenLiteral() + " ")
 
+	if rs.Key != nil {
+		out.WriteString(rs.Key.String())
+		out.WriteString(", ")
+	}
 	if rs.Iterator != nil {
 		out.WriteString(rs.Iterator.String())
 		out.WriteString(" in ")

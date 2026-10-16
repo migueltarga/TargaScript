@@ -363,11 +363,19 @@ func (vm *VM) loop(base int) object.Object {
 
 		case code.OpIterNext:
 			target := int(code.ReadUint16(ins[ip+1:]))
-			f.ip += 2
-			value, ok := vm.stack[vm.sp-1].(iterator).Next()
-			if !ok {
+			pairs := ins[ip+3] == 1
+			f.ip += 3
+			it := vm.stack[vm.sp-1].(iterator)
+			key, value, ok := it.Next()
+			switch {
+			case !ok:
 				f.ip = target
-			} else {
+			case pairs:
+				vm.push(key)
+				vm.push(value)
+			case it.KeysFirst():
+				vm.push(key)
+			default:
 				vm.push(value)
 			}
 

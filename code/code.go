@@ -56,7 +56,7 @@ const (
 	OpLoopExit          // forget the innermost loop
 	OpBreak             // restore the loop's stack height and jump to its end, or to its next iteration when the operand is 1
 	OpIterStart         // pop a collection, push an iterator over it
-	OpIterNext          // push the iterator's next value, or jump when done
+	OpIterNext          // push the iterator's next value, or its key and value when the second operand is 1, or jump when done
 	OpRangeIter         // pop end and start, push an iterator over start..end
 
 	// Variables
@@ -138,7 +138,7 @@ var definitions = map[Opcode]*Definition{
 	OpLoopExit:          {"OpLoopExit", []int{}},
 	OpBreak:             {"OpBreak", []int{1}},
 	OpIterStart:         {"OpIterStart", []int{}},
-	OpIterNext:          {"OpIterNext", []int{2}},
+	OpIterNext:          {"OpIterNext", []int{2, 1}},
 	OpRangeIter:         {"OpRangeIter", []int{}},
 
 	OpGetGlobal:    {"OpGetGlobal", []int{2}},

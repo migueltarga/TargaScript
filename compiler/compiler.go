@@ -552,14 +552,23 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 		c.emit(stmt.Token, code.OpIterStart)
 	}
 
+	pairs := 0
+	if stmt.Key != nil {
+		pairs = 1
+	}
 	enter := c.emit(token.Token{}, code.OpLoopEnter, 9999, 9999)
-	next := c.emit(token.Token{}, code.OpIterNext, 9999)
+	next := c.emit(token.Token{}, code.OpIterNext, 9999, pairs)
 
 	c.fn.loops++
 	c.fn.pushBlock()
 	iterator := c.fn.defineLocal(stmt.Iterator.Value, false)
 	c.emitDefine(iterator)
 	c.emit(token.Token{}, code.OpPop)
+	if stmt.Key != nil {
+		key := c.fn.defineLocal(stmt.Key.Value, false)
+		c.emitDefine(key)
+		c.emit(token.Token{}, code.OpPop)
+	}
 	err := c.compileStatements(stmt.Body.Statements)
 	c.fn.popBlock()
 	c.fn.loops--
@@ -571,7 +580,7 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 
 	end := c.emit(token.Token{}, code.OpLoopExit)
 	c.changeOperands(enter, end, next)
-	c.changeOperands(next, end)
+	c.changeOperands(next, end, pairs)
 	c.emit(token.Token{}, code.OpPop) // the iterator
 	c.emit(token.Token{}, code.OpNull)
 	return nil
