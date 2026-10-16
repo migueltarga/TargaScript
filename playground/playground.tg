@@ -106,6 +106,10 @@ fn syncScroll() {
 
 fn setCode(source) {
     code.value = source
+    // A new value puts the cursor at its end, and the browser scrolls the
+    // focused editor there; new code starts at the top
+    code.setSelectionRange(0, 0)
+    code.scrollTop = 0
     render()
 }
 
