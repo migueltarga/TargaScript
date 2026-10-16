@@ -380,6 +380,64 @@ func (vm *VM) loop(base int) object.Object {
 			}
 			vm.push(result)
 
+		case code.OpBinaryConst:
+			// The operator's position is that of the instruction it replaced
+			op := code.Opcode(ins[ip+1])
+			right := vm.constants[code.ReadUint16(ins[ip+2:])]
+			left := vm.stack[vm.sp-1]
+			f.ip += 3
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+						vm.stack[vm.sp-1] = result
+						continue
+					}
+				}
+			}
+			result := vm.binary(f, ip+3, op, left, right)
+			if err, ok := result.(*object.Error); ok {
+				return err
+			}
+			vm.stack[vm.sp-1] = result
+
+		case code.OpCompareJump:
+			op := code.Opcode(ins[ip+1])
+			right := vm.stack[vm.sp-1]
+			left := vm.stack[vm.sp-2]
+			vm.sp -= 2
+			l, lok := left.(*object.Integer)
+			r, rok := right.(*object.Integer)
+			var truthy bool
+			if lok && rok {
+				truthy = compareInts(op, l.Value, r.Value)
+			} else {
+				result := vm.binary(f, ip, op, left, right)
+				if err, ok := result.(*object.Error); ok {
+					return err
+				}
+				truthy = evaluator.IsTruthy(result)
+			}
+			if truthy {
+				f.ip += 3
+			} else {
+				f.ip = int(code.ReadUint16(ins[ip+2:]))
+			}
+
+		case code.OpSetLocalPop:
+			i := int(code.ReadUint16(ins[ip+1:]))
+			f.ip += 3
+			vm.sp--
+			if cell, ok := vm.stack[f.base+i].(*object.Cell); ok {
+				cell.Value = vm.stack[vm.sp]
+			} else {
+				vm.stack[f.base+i] = vm.stack[vm.sp]
+			}
+
+		case code.OpSetGlobalPop:
+			vm.sp--
+			vm.globals[code.ReadUint16(ins[ip+1:])] = vm.stack[vm.sp]
+			f.ip += 3
+
 		case code.OpInRange:
 			end := vm.pop()
 			start := vm.pop()
@@ -993,6 +1051,23 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// compareInts compares two integers with a comparison operator.
+func compareInts(op code.Opcode, a, b int64) bool {
+	switch op {
+	case code.OpLessThan:
+		return a < b
+	case code.OpLessEqual:
+		return a <= b
+	case code.OpGreaterThan:
+		return a > b
+	case code.OpGreaterEqual:
+		return a >= b
+	case code.OpEqual:
+		return a == b
+	}
+	return a != b
 }
 
 // intBinary is the fast path of binary for integers small enough not to

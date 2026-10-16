@@ -98,6 +98,14 @@ const (
 	OpTry     // start a try block whose catch block starts at the operand
 	OpTryEnd  // end the innermost try block
 	OpThrow   // pop a value and raise an error with it
+
+	// Superinstructions, which do the work of a common pair of instructions
+	// in one step. Each takes the same bytes as the pair, so the compiler
+	// puts them in after the jumps are known; see compiler/fuse.go.
+	OpBinaryConst  // the operator in operand 1 with the top and constants[operand 2]: OpConstant, then the operator
+	OpCompareJump  // pop two values, compare them with the operator in operand 1 and jump to operand 2 if false: a comparison, then OpJumpNotTruthy
+	OpSetLocalPop  // pop the top into a local: OpSetLocal, then OpPop; the second operand is unused
+	OpSetGlobalPop // pop the top into a global: OpSetGlobal, then OpPop; the second operand is unused
 )
 
 // Definition describes an opcode: its name and the width in bytes of each
@@ -186,6 +194,11 @@ var definitions = map[Opcode]*Definition{
 	OpTry:             {"OpTry", []int{2}},
 	OpTryEnd:          {"OpTryEnd", []int{}},
 	OpThrow:           {"OpThrow", []int{}},
+
+	OpBinaryConst:  {"OpBinaryConst", []int{1, 2}},
+	OpCompareJump:  {"OpCompareJump", []int{1, 2}},
+	OpSetLocalPop:  {"OpSetLocalPop", []int{2, 1}},
+	OpSetGlobalPop: {"OpSetGlobalPop", []int{2, 1}},
 }
 
 // Lookup returns the definition of an opcode.

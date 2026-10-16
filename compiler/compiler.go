@@ -239,6 +239,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			continue
 		}
 
+		fuse(scope.instructions)
 		compiled := &object.CompiledFunction{
 			Instructions: scope.instructions,
 			NumLocals:    fn.numLocals,
