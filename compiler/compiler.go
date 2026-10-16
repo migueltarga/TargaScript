@@ -93,7 +93,7 @@ func (c *Compiler) Problems() []Problem {
 
 // compilation is the code of the function being compiled.
 type compilation struct {
-	instructions code.Instructions
+	instructions instructions
 	positions    []object.Position
 	caches       int // property caches given out
 	outer        *compilation
@@ -1434,7 +1434,8 @@ func (c *Compiler) addConstant(obj object.Object) int {
 // emit appends an instruction and returns its offset. When tok has a
 // position, errors raised by the instruction are reported there.
 func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
-	ins := code.Make(op, operands...)
+	ins := instruction{op: op}
+	copy(ins.args[:], operands)
 	pos := len(c.scope.instructions)
 	if tok.Line > 0 {
 		c.scope.positions = append(c.scope.positions, object.Position{Offset: pos, Line: tok.Line, Column: tok.Column})
@@ -1442,15 +1443,14 @@ func (c *Compiler) emit(tok token.Token, op code.Opcode, operands ...int) int {
 		// Instructions without a position don't take the previous one
 		c.scope.positions = append(c.scope.positions, object.Position{Offset: pos})
 	}
-	c.scope.instructions = append(c.scope.instructions, ins...)
+	c.scope.instructions = append(c.scope.instructions, ins)
 	return pos
 }
 
 // changeOperands rewrites the operands of the instruction at pos, to point a
 // jump at a target known only later.
 func (c *Compiler) changeOperands(pos int, operands ...int) {
-	op := code.Opcode(c.scope.instructions[pos])
-	copy(c.scope.instructions[pos:], code.Make(op, operands...))
+	copy(c.scope.instructions[pos].args[:], operands)
 }
 
 func hasSpread(expressions []ast.Expression) bool {
