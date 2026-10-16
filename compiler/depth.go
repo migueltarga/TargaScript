@@ -41,6 +41,10 @@ func stackEffect(op code.Opcode, args [3]int) (int, bool) {
 		return -args[1], true
 	case code.OpClosure:
 		return 1 - args[1], true
+	case code.OpStruct:
+		return -args[1], true
+	case code.OpStructNew:
+		return -args[0], true
 	}
 	return 0, false
 }

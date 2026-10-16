@@ -130,7 +130,16 @@ func typeName(obj object.Object) string {
 	case object.ARRAY_OBJ:
 		return "an array"
 	case object.HASH_OBJ:
+		if typ := obj.(*object.Hash).Struct(); typ != nil {
+			return article(typ.Name)
+		}
 		return "an object"
+	case object.STRUCT_OBJ:
+		return "a struct"
+	case object.ENUM_OBJ:
+		return "an enum"
+	case object.ENUM_VALUE_OBJ:
+		return article(obj.(*object.EnumValue).Enum.Name)
 	case object.FUNCTION_OBJ, object.BUILTIN_OBJ:
 		return "a function"
 	}
@@ -145,7 +154,12 @@ func typeName(obj object.Object) string {
 func kindName(obj object.Object) string {
 	switch obj.Type() {
 	case object.HASH_OBJ:
+		if typ := obj.(*object.Hash).Struct(); typ != nil {
+			return typ.Name
+		}
 		return "object"
+	case object.ENUM_VALUE_OBJ:
+		return obj.(*object.EnumValue).Enum.Name
 	case object.FUNCTION_OBJ, object.BUILTIN_OBJ:
 		return "function"
 	}
@@ -234,4 +248,12 @@ func editDistance(a, b string) int {
 		}
 	}
 	return d[len(ra)][len(rb)]
+}
+
+// article puts a or an before a name, by its first letter.
+func article(name string) string {
+	if name != "" && strings.ContainsRune("AEIOUaeiou", rune(name[0])) {
+		return "an " + name
+	}
+	return "a " + name
 }

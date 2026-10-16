@@ -407,6 +407,8 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		}
 		newline(depth)
 		out.WriteByte('}')
+	case *object.EnumValue:
+		writeJSONString(out, obj.Name)
 	default:
 		return &object.Error{Message: "cannot convert " + typeName(obj) + " to JSON"}
 	}

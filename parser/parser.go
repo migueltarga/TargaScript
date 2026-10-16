@@ -207,6 +207,12 @@ func (p *Parser) parseStatement() ast.Statement {
 		}
 		return nil
 	default:
+		if p.curToken.Literal == "struct" && p.peekTokenIs(token.IDENT) {
+			return p.parseStructStatement()
+		}
+		if p.curToken.Literal == "enum" && p.peekTokenIs(token.IDENT) {
+			return p.parseEnumStatement()
+		}
 		if hint := p.otherLanguageStatement(); hint != "" {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "%s", hint)
 			return nil
@@ -272,6 +278,7 @@ var otherLanguageStatements = [][2]string{
 	{"def", "functions are declared with fn: fn name(a, b) { ... }"},
 	{"func", "functions are declared with fn: fn name(a, b) { ... }"},
 	{"var", "variables are declared with let, or const for ones that don't change"},
+	{"class", "kinds of objects are declared with struct: struct Point { x, y = 0, fn dist() { ... } }"},
 }
 
 // otherLanguageStatement returns a hint when the statement starts like one
@@ -1971,5 +1978,96 @@ func unescape(ch rune) string {
 		return string(ch)
 	default:
 		return "\\" + string(ch)
+	}
+}
+
+// parseStructStatement parses a struct: its name, then in braces its
+// fields, with defaults, and its methods.
+func (p *Parser) parseStructStatement() ast.Statement {
+	stmt := &ast.StructStatement{Token: p.curToken}
+	stmt.Name = p.parseMembers(func() *ast.Identifier {
+		if p.curTokenIs(token.FUNCTION) && p.peekTokenIs(token.IDENT) {
+			method := p.parseFunctionStatement()
+			if method == nil {
+				return nil
+			}
+			stmt.Methods = append(stmt.Methods, method)
+			return method.Name
+		}
+		if !p.curTokenIs(token.IDENT) {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a field or a method, found %s", describe(p.curToken))
+			return nil
+		}
+		field := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		var value ast.Expression
+		if p.peekTokenIs(token.ASSIGN) {
+			p.nextToken()
+			p.nextToken()
+			if value = p.parseExpression(LOWEST); value == nil {
+				return nil
+			}
+		}
+		stmt.Fields = append(stmt.Fields, field)
+		stmt.Defaults = append(stmt.Defaults, value)
+		return field
+	})
+	if stmt.Name == nil {
+		return nil
+	}
+	return stmt
+}
+
+// parseEnumStatement parses an enum: its name, then in braces the names of
+// its values.
+func (p *Parser) parseEnumStatement() ast.Statement {
+	stmt := &ast.EnumStatement{Token: p.curToken}
+	stmt.Name = p.parseMembers(func() *ast.Identifier {
+		if !p.curTokenIs(token.IDENT) || p.curToken.Literal == "values" {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "expected the name of a value, found %s; values is the method that lists them", describe(p.curToken))
+			return nil
+		}
+		name := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		stmt.Values = append(stmt.Values, name)
+		return name
+	})
+	if stmt.Name == nil {
+		return nil
+	}
+	return stmt
+}
+
+// parseMembers parses the name of a struct or an enum, then the members in
+// its braces, separated by commas or lines, calling member at the start of
+// each. member returns the member's name, or nil when it failed. It returns
+// the name, or nil when parsing failed.
+func (p *Parser) parseMembers(member func() *ast.Identifier) *ast.Identifier {
+	keyword := p.curToken
+	p.nextToken()
+	name := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	seen := map[string]bool{}
+	for {
+		p.nextToken()
+		for p.curTokenIs(token.COMMA) || p.curTokenIs(token.SEMICOLON) {
+			p.nextToken()
+		}
+		switch {
+		case p.curTokenIs(token.RBRACE):
+			return name
+		case p.curTokenIs(token.EOF):
+			p.errorAt(keyword.Line, keyword.Column, "%s %s is missing its closing }", keyword.Literal, name.Value)
+			return nil
+		}
+		m := member()
+		if m == nil {
+			return nil
+		}
+		if seen[m.Value] {
+			p.errorAt(m.Token.Line, m.Token.Column, "%s %s has %s twice", keyword.Literal, name.Value, m.Value)
+			return nil
+		}
+		seen[m.Value] = true
 	}
 }

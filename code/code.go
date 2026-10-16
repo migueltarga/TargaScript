@@ -92,4 +92,8 @@ const (
 	OpTry     // start a try block whose catch block starts at the operand
 	OpTryEnd  // end the innermost try block
 	OpThrow   // pop a value and raise an error with it
+
+	// Structs
+	OpStruct    // pop a constructor and n methods, push a struct of the spec constants[index]
+	OpStructNew // pop the values of n fields and a struct, push a value of the struct
 )

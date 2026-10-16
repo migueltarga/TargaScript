@@ -22,6 +22,7 @@ type dictionary struct {
 	keys  []HashKey
 	pairs []HashPair
 	index map[HashKey]int
+	typ   *StructType
 }
 
 const (
@@ -40,6 +41,8 @@ type Shape struct {
 	keys  []HashKey
 	names []Object // the keys as values
 	next  []transition
+	// typ is the struct of the objects of the shape, or nil
+	typ *StructType
 }
 
 // transition leads from a shape to the one with a key more.
@@ -83,6 +86,7 @@ func (s *Shape) with(key HashKey, name Object) *Shape {
 	next := &Shape{
 		keys:  append(s.keys[:len(s.keys):len(s.keys)], key),
 		names: append(s.names[:len(s.names):len(s.names)], name),
+		typ:   s.typ,
 	}
 	s.next = append(s.next, transition{key, next})
 	return next
@@ -248,7 +252,7 @@ func (h *Hash) toDictionary() {
 		return
 	}
 	n := len(h.values)
-	h.dict = &dictionary{}
+	h.dict = &dictionary{typ: h.shape.typ}
 	h.dict.keys = make([]HashKey, n, n+1)
 	h.dict.pairs = make([]HashPair, n, n+1)
 	for i := range h.values {
@@ -357,4 +361,15 @@ func NewHashFromPairs(pairs []Object, cache *PropertyCache) (*Hash, int) {
 		cache.shape = h.shape
 	}
 	return h, -1
+}
+
+// Struct returns the struct of the object, or nil for a plain object.
+func (h *Hash) Struct() *StructType {
+	switch {
+	case h.shape != nil:
+		return h.shape.typ
+	case h.dict != nil:
+		return h.dict.typ
+	}
+	return nil
 }

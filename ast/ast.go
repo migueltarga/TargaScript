@@ -887,3 +887,35 @@ type FormatExpression struct {
 func (fe *FormatExpression) expressionNode()      {}
 func (fe *FormatExpression) TokenLiteral() string { return fe.Token.Literal }
 func (fe *FormatExpression) String() string       { return nodeString(fe.Value) + ":" + fe.Spec }
+
+// StructStatement declares a struct: `struct Point { x, y = 0, fn dist() { ... } }`.
+type StructStatement struct {
+	Token    token.Token
+	Name     *Identifier
+	Fields   []*Identifier
+	Defaults []Expression // default value of each field, or nil
+	Methods  []*FunctionStatement
+}
+
+func (ss *StructStatement) statementNode()       {}
+func (ss *StructStatement) TokenLiteral() string { return ss.Token.Literal }
+func (ss *StructStatement) String() string {
+	parts := ParameterStrings(ss.Fields, ss.Defaults, false)
+	for _, m := range ss.Methods {
+		parts = append(parts, m.String())
+	}
+	return "struct " + ss.Name.String() + " { " + strings.Join(parts, ", ") + " }"
+}
+
+// EnumStatement declares an enum: `enum Status { Active, Blocked }`.
+type EnumStatement struct {
+	Token  token.Token
+	Name   *Identifier
+	Values []*Identifier
+}
+
+func (es *EnumStatement) statementNode()       {}
+func (es *EnumStatement) TokenLiteral() string { return es.Token.Literal }
+func (es *EnumStatement) String() string {
+	return "enum " + es.Name.Value + " { " + strings.Join(ParameterStrings(es.Values, nil, false), ", ") + " }"
+}

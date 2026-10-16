@@ -456,6 +456,8 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		return fn.Fn(args...)
 	case *object.Closure:
 		return fn.Runner.CallClosure(fn, args)
+	case *object.StructType:
+		return fn.Call(args)
 	case object.External:
 		return fn.Call(args)
 	default:
@@ -474,7 +476,7 @@ func applyFunctionAsync(fn object.Object, args []object.Object) object.Object {
 
 func isCallable(obj object.Object) bool {
 	switch obj.(type) {
-	case *object.Builtin, *object.Closure, object.External:
+	case *object.Builtin, *object.Closure, *object.StructType, object.External:
 		return true
 	default:
 		return false
@@ -569,10 +571,25 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 		if pair, ok := obj.Get((&object.String{Value: propertyName}).HashKey()); ok {
 			return pair.Value
 		}
+		if typ := obj.Struct(); typ != nil {
+			if method := typ.Methods[propertyName]; method != nil {
+				return method
+			}
+		}
 		if propertyName == "length" {
 			return &object.Integer{Value: int64(obj.Len())}
 		}
 		return NULL
+	case *object.Enum:
+		if value := obj.Value(propertyName); value != nil {
+			return value
+		}
+		return newError(line, column, "enum %s has no %s; its values are %s", obj.Name, propertyName, obj.Names())
+	case *object.EnumValue:
+		if propertyName == "name" {
+			return &object.String{Value: obj.Name}
+		}
+		return newError(line, column, "%s has no property %q; it has name", obj.Inspect(), propertyName)
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
@@ -584,6 +601,15 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 
 func evalMethodCallExpression(obj object.Object, method string, args []object.Object, line, column int) object.Object {
 	switch obj := obj.(type) {
+	case *object.Enum:
+		if method == "values" && len(args) == 0 {
+			values := make([]object.Object, len(obj.Values))
+			for i, v := range obj.Values {
+				values[i] = v
+			}
+			return &object.Array{Elements: values}
+		}
+		return newError(line, column, "enum %s has one method, values()", obj.Name)
 	case object.External:
 		if method == "new" {
 			return withPosition(obj.New(args), line, column)
@@ -820,6 +846,11 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 		// An object's own functions come before the methods every object has
 		if pair, ok := obj.Get((&object.String{Value: method}).HashKey()); ok && isCallable(pair.Value) {
 			return withPosition(applyFunction(pair.Value, args), line, column)
+		}
+		if typ := obj.Struct(); typ != nil {
+			if fn := typ.Methods[method]; fn != nil {
+				return withPosition(fn.Runner.CallMethod(fn, obj, args), line, column)
+			}
 		}
 		switch method {
 		case "keys":

@@ -14,6 +14,8 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 
 ### Language
 
+- Enums, with `match` checking that every value has an arm: `enum Status { Active, Blocked }`
+- Structs, with fields, defaults and methods: `struct Point { x = 0, y = 0, fn length() { ... } }`
 - `match` with ranges, several values per arm and guards: `_ if n > 100 => ...`
 - Destructuring of arrays and objects, with rest, defaults and renaming: `let {port = 8080, host: h, ...rest} = config`
 - Spread in arrays, objects and calls; rest parameters

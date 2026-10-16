@@ -149,6 +149,9 @@ const (
 	RError  // stop with the error message K[A]
 
 	RIsArray // R[A] = whether R[B] is an array, for patterns
+
+	RStruct    // R[A] = a struct of the spec K[B] made with the constructor R[A] and the C methods after it
+	RStructNew // R[A] = a value of the struct R[A+C] with the C fields R[A]...
 )
 
 var opNames = [...]string{
@@ -168,7 +171,7 @@ var opNames = [...]string{
 	RHashMerge: "HASHMERGE", RWithout: "WITHOUT", RIndex: "INDEX", RSetIndex: "SETINDEX", RGetProp: "GETPROP",
 	RSetProp: "SETPROP", RCall: "CALL", RCallGlobal: "CALLGLOBAL", RCallMethod: "CALLMETHOD", RCallSpread: "CALLSPREAD",
 	RCallMethodSpread: "CALLMETHODSPREAD", RReturn: "RETURN", RClosure: "CLOSURE", RLoad: "LOAD", RAwait: "AWAIT",
-	RTry: "TRY", RTryEnd: "TRYEND", RThrow: "THROW", RError: "ERROR", RIsArray: "ISARRAY",
+	RTry: "TRY", RTryEnd: "TRYEND", RThrow: "THROW", RError: "ERROR", RIsArray: "ISARRAY", RStruct: "STRUCT", RStructNew: "STRUCTNEW",
 }
 
 func (op Op) String() string {
@@ -278,6 +281,8 @@ var registers = [...]uint8{
 	RTry:               1,
 	RThrow:             1,
 	RIsArray:           3,
+	RStruct:            1,
+	RStructNew:         1,
 }
 
 // Registers returns which of the fields of op name registers: 1 for A, 2
