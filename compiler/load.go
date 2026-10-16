@@ -2,13 +2,13 @@ package compiler
 
 import (
 	"path"
-	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 	"github.com/migueltarga/TargaScript/parser"
 	"github.com/migueltarga/TargaScript/token"
 )
@@ -128,8 +128,7 @@ func moduleNames(program *ast.Program, dir string, seen map[string]bool) []modul
 	for name, isConst := range byName {
 		names = append(names, moduleName{name, isConst})
 	}
-	slices.SortFunc(names, func(a, b moduleName) int { return strings.Compare(a.name, b.name) })
-	return names
+	return order.Permute(names, order.Stable(len(names), func(a, b int) int { return strings.Compare(names[a].name, names[b].name) }))
 }
 
 // loadedNames returns the names a load statement defines, or the error

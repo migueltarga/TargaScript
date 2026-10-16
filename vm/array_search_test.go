@@ -82,7 +82,7 @@ func TestArrayMethodErrors(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{`[1, "a"].sort()`, `cannot sort: cannot use "<" with a string and an integer`},
+		{`[1, "a"].sort()`, `cannot sort: cannot use "<" with an integer and a string`},
 		{"[true, false].sort()", `cannot sort: cannot use "<" with a boolean and a boolean`},
 		{`[1, 2].sort(fn(a, b) { "x" })`, "compare function must return a number, got a string"},
 		{"[1, 2].sort(fn(a, b) { missing })", `"missing" is not defined`},

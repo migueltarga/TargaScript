@@ -2,13 +2,11 @@
 package compiler
 
 import (
-	"cmp"
-	"slices"
-
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/code"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 	"github.com/migueltarga/TargaScript/parser"
 	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
@@ -85,13 +83,12 @@ func (c *Compiler) Problems() []Problem {
 			problems = append(problems, p)
 		}
 	}
-	slices.SortStableFunc(problems, func(a, b Problem) int {
-		if a.Line != b.Line {
-			return cmp.Compare(a.Line, b.Line)
+	return order.Permute(problems, order.Stable(len(problems), func(a, b int) int {
+		if problems[a].Line != problems[b].Line {
+			return problems[a].Line - problems[b].Line
 		}
-		return cmp.Compare(a.Column, b.Column)
-	})
-	return problems
+		return problems[a].Column - problems[b].Column
+	}))
 }
 
 // compilation is the code of the function being compiled.
@@ -688,7 +685,7 @@ func (c *Compiler) knownNames() []string {
 			}
 		}
 	}
-	slices.Sort(names)
+	order.Strings(names)
 	return names
 }
 
