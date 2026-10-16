@@ -97,6 +97,12 @@ func (l *Lexer) NextToken() token.Token {
 			l.skipLineComment()
 			return l.NextToken()
 		}
+		if l.peekChar() == '*' {
+			if !l.skipBlockComment() {
+				return l.newToken(token.ILLEGAL, "/*", tokenLine, tokenColumn)
+			}
+			return l.NextToken()
+		}
 		tok = l.newToken(token.SLASH, string(l.ch), tokenLine, tokenColumn)
 	case '!':
 		if l.peekChar() == '=' {
@@ -185,6 +191,22 @@ func (l *Lexer) skipLineComment() {
 	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
+}
+
+// skipBlockComment skips a /* ... */ comment and reports whether its closing
+// */ was found.
+func (l *Lexer) skipBlockComment() bool {
+	l.readChar()
+	l.readChar()
+	for l.ch != 0 {
+		if l.ch == '*' && l.peekChar() == '/' {
+			l.readChar()
+			l.readChar()
+			return true
+		}
+		l.readChar()
+	}
+	return false
 }
 
 func (l *Lexer) readChar() {
