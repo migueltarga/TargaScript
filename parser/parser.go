@@ -933,7 +933,8 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 	p.nextToken()
 
-	if !p.curTokenIs(token.IDENT) {
+	// Keywords are fine as names here, like `text.repeat(3)`
+	if !p.curTokenIs(token.IDENT) && !token.IsKeyword(p.curToken) {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "expected a property or method name after %q, found %s", expression.Token.Literal, describe(p.curToken))
 		return nil
 	}

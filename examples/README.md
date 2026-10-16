@@ -111,6 +111,15 @@ Strings support the following method-style operations:
 - `str.startsWith(prefix)` / `str.endsWith(suffix)` - Check the start or end
 - `str.indexOf(sub)` - Position of the first `sub`, or -1
 - `str[i]` - The character at position `i` (`null` when out of range)
+- `str.repeat(n)` - The string repeated `n` times
+- `str.padStart(width, fill)` / `str.padEnd(width, fill)` - Add `fill` (a space by default) until the string is `width` characters long
+- `str.reverse()` - The characters in reverse order
+- `str.slice(start, end)` - The characters from `start` up to (not including) `end`; negative positions count from the end, and `end` is optional
+- `str.chars()` - An array of the characters
+- `str.lines()` - An array of the lines, without their line breaks
+- `str.trimStart()` / `str.trimEnd()` - Remove whitespace from one end
+- `str.count(sub)` - How many times `sub` appears
+- `str.capitalize()` - The string with its first character in uppercase
 
 `repeat c in str { ... }` iterates over the characters of a string.
 

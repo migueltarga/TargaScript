@@ -112,3 +112,9 @@ func LookupIdent(ident string) TokenType {
 	}
 	return IDENT
 }
+
+// IsKeyword reports whether a token is a keyword, like repeat or in.
+func IsKeyword(tok Token) bool {
+	keyword, ok := keywords[tok.Literal]
+	return ok && keyword == tok.Type
+}

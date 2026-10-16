@@ -523,6 +523,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 		default:
+			if fn, ok := moreStringMethods[method]; ok {
+				return withPosition(fn(obj.Value, args), line, column)
+			}
 			return newError(line, column, "strings have no method %q%s", method, suggestion(method, stringMethods))
 		}
 	case *object.Array:
