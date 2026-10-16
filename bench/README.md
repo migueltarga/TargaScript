@@ -18,15 +18,15 @@ Each benchmark is a small program written twice, in TargaScript (`.tg`) and in P
 
 ```
 benchmark   TargaScript       Python
-callbacks          0.18         0.23
+callbacks          0.18         0.24
 concat             0.02         0.56
-fib                0.13         0.13
+fib                0.10         0.14
 loop               0.11         0.21
 methods            0.09         0.12
-objects            0.10         0.15
+objects            0.10         0.14
 properties         0.09         0.14
 strings            0.06         0.07
-words              0.05         0.08
+words              0.05         0.09
 ```
 
-TargaScript is faster than CPython on all of them but `fib`, a tie, where function calls dominate. That's plenty for scripts, servers and web pages, though not for heavy number crunching.
+TargaScript is faster than CPython on all of them, from 1.2 times on `strings` to 2 times on `loop` (and 28 times on `concat`, which CPython makes a new string for every time). That's plenty for scripts, servers and web pages, though not for heavy number crunching.
