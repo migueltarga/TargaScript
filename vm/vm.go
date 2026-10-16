@@ -43,12 +43,15 @@ type VM struct {
 	sp    int // the next free slot; the top is stack[sp-1]
 
 	frames []*frame
+
+	modules *modules
 }
 
 func New(globals *compiler.GlobalTable) *VM {
 	vm := &VM{
-		names: globals,
-		stack: make([]object.Object, initialStackSize),
+		names:   globals,
+		stack:   make([]object.Object, initialStackSize),
+		modules: newModules(),
 	}
 	for _, name := range evaluator.BuiltinNames() {
 		builtin, _ := evaluator.Builtin(name)
@@ -465,6 +468,17 @@ func (vm *VM) loop(base int) object.Object {
 			vm.sp -= n
 			evaluator.Print(values)
 			vm.push(NULL)
+
+		case code.OpLoad:
+			path := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value
+			shown := vm.constants[code.ReadUint16(ins[ip+3:])].(*object.String).Value
+			f.ip += 4
+			line, column := f.cl.Fn.PositionAt(ip)
+			module := vm.load(path, shown, line, column)
+			if err, ok := module.(*object.Error); ok {
+				return err
+			}
+			vm.push(module)
 
 		case code.OpError:
 			message := vm.constants[code.ReadUint16(ins[ip+1:])].(*object.String).Value

@@ -36,6 +36,10 @@ type Compiler struct {
 	captured map[ast.Node]map[int]bool
 
 	builtinIndex map[string]int
+
+	// Dir is the directory of the file being compiled, which load paths
+	// are relative to. Empty means the working directory.
+	Dir string
 }
 
 // compilation is the code of the function being compiled.
@@ -70,6 +74,15 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 	for _, stmt := range program.Statements {
 		if name := declaredName(stmt); name != "" {
 			c.globals.define(name)
+		}
+		if load, ok := stmt.(*ast.LoadStatement); ok {
+			if load.Alias != nil {
+				c.globals.define(load.Alias.Value)
+			} else if _, names, _ := c.loadedNames(load); names != nil {
+				for _, n := range names {
+					c.globals.define(n.name)
+				}
+			}
 		}
 	}
 
@@ -248,8 +261,7 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 		return c.compileBlock(stmt)
 
 	case *ast.LoadStatement:
-		c.emitError(stmt.Token, "load is not supported by the compiler yet")
-		return nil
+		return c.compileLoad(stmt)
 	}
 	return fmt.Errorf("cannot compile %T", stmt)
 }
