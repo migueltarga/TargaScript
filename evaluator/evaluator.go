@@ -602,7 +602,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			if fn, ok := moreStringMethods[method]; ok {
 				return withPosition(fn(obj.Value, args), line, column)
 			}
-			return newError(line, column, "strings have no method %q%s", method, suggestion(method, stringMethods))
+			return newError(line, column, "strings have no method %q%s", method, hint(method, otherLanguageStringMethods, stringMethods))
 		}
 	case *object.Array:
 		switch method {
@@ -732,7 +732,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			if result, ok := evalArrayChangeMethod(obj, method, args, line, column); ok {
 				return result
 			}
-			return newError(line, column, "arrays have no method %q%s", method, suggestion(method, arrayMethods))
+			return newError(line, column, "arrays have no method %q%s", method, hint(method, otherLanguageArrayMethods, arrayMethods))
 		}
 	case *object.Hash:
 		switch method {
@@ -804,11 +804,11 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 					own = append(own, name.Value)
 				}
 			}
-			hint := suggestion(method, own)
-			if hint == "" {
-				hint = suggestion(method, append([]string{}, hashMethods...))
+			message := suggestion(method, own)
+			if message == "" {
+				message = hint(method, otherLanguageHashMethods, append([]string{}, hashMethods...))
 			}
-			return newError(line, column, "object has no method %q%s", method, hint)
+			return newError(line, column, "object has no method %q%s", method, message)
 		}
 	default:
 		return newError(line, column, "cannot call method %q on %s", method, typeName(obj))
