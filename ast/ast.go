@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -172,10 +173,19 @@ func (pe *PrefixExpression) String() string {
 
 	out.WriteString("(")
 	out.WriteString(pe.Operator)
-	out.WriteString(pe.Right.String())
+	out.WriteString(nodeString(pe.Right))
 	out.WriteString(")")
 
 	return out.String()
+}
+
+// nodeString is the String of a node, or "" for one missing because of a
+// syntax error, so error messages can show a partly parsed expression.
+func nodeString(node Node) string {
+	if node == nil || reflect.ValueOf(node).IsNil() {
+		return ""
+	}
+	return node.String()
 }
 
 type InfixExpression struct {
@@ -191,9 +201,9 @@ func (ie *InfixExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString("(")
-	out.WriteString(ie.Left.String())
+	out.WriteString(nodeString(ie.Left))
 	out.WriteString(" " + ie.Operator + " ")
-	out.WriteString(ie.Right.String())
+	out.WriteString(nodeString(ie.Right))
 	out.WriteString(")")
 
 	return out.String()
