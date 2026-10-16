@@ -61,6 +61,12 @@ TargaScript provides several loop constructs:
 
    For an object, the loop goes over its keys in insertion order (`obj[key]` gives the value).
 
+   With two variables, the loop gets the key and the value: the index and element of an array, string or range, or the key and value of an object:
+   ```
+   repeat i, name in names { print(i, name) }
+   repeat key, value in settings { print(key, "=", value) }
+   ```
+
 2. **Condition-based loops** - Loop as long as a condition is true:
    ```
    repeat condition {

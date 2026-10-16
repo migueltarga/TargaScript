@@ -763,7 +763,19 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 
 	p.nextToken()
 
-	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.IN) {
+	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.COMMA) {
+		stmt.Key = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		p.nextToken()
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		if !p.expectPeek(token.IN) {
+			return nil
+		}
+		p.nextToken()
+		stmt.Collection = p.parseExpression(LOWEST)
+	} else if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.IN) {
 		stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		p.nextToken()
 		p.nextToken()
