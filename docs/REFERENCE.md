@@ -40,6 +40,10 @@ Statements end at the end of the line; `;` can separate several on one line. Blo
 
 Numbers are 64-bit integers or floats. Integer arithmetic that overflows is an error, and integer division truncates: `7 / 2` is `3`, `7.0 / 2` is `3.5`. Dividing a float by zero gives `Inf` or `NaN`; dividing an integer by zero is an error.
 
+```targascript
+print(1_000_000, 0xff, 0b1010, 0o17, 2.5e3)   // → 1000000 255 10 15 2500
+```
+
 ## Operators
 
 From loosest to tightest:

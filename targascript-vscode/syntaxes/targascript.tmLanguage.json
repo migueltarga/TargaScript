@@ -136,16 +136,20 @@
     "numbers": {
       "patterns": [
         {
-          "name": "constant.numeric.float.targascript",
-          "match": "\\b[0-9]+(\\.[0-9]+)?[eE][+-]?[0-9]+\\b"
+          "name": "constant.numeric.integer.targascript",
+          "match": "\\b0([xX][0-9a-fA-F_]+|[bB][01_]+|[oO][0-7_]+)\\b"
         },
         {
           "name": "constant.numeric.float.targascript",
-          "match": "\\b[0-9]+\\.[0-9]+\\b"
+          "match": "\\b[0-9][0-9_]*(\\.[0-9]+)?[eE][+-]?[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.targascript",
+          "match": "\\b[0-9][0-9_]*\\.[0-9]+\\b"
         },
         {
           "name": "constant.numeric.integer.targascript",
-          "match": "\\b[0-9]+\\b"
+          "match": "\\b[0-9][0-9_]*\\b"
         }
       ]
     }
