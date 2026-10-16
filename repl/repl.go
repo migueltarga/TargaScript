@@ -41,6 +41,7 @@ var loop = eventloop.New()
 
 func init() {
 	evaluator.SetHost(loop)
+	evaluator.SetSystem(osSystem{})
 }
 
 // SetMainDir sets the directory used to resolve `load` paths in the main
