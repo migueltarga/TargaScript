@@ -73,6 +73,11 @@ type VM struct {
 	// Output is where print writes while this VM runs, including when a
 	// paused run resumes later. When nil, print uses evaluator.SetOutput.
 	Output io.Writer
+
+	// MaxSteps, when above zero, stops a run with an error after that many
+	// loop iterations and calls, to bound programs that might not end
+	MaxSteps int
+	steps    int
 }
 
 func New(globals *compiler.GlobalTable) *VM {
@@ -97,6 +102,7 @@ func (vm *VM) Run(bytecode *compiler.Bytecode) object.Object {
 	}
 
 	main := &object.Closure{Fn: bytecode.Main, Runner: vm}
+	vm.steps = 0
 	vm.sp = 0
 	vm.frames = vm.frames[:0]
 	vm.push(main)
@@ -152,6 +158,15 @@ func (vm *VM) CallClosureAsync(cl *object.Closure, args []object.Object) object.
 	vm.asyncBases = append(vm.asyncBases, len(vm.frames))
 	defer func() { vm.asyncBases = vm.asyncBases[:len(vm.asyncBases)-1] }()
 	return vm.CallClosure(cl, args)
+}
+
+// step counts a loop iteration or a call against MaxSteps.
+func (vm *VM) step(f *frame, ip int) *object.Error {
+	vm.steps++
+	if vm.steps > vm.MaxSteps {
+		return vm.positioned(f, ip, evaluator.NewError(0, 0, "the program took more than %d steps", vm.MaxSteps))
+	}
+	return nil
 }
 
 // canPause reports whether the run from base can pause at an await.
@@ -330,6 +345,12 @@ func (vm *VM) loop(base int) object.Object {
 
 		case code.OpJump:
 			f.ip = int(code.ReadUint16(ins[ip+1:]))
+			// Every loop jumps back to its start here or at a continue
+			if f.ip <= ip && vm.MaxSteps > 0 {
+				if err := vm.step(f, ip); err != nil {
+					return err
+				}
+			}
 
 		case code.OpJumpNotTruthy:
 			target := int(code.ReadUint16(ins[ip+1:]))
@@ -382,6 +403,12 @@ func (vm *VM) loop(base int) object.Object {
 			f.handlers = f.handlers[:l.handlers]
 			if ins[ip+1] == 1 {
 				f.ip = l.continueTo
+				// continue goes back to the start without the loop's jump
+				if vm.MaxSteps > 0 {
+					if err := vm.step(f, ip); err != nil {
+						return err
+					}
+				}
 			} else {
 				f.ip = l.breakTo
 			}
@@ -551,6 +578,11 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpCall:
 			argc := int(ins[ip+1])
 			f.ip++
+			if vm.MaxSteps > 0 {
+				if err := vm.step(f, ip); err != nil {
+					return err
+				}
+			}
 			switched, err := vm.call(f, ip, argc)
 			if err != nil {
 				return err
