@@ -380,7 +380,7 @@ It exits with 1 when a test fails, when a file has an error outside a test, or w
 ## Command line
 
 ```sh
-targascript                       # the REPL; unfinished code continues on the next line
+targascript                       # the REPL: unfinished code continues on the next line; help, exit
 targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(2 ** 10)'   # run code given on the command line
 targascript test                  # run the *_test.tg files, see Testing

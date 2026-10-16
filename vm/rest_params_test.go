@@ -17,7 +17,7 @@ func TestRestParameters(t *testing.T) {
 		{"let log = fn(level, ...parts) { \"[${level}] \" + parts.join(\" \") }\nlog(\"info\", \"a\", \"b\")", "[info] a b"},
 		{"fn f(...xs) { fn() { xs.length } }\nf(1, 2)()", "2"},
 		{"[1, 2].map(fn(...all) { all.length })", "[1, 1]"},
-		{"fn f(a, ...rest) { 1 }\nf", "fn f(a, ...rest) {\n{ 1 }\n}"},
+		{"fn f(a, ...rest) { 1 }\nf", "fn f(a, ...rest)"},
 		{"fn f(...rest, a) { 1 }", `ERROR: parser errors: line 1:13: the ...rest parameter must be the last one`},
 	}
 

@@ -98,7 +98,7 @@ func main() {
 	fmt.Printf("Welcome to TargaScript %s\n", version)
 	fmt.Println("")
 	fmt.Println("Type commands and press Enter to execute")
-	fmt.Println("Press Ctrl+C to exit")
+	fmt.Println("Type help for help, exit or Ctrl+D to leave")
 
 	repl.Start(os.Stdin, os.Stdout, noColor, debugEnabled)
 }

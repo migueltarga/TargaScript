@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -150,8 +151,8 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 	}()
 
 	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ &&
-		evaluated.Type() != object.ERROR_OBJ {
-		io.WriteString(out, evaluated.Inspect())
+		evaluated.Type() != object.ERROR_OBJ && !declares(program) {
+		io.WriteString(out, replValue(evaluated))
 		io.WriteString(out, "\n")
 	}
 
@@ -168,6 +169,38 @@ func evalSource(source string, sess *session, out io.Writer, noColor bool, debug
 
 	return nil
 }
+
+// declares reports whether a program ends by declaring something, like
+// `let x = 1` or `fn f() {}`, whose value the REPL doesn't show.
+func declares(program *ast.Program) bool {
+	if len(program.Statements) == 0 {
+		return false
+	}
+	switch program.Statements[len(program.Statements)-1].(type) {
+	case *ast.LetStatement, *ast.ConstStatement, *ast.FunctionStatement:
+		return true
+	}
+	return false
+}
+
+// replValue shows a result as code would write it, so a string is quoted:
+// "1" and 1 look different.
+func replValue(value object.Object) string {
+	if str, ok := value.(*object.String); ok {
+		return strconv.Quote(str.Value)
+	}
+	return value.Inspect()
+}
+
+// replHelp is what the REPL shows for help.
+const replHelp = `Type TargaScript and press Enter to run it. Code that isn't finished,
+like a function whose body isn't closed, continues on the next line.
+
+  help          show this
+  exit, quit    leave (Ctrl+D works too)
+
+The language reference: https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md
+`
 
 func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 	scanner := bufio.NewScanner(in)
@@ -188,6 +221,15 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool) {
 		}
 
 		line := scanner.Text()
+		if code.Len() == 0 {
+			switch strings.TrimSpace(line) {
+			case "exit", "quit":
+				return
+			case "help":
+				io.WriteString(out, replHelp)
+				continue
+			}
+		}
 		code.WriteString(line + "\n")
 		if strings.TrimSpace(code.String()) == "" {
 			code.Reset()

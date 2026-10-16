@@ -18,7 +18,7 @@ func TestMorePatterns(t *testing.T) {
 		{"fn f(x, {y} = {\"y\": 7}) { x + y }\n[f(1), f(1, {\"y\": 2})]", "[8, 3]"},
 		{"let pts = [[1, 2], [3, 4]]\npts.map(fn([x, y]) { x + y })", "[3, 7]"},
 		{"fn f({a}) { fn() { a } }\nf({\"a\": 5})()", "5"},
-		{"fn area({width, height}) { 1 }\narea", "fn area({width, height}) {\n{ 1 }\n}"},
+		{"fn area({width, height}) { 1 }\narea", "fn area({width, height})"},
 		{"let fs = []\nrepeat [a] in [[1], [2]] { fs.insert(fn() { a }) }\nfs.map(fn(f) { f() })", "[1, 2]"},
 		{"repeat [1, 2] in [] { }", "ERROR: parser errors: line 1:15: expected a name or a pattern like [a, b] before \"in\""},
 		{"let n = 0\nrepeat [n].length > 0 && n < 3 { n++ }\nn", "3"},
