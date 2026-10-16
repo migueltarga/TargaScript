@@ -157,9 +157,9 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
 		return evalBooleanInfixExpression(operator, left, right, line, column)
 	case operator == "==":
-		return nativeBoolToBooleanObject(left == right)
+		return nativeBoolToBooleanObject(valuesEqual(left, right, 0))
 	case operator == "!=":
-		return nativeBoolToBooleanObject(left != right)
+		return nativeBoolToBooleanObject(!valuesEqual(left, right, 0))
 	case left.Type() != right.Type():
 		return operatorError(line, column, operator, left, right)
 	default:
