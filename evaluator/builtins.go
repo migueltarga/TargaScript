@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/migueltarga/TargaScript/object"
@@ -83,8 +84,11 @@ func init() {
 				if err != nil {
 					return err
 				}
+				// A line break ends the output, unless the format has its own
+				if !strings.HasSuffix(text, "\n") {
+					text += "\n"
+				}
 				fmt.Fprint(output, text)
-				fmt.Fprintln(output) // add newline at the end
 
 				return NULL
 			},
