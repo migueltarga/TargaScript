@@ -428,6 +428,69 @@ func (vm *VM) loop(base int) object.Object {
 				f.ip = int(code.ReadUint16(ins[ip+4:]))
 			}
 
+		case code.OpLocalBinaryConst:
+			// The operator's position is that of the instruction it replaced
+			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
+			if err != nil {
+				return err
+			}
+			op := code.Opcode(ins[ip+3])
+			right := vm.constants[code.ReadUint16(ins[ip+4:])]
+			f.ip += 6
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+						vm.push(result)
+						continue
+					}
+				}
+			}
+			result := vm.binary(f, ip+6, op, left, right)
+			if err, ok := result.(*object.Error); ok {
+				return err
+			}
+			vm.push(result)
+
+		case code.OpLocalCompareConstJump:
+			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
+			if err != nil {
+				return err
+			}
+			truthy, err := vm.compare(f, ip+6, code.Opcode(ins[ip+3]), left, vm.constants[code.ReadUint16(ins[ip+4:])])
+			if err != nil {
+				return err
+			}
+			if truthy {
+				f.ip += 9
+			} else {
+				f.ip = int(code.ReadUint16(ins[ip+6:]))
+			}
+
+		case code.OpLocalLocalBinary:
+			left, err := vm.local(f, ip, int(code.ReadUint16(ins[ip+1:])))
+			if err != nil {
+				return err
+			}
+			right, err := vm.local(f, ip+3, int(code.ReadUint16(ins[ip+3:])))
+			if err != nil {
+				return err
+			}
+			op := code.Opcode(ins[ip+5])
+			f.ip += 6
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+						vm.push(result)
+						continue
+					}
+				}
+			}
+			result := vm.binary(f, ip+6, op, left, right)
+			if err, ok := result.(*object.Error); ok {
+				return err
+			}
+			vm.push(result)
+
 		case code.OpSetLocalPop:
 			i := int(code.ReadUint16(ins[ip+1:]))
 			f.ip += 3
@@ -1086,6 +1149,19 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// local returns the value of a local of the running function, like
+// OpGetLocal; ip is where an error is reported.
+func (vm *VM) local(f *frame, ip int, i int) (object.Object, *object.Error) {
+	value := vm.stack[f.base+i]
+	if cell, ok := value.(*object.Cell); ok {
+		value = cell.Value
+	}
+	if value == nil {
+		return nil, vm.notDefined(f, ip, f.cl.Fn.LocalNames[i])
+	}
+	return value, nil
 }
 
 // compare gives the result of a comparison as a bool, for the jumps that

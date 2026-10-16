@@ -107,6 +107,12 @@ const (
 	OpSetLocalPop      // pop the top into a local: OpSetLocal, then OpPop; the second operand is unused
 	OpSetGlobalPop     // pop the top into a global: OpSetGlobal, then OpPop; the second operand is unused
 	OpCompareConstJump // pop a value, compare it with constants[operand 2] by the operator in operand 1 and jump to operand 3 if false: OpConstant, a comparison, OpJumpNotTruthy; the last operand is unused
+
+	// Superinstructions that take a value from a local instead of the
+	// stack, in the second pass of compiler/fuse.go
+	OpLocalBinaryConst      // push the operator in operand 2 with local operand 1 and constants[operand 3]: OpGetLocal, OpBinaryConst
+	OpLocalCompareConstJump // compare local operand 1 with constants[operand 3] by the operator in operand 2, jump to operand 4 if false: OpGetLocal, OpCompareConstJump
+	OpLocalLocalBinary      // push the operator in operand 3 with locals operand 1 and operand 2: OpGetLocal, OpGetLocal, an operator
 )
 
 // Definition describes an opcode: its name and the width in bytes of each
@@ -202,6 +208,10 @@ var definitions = map[Opcode]*Definition{
 	OpSetGlobalPop: {"OpSetGlobalPop", []int{2, 1}},
 
 	OpCompareConstJump: {"OpCompareConstJump", []int{1, 2, 2, 1}},
+
+	OpLocalBinaryConst:      {"OpLocalBinaryConst", []int{2, 1, 2, 1}},
+	OpLocalCompareConstJump: {"OpLocalCompareConstJump", []int{2, 1, 2, 2, 2}},
+	OpLocalLocalBinary:      {"OpLocalLocalBinary", []int{2, 2, 1, 1}},
 }
 
 // Lookup returns the definition of an opcode.

@@ -9,6 +9,45 @@ import "github.com/migueltarga/TargaScript/code"
 // its second instruction, which would then be gone.
 func fuse(ins code.Instructions) {
 	targets := jumpTargets(ins)
+	fusePairs(ins, targets)
+	fuseLocals(ins, targets)
+}
+
+// fuseLocals fuses reading a local with the instruction that uses it, after
+// fusePairs: a local and a constant, as in n - 1; a local compared with a
+// constant, as in if n < 2; and two locals, as in a + b.
+func fuseLocals(ins code.Instructions, targets map[int]bool) {
+	for i := 0; i < len(ins); {
+		next := i + instructionWidth(ins, i)
+		if code.Opcode(ins[i]) == code.OpGetLocal && next < len(ins) && !targets[next] {
+			local := int(code.ReadUint16(ins[i+1:]))
+			switch code.Opcode(ins[next]) {
+			case code.OpBinaryConst:
+				op, constant := int(ins[next+1]), int(code.ReadUint16(ins[next+2:]))
+				copy(ins[i:], code.Make(code.OpLocalBinaryConst, local, op, constant, 0))
+				i += 7
+				continue
+			case code.OpCompareConstJump:
+				op, constant, target := int(ins[next+1]), int(code.ReadUint16(ins[next+2:])), int(code.ReadUint16(ins[next+4:]))
+				copy(ins[i:], code.Make(code.OpLocalCompareConstJump, local, op, constant, target, 0))
+				i += 10
+				continue
+			case code.OpGetLocal:
+				third := next + 3
+				if third < len(ins) && !targets[third] && isBinary(code.Opcode(ins[third])) {
+					other := int(code.ReadUint16(ins[next+1:]))
+					copy(ins[i:], code.Make(code.OpLocalLocalBinary, local, other, int(ins[third]), 0))
+					i += 7
+					continue
+				}
+			}
+		}
+		i = next
+	}
+}
+
+// fusePairs fuses the pairs of instructions that don't read locals.
+func fusePairs(ins code.Instructions, targets map[int]bool) {
 	for i := 0; i < len(ins); {
 		op := code.Opcode(ins[i])
 		width := instructionWidth(ins, i)
