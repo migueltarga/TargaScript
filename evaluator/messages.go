@@ -50,8 +50,14 @@ func operatorError(line, column int, operator string, left, right object.Object)
 // notDefinedError reports an unknown name, suggesting a similar one from
 // the environment or the builtins.
 func notDefinedError(line, column int, name string, env *object.Environment) *object.Error {
+	return NotDefined(line, column, name, env.Names())
+}
+
+// NotDefined reports an unknown name, suggesting a similar one from
+// candidates, the builtins or print.
+func NotDefined(line, column int, name string, candidates []string) *object.Error {
 	// print is a keyword, but it's called like a function
-	candidates := append(env.Names(), "print")
+	candidates = append(append([]string{}, candidates...), "print")
 	for builtin := range builtins {
 		candidates = append(candidates, builtin)
 	}
