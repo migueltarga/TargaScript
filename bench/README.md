@@ -20,15 +20,15 @@ Example result on an Apple M3 Max, October 2026, with Python 3.14.3, Node 22.23.
 
 | Workload | TargaScript | Python | Node | Lua |
 |---|---:|---:|---:|---:|
-| callbacks | 0.157 | 0.142 | 0.061 | 0.064 |
-| concat | 0.017 | 0.424 | 0.036 | 0.461 |
-| fib | 0.076 | 0.112 | 0.032 | 0.040 |
-| loop | 0.089 | 0.193 | 0.029 | 0.028 |
-| methods | 0.053 | 0.093 | 0.029 | 0.025 |
-| objects | 0.097 | 0.120 | 0.064 | 0.218 |
-| properties | 0.072 | 0.137 | 0.043 | 0.064 |
-| strings | 0.057 | 0.054 | 0.054 | 0.076 |
-| words | 0.044 | 0.084 | 0.036 | 0.016 |
+| callbacks | 0.112 | 0.141 | 0.063 | 0.065 |
+| concat | 0.014 | 0.419 | 0.036 | 0.452 |
+| fib | 0.058 | 0.109 | 0.033 | 0.040 |
+| loop | 0.048 | 0.185 | 0.029 | 0.027 |
+| methods | 0.039 | 0.093 | 0.032 | 0.026 |
+| objects | 0.073 | 0.115 | 0.061 | 0.200 |
+| properties | 0.052 | 0.136 | 0.041 | 0.063 |
+| strings | 0.034 | 0.048 | 0.045 | 0.066 |
+| words | 0.026 | 0.079 | 0.036 | 0.014 |
 
 These are small programs, not a general ranking. `concat` particularly favors runtimes that optimize repeated string appends. The CLI build uses `cmd/targascript/default.pgo`, a profile trained on these workloads, so add representative applications before making broad performance claims.
 
