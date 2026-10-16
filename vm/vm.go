@@ -54,6 +54,8 @@ type VM struct {
 	stack []object.Object
 	sp    int // the next free slot; the top is stack[sp-1]
 
+	ints ints
+
 	frames []*frame
 
 	modules *modules
@@ -485,7 +487,7 @@ func (vm *VM) loop(base int) object.Object {
 			}
 
 		case code.OpIterStart:
-			it, err := newIterator(vm.pop())
+			it, err := newIterator(vm.pop(), &vm.ints)
 			if err != nil {
 				return vm.errorAt(f, ip, "%s", err.Error())
 			}
@@ -499,14 +501,14 @@ func (vm *VM) loop(base int) object.Object {
 			if !okStart || !okEnd {
 				return vm.errorAt(f, ip, "range bounds must be integers, got %s and %s", evaluator.TypeName(start), evaluator.TypeName(end))
 			}
-			vm.push(&rangeIterator{next: s.Value, end: e.Value})
+			vm.push(&rangeIterator{next: s.Value, end: e.Value, ints: &vm.ints})
 
 		case code.OpIterNext:
 			target := int(code.ReadUint16(ins[ip+1:]))
 			pairs := ins[ip+3] == 1
 			f.ip += 3
 			it := vm.stack[vm.sp-1].(iterator)
-			key, value, ok := it.Next()
+			key, value, ok := it.Next(pairs || it.KeysFirst())
 			switch {
 			case !ok:
 				f.ip = target
@@ -974,20 +976,20 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 			a, b := l.Value, r.Value
 			switch op {
 			case code.OpAdd:
-				return newInt(a + b)
+				return vm.ints.get(a + b)
 			case code.OpSub:
-				return newInt(a - b)
+				return vm.ints.get(a - b)
 			case code.OpMul:
 				if a > -(1<<30) && a < 1<<30 && b > -(1<<30) && b < 1<<30 {
-					return newInt(a * b)
+					return vm.ints.get(a * b)
 				}
 			case code.OpDiv:
 				if b != 0 {
-					return newInt(a / b)
+					return vm.ints.get(a / b)
 				}
 			case code.OpMod:
 				if b != 0 {
-					return newInt(a % b)
+					return vm.ints.get(a % b)
 				}
 			case code.OpLessThan:
 				return nativeBool(a < b)
@@ -1040,11 +1042,27 @@ var smallInts = func() (ints [smallIntMax - smallIntMin + 1]*object.Integer) {
 	return ints
 }()
 
-func newInt(n int64) *object.Integer {
+// intBlock is how many integers ints allocates at a time.
+const intBlock = 128
+
+// ints makes integers in blocks, as one allocation of many costs far less
+// than one for each. A block is freed once none of its integers is used.
+// Each VM has its own, as VMs can run on different goroutines.
+type ints struct {
+	free []object.Integer
+}
+
+func (a *ints) get(n int64) *object.Integer {
 	if n >= smallIntMin && n <= smallIntMax {
 		return smallInts[n-smallIntMin]
 	}
-	return &object.Integer{Value: n}
+	if len(a.free) == 0 {
+		a.free = make([]object.Integer, intBlock)
+	}
+	i := &a.free[0]
+	a.free = a.free[1:]
+	i.Value = n
+	return i
 }
 
 // positioned gives an error raised by the instruction at ip its position,
