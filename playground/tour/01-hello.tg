@@ -1,7 +1,8 @@
 // Lesson 1: Hello, TargaScript
 //
 // print writes values separated by spaces. Strings use double quotes,
-// and ${...} puts any expression inside a string.
+// and ${...} puts any expression inside a string, formatted with
+// ${value:spec} if you like.
 //
 // Press Run (or Ctrl+Enter), change something, and run again.
 
@@ -11,3 +12,4 @@ let name = "TargaScript"
 let year = 2025
 print("Hello from ${name}, born in ${year}!")
 print("2 + 2 =", 2 + 2)
+print("Pi is about ${3.14159:.2f}, and 42 padded is [${42:5d}]")

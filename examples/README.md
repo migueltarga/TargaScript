@@ -135,6 +135,8 @@ Strings support the following method-style operations:
 
 `repeat c in str { ... }` iterates over the characters of a string.
 
+`"${value}"` puts any value in a string, and `"${value:spec}"` formats it like `format("%spec", value)`: `"${price:.2f}"`, `"${count:5d}"`, `"${name:-10s}"`.
+
 Example of string method chaining:
 ```
 // Using method-style notation

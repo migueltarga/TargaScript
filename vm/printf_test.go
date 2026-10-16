@@ -51,11 +51,11 @@ func TestPrintfErrors(t *testing.T) {
 		{`printf("%s")`, "not enough arguments for printf"},
 		{`printf("%d", 1, 2)`, "too many arguments for printf: format uses 1 of the 2 given"},
 		{`printf("plain", 1)`, "too many arguments for printf"},
-		{`printf("%d", "x")`, "printf verb %d does not accept STRING"},
-		{`printf("%d", 1.5)`, "printf verb %d does not accept FLOAT"},
-		{`printf("%t", 1)`, "printf verb %t does not accept INTEGER"},
+		{`printf("%d", "x")`, "printf verb %d does not accept a string"},
+		{`printf("%d", 1.5)`, "printf verb %d does not accept a float"},
+		{`printf("%t", 1)`, "printf verb %t does not accept an integer"},
 		{`printf("%y", 1)`, "unknown printf verb %y"},
-		{`printf("%*d", "w", 1)`, "printf width given by * must be an INTEGER"},
+		{`printf("%*d", "w", 1)`, "printf width given by * must be an integer"},
 		{`printf("50%")`, "printf format ends with an incomplete verb"},
 	}
 
