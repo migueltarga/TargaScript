@@ -640,6 +640,16 @@ func (c *Compiler) emitDefine(s *Symbol) {
 	}
 }
 
+// knows reports whether a name is a variable, a builtin or a constant of
+// the program.
+func (c *Compiler) knows(name string) bool {
+	if _, ok := c.resolve(name); ok {
+		return true
+	}
+	_, ok := evaluator.Constant(name)
+	return ok
+}
+
 // itIsVariable reports whether it is a variable of the program where an
 // argument uses it, so the argument isn't a function of it. The it of an
 // argument around this one doesn't count: the innermost argument has its
@@ -994,6 +1004,12 @@ func (c *Compiler) compileAccess(node ast.Expression) error {
 		c.emit(node.Token, code.OpCallMethod, c.addConstant(&object.String{Value: node.Method.Value}), len(node.Arguments), c.cache())
 
 	case *ast.CallExpression:
+		if name, ok := node.Function.(*ast.Identifier); ok && node.Piped && !c.knows(name.Value) {
+			// value |> map(f) is value.map(f)
+			return c.compileExpression(&ast.MethodCallExpression{
+				Token: node.Token, Object: node.Arguments[0], Method: name, Arguments: node.Arguments[1:],
+			})
+		}
 		if err := c.compileExpression(node.Function); err != nil {
 			return err
 		}

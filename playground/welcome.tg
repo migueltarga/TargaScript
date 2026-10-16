@@ -5,10 +5,10 @@
 fn greet(name = "world") { "Hello, ${name}!" }
 print(greet())
 
-// Pipes and array methods; it is the value going through
+// Pipes and array methods: it is each value
 (1..10)
-    |> it.map(it * it)
-    |> it.filter(it % 2 == 0)
+    |> map(it * it)
+    |> filter(it % 2 == 0)
     |> print
 
 // match, with guards
