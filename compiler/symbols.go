@@ -49,6 +49,12 @@ func (g *GlobalTable) define(name string) *Symbol {
 	return s
 }
 
+// Define declares a global and returns its index, for values the host
+// provides before running code.
+func (g *GlobalTable) Define(name string) int {
+	return g.define(name).Index
+}
+
 // Names returns the names of the globals, by index.
 func (g *GlobalTable) Names() []string {
 	return g.names

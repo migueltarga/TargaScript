@@ -7,26 +7,52 @@ import (
 	"io"
 
 	"github.com/migueltarga/TargaScript/ast"
+	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
+	"github.com/migueltarga/TargaScript/vm"
 )
 
 const PROMPT = ">> "
 
 func EvalSource(source string, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
-	return evalSource(source, newEnvironment(), out, noColor, debug, isRepl, trace)
+	return evalSource(source, newSession(), out, noColor, debug, isRepl, trace)
 }
 
-func newEnvironment() *object.Environment {
-	env := object.NewEnvironment()
-	env.Set("NULL", evaluator.NULL)
-	return env
+// session keeps the variables of a program between REPL lines. Code runs on
+// the bytecode VM, or on the evaluator in trace mode, which only it supports.
+type session struct {
+	compiler *compiler.Compiler
+	machine  *vm.VM
+	env      *object.Environment
 }
 
-func evalSource(source string, env *object.Environment, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
+func newSession() *session {
+	c := compiler.New()
+	c.Dir = evaluator.MainDir()
+	s := &session{compiler: c, machine: vm.New(c.Globals()), env: object.NewEnvironment()}
+
+	s.env.Set("NULL", evaluator.NULL)
+	s.machine.SetGlobal("NULL", evaluator.NULL)
+	return s
+}
+
+// run evaluates a parsed program and returns its value or error.
+func (s *session) run(program *ast.Program, trace bool) object.Object {
+	if trace {
+		return evaluator.Eval(program, s.env)
+	}
+	bytecode, err := s.compiler.Compile(program)
+	if err != nil {
+		return &object.Error{Message: err.Error()}
+	}
+	return s.machine.Run(bytecode)
+}
+
+func evalSource(source string, sess *session, out io.Writer, noColor bool, debug bool, isRepl bool, trace bool) error {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParseProgram()
@@ -63,7 +89,7 @@ func evalSource(source string, env *object.Environment, out io.Writer, noColor b
 			}
 		}()
 
-		evaluated = evaluator.Eval(program, env)
+		evaluated = sess.run(program, trace)
 	}()
 
 	if isRepl && evaluated != nil && evaluated.Type() != object.NULL_OBJ &&
@@ -88,7 +114,7 @@ func evalSource(source string, env *object.Environment, out io.Writer, noColor b
 
 func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 	scanner := bufio.NewScanner(in)
-	env := newEnvironment()
+	sess := newSession()
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -98,7 +124,7 @@ func Start(in io.Reader, out io.Writer, noColor bool, debug bool, trace bool) {
 		}
 
 		line := scanner.Text()
-		evalSource(line, env, out, noColor, debug, true, trace)
+		evalSource(line, sess, out, noColor, debug, true, trace)
 	}
 }
 

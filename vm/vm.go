@@ -78,9 +78,34 @@ func (vm *VM) Run(bytecode *compiler.Bytecode) object.Object {
 	return vm.run(0)
 }
 
+// SetGlobal defines a global with a value, for values the host provides,
+// like the js object in the browser.
+func (vm *VM) SetGlobal(name string, value object.Object) {
+	i := vm.names.Define(name)
+	for len(vm.globals) <= i {
+		vm.globals = append(vm.globals, nil)
+	}
+	vm.globals[i] = value
+}
+
+var (
+	// Closures running for code outside a VM, each nested in Go's stack
+	nestedRuns int
+
+	// MaxNestedRuns limits nestedRuns where the native stack is small, as
+	// in WebAssembly. Zero means no limit.
+	MaxNestedRuns int
+)
+
 // CallClosure runs a closure for code outside the VM, such as a builtin that
 // takes a function, and returns its result.
 func (vm *VM) CallClosure(cl *object.Closure, args []object.Object) object.Object {
+	if MaxNestedRuns > 0 && nestedRuns >= MaxNestedRuns {
+		return evaluator.NewError(0, 0, "maximum call depth exceeded")
+	}
+	nestedRuns++
+	defer func() { nestedRuns-- }()
+
 	base := len(vm.frames)
 	vm.push(cl)
 	for _, arg := range args {
@@ -494,7 +519,8 @@ func (vm *VM) loop(base int) object.Object {
 // callClosure starts a call to the closure below the argc arguments on the
 // stack.
 func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
-	if len(vm.frames) >= evaluator.MaxCallDepth {
+	// The main program has a frame too, which isn't a call
+	if len(vm.frames) > evaluator.MaxCallDepth {
 		return evaluator.NewError(0, 0, "maximum call depth exceeded (%d)", evaluator.MaxCallDepth)
 	}
 

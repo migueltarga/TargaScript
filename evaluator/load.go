@@ -27,6 +27,11 @@ func SetMainDir(dir string) {
 	mainDir = dir
 }
 
+// MainDir returns the directory set by SetMainDir.
+func MainDir() string {
+	return mainDir
+}
+
 // ResetModules forgets the files loaded so far, so they run again when
 // loaded.
 func ResetModules() {

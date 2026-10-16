@@ -200,7 +200,7 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 			}
 		}
 		return hash, true
-	case *object.Function, *object.Builtin:
+	case *object.Function, *object.Builtin, *object.Closure:
 		if h, ok := callbackHandles[obj]; ok {
 			return h, false
 		}
@@ -278,9 +278,17 @@ func MakeString(text string) uint32 {
 
 // ConsoleError writes message with console.error.
 func ConsoleError(message string) {
-	console := Global().Get("console")
-	if c, ok := console.(*Value); ok {
-		c.CallMethod("error", []object.Object{&object.String{Value: message}})
+	console("error", message)
+}
+
+// ConsoleLog writes message with console.log.
+func ConsoleLog(message string) {
+	console("log", message)
+}
+
+func console(method, message string) {
+	if c, ok := Global().Get("console").(*Value); ok {
+		c.CallMethod(method, []object.Object{&object.String{Value: message}})
 	}
 }
 
