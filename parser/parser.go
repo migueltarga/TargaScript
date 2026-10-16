@@ -1381,6 +1381,19 @@ func (p *Parser) parseInterpolation(source string) ast.Expression {
 		return nil
 	}
 
+	// ${value:spec} formats the value like format("%spec", value)
+	if expression, spec, ok := splitFormatSpec(source); ok {
+		if !validFormatSpec(spec) {
+			p.errorAt(p.curToken.Line, p.curToken.Column, "in ${%s}: %q is not a format like .2f, 5d or -10s", source, spec)
+			return nil
+		}
+		value := p.parseInterpolation(expression)
+		if value == nil {
+			return nil
+		}
+		return &ast.FormatExpression{Token: p.curToken, Value: value, Spec: spec}
+	}
+
 	sub := New(lexer.New(source))
 	expr := sub.parseExpression(LOWEST)
 	if len(sub.errors) == 0 && !sub.peekTokenIs(token.EOF) {
@@ -1395,6 +1408,48 @@ func (p *Parser) parseInterpolation(source string) ast.Expression {
 		return nil
 	}
 	return expr
+}
+
+// splitFormatSpec splits "value:spec" at its first colon outside brackets,
+// parentheses, braces and strings.
+func splitFormatSpec(source string) (string, string, bool) {
+	depth := 0
+	inString := false
+	for i := 0; i < len(source); i++ {
+		switch c := source[i]; {
+		case inString && c == '\\':
+			i++
+		case c == '"':
+			inString = !inString
+		case inString:
+		case c == '(' || c == '[' || c == '{':
+			depth++
+		case c == ')' || c == ']' || c == '}':
+			depth--
+		case c == ':' && depth == 0:
+			return source[:i], source[i+1:], true
+		}
+	}
+	return "", "", false
+}
+
+// validFormatSpec reports whether spec is a printf format without the %,
+// like .2f, 5d, -10s or 08.3f.
+func validFormatSpec(spec string) bool {
+	if spec == "" {
+		return false
+	}
+	for i, c := range spec {
+		last := i == len(spec)-1
+		switch {
+		case last && strings.ContainsRune("dfFeEgGsqvxXobct", c):
+			return true
+		case !last && strings.ContainsRune("+-# 0123456789.", c):
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // matchingBrace returns the index of the "}" closing the "{" at open,

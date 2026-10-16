@@ -802,3 +802,14 @@ func (me *MatchExpression) String() string {
 	}
 	return "match " + me.Subject.String() + " { " + strings.Join(arms, "; ") + " }"
 }
+
+// FormatExpression formats a value inside a string: ${price:.2f}.
+type FormatExpression struct {
+	Token token.Token
+	Value Expression
+	Spec  string // the format without its %, like .2f
+}
+
+func (fe *FormatExpression) expressionNode()      {}
+func (fe *FormatExpression) TokenLiteral() string { return fe.Token.Literal }
+func (fe *FormatExpression) String() string       { return fe.Value.String() + ":" + fe.Spec }

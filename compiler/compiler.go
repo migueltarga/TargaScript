@@ -909,6 +909,16 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 	case *ast.MatchExpression:
 		return c.compileMatch(node)
 
+	case *ast.FormatExpression:
+		// format("%spec", value), with the builtin even if a variable is
+		// named format
+		c.emit(token.Token{}, code.OpGetBuiltin, c.builtinIndex["format"])
+		c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.String{Value: "%" + node.Spec}))
+		if err := c.compileOperand(node.Value); err != nil {
+			return err
+		}
+		c.emit(node.Token, code.OpCall, 2)
+
 	case *ast.AwaitExpression:
 		if err := c.compileExpression(node.Value); err != nil {
 			return err

@@ -51,7 +51,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 				n, ok := arg.(*object.Integer)
 				if !ok {
 					return "", &object.Error{Message: fmt.Sprintf(
-						"printf %s given by * must be an INTEGER, got %s", part, arg.Type())}
+						"printf %s given by * must be an integer, got %s", part, typeName(arg))}
 				}
 				values = append(values, int(n.Value))
 				i++
@@ -134,5 +134,5 @@ func printfValue(verb rune, arg object.Object) (interface{}, *object.Error) {
 	}
 
 	return nil, &object.Error{Message: fmt.Sprintf(
-		"printf verb %%%c does not accept %s", verb, arg.Type())}
+		"printf verb %%%c does not accept %s", verb, typeName(arg))}
 }
