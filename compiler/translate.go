@@ -41,7 +41,7 @@ func inRegister(r int) where { return where{register: r, constant: -1} }
 // translation is the state of translating one function.
 type translation struct {
 	in        instructions
-	flow      *flow
+	flow      *emitFlow
 	numLocals int
 	cells     []bool
 	constants []object.Object
@@ -84,10 +84,9 @@ type translationError struct{ message string }
 
 // translate returns the register code of a function's stack code, its
 // positions, and how many registers it needs.
-func translate(ins instructions, positions []object.Position, numLocals int, cells []bool, constants []object.Object) (out []code.Word, pos []object.Position, registers int, err error) {
-	flow, err := analyze(ins)
-	if err != nil {
-		return nil, nil, 0, err
+func translate(ins instructions, flow *emitFlow, positions []object.Position, numLocals int, cells []bool, constants []object.Object) (out []code.Word, pos []object.Position, registers int, err error) {
+	if flow.err != nil {
+		return nil, nil, 0, flow.err
 	}
 	t := &translation{
 		in: ins, flow: flow, numLocals: numLocals, cells: cells, constants: constants,
@@ -716,18 +715,14 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		// Loops need no instructions: break and continue are jumps
 
 	case code.OpBreak:
-		loops := t.flow.loops[at]
-		loop := loops[len(loops)-1]
-		if open := t.flow.tries[at] - loop.tries; open > 0 {
-			t.emit(at, code.RTryEnd, open, 0, 0)
+		b := t.flow.breaks[at]
+		if b.tries > 0 {
+			t.emit(at, code.RTryEnd, b.tries, 0, 0)
 		}
-		target := loop.breakTo
-		if t.u16(at, 0) == 1 {
-			target = loop.continueTo
-		}
+		target := b.target
 		// The values the loop started with are in their places already,
 		// as the loop's start is a place jumps go to
-		t.stack = t.stack[:loop.depth]
+		t.stack = t.stack[:b.depth]
 		t.place(at, 0)
 		t.jump(at, code.RJump, 0, 0, 0, 0, target)
 
