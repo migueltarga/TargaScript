@@ -1,0 +1,245 @@
+// playground.tg
+// ===============================================================
+// The TargaScript playground. Everything the page does is written
+// here in TargaScript and runs in the browser through WebAssembly.
+// Programs run in a worker (runner.tg), so a long loop never
+// freezes the page.
+// ===============================================================
+
+let doc = js.document
+let byId = fn(id) { doc.getElementById(id) }
+
+let code = byId("code")
+let highlight = byId("highlight")
+let gutter = byId("gutter")
+let output = byId("output")
+let status = byId("status")
+let runButton = byId("run")
+let stopButton = byId("stop")
+let shareButton = byId("share")
+let examples = byId("examples")
+
+const TIME_LIMIT = 10000
+
+// SECTION 1: Syntax highlighting
+// ------------------------------
+// One regular expression finds comments, strings, numbers, keywords
+// and function calls. Everything else is matched one run at a time.
+
+let tokenPattern = js.RegExp.new(
+    "(//[^\\n]*|/\\*[\\s\\S]*?(?:\\*/|$))" +
+    "|(\"(?:\\\\[\\s\\S]|[^\"\\\\])*\"?)" +
+    "|(\\b\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?\\b)" +
+    "|(\\b(?:let|const|fn|if|else|return|repeat|in|break|continue|load|as|print|true|false|null)\\b)" +
+    "|(\\b[A-Za-z_]\\w*(?=\\s*\\())" +
+    "|([^/\"\\w]+|[\\s\\S])",
+    "g"
+)
+
+fn escapeHtml(text) {
+    text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+}
+
+fn span(kind, text) {
+    "<span class=\"tok-${kind}\">${escapeHtml(text)}</span>"
+}
+
+fn colorToken(match, comment, string, number, keyword, call) {
+    if comment != null { return span("comment", match) }
+    if string != null { return span("string", match) }
+    if number != null { return span("number", match) }
+    if keyword != null { return span("keyword", match) }
+    if call != null { return span("call", match) }
+    escapeHtml(match)
+}
+
+fn render() {
+    let source = code.value
+    // A trailing newline keeps the last line visible in the overlay
+    highlight.innerHTML = js.String.prototype.replace.call(source, tokenPattern, colorToken) + "\n"
+
+    let lines = source.split("\n").length
+    let numbers = []
+    repeat n in 1..lines { numbers.insert(n) }
+    gutter.textContent = numbers.join("\n")
+    syncScroll()
+}
+
+fn syncScroll() {
+    highlight.scrollTop = code.scrollTop
+    highlight.scrollLeft = code.scrollLeft
+    gutter.scrollTop = code.scrollTop
+}
+
+fn setCode(source) {
+    code.value = source
+    render()
+}
+
+code.addEventListener("input", fn(event) { render() })
+code.addEventListener("scroll", fn(event) { syncScroll() })
+code.addEventListener("keydown", fn(event) {
+    if event.key == "Enter" && (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        run()
+        return null
+    }
+    if event.key == "Tab" && !event.shiftKey {
+        event.preventDefault()
+        code.setRangeText("    ", code.selectionStart, code.selectionEnd, "end")
+        render()
+    }
+})
+
+// SECTION 2: Running programs
+// ---------------------------
+// Each run gets a fresh worker. Stop, a new run or the time limit
+// terminate it.
+
+let worker = null
+let timer = null
+
+fn finish(message) {
+    if worker != null {
+        worker.terminate()
+        worker = null
+    }
+    if timer != null {
+        js.clearTimeout(timer)
+        timer = null
+    }
+    runButton.disabled = false
+    stopButton.disabled = true
+    status.textContent = message
+}
+
+fn showError(text) {
+    let line = doc.createElement("span")
+    line.className = "error"
+    line.textContent = text + "\n"
+    output.appendChild(line)
+}
+
+fn run() {
+    if worker != null { finish("") }
+    output.textContent = ""
+    status.textContent = "Running..."
+    runButton.disabled = true
+    stopButton.disabled = false
+
+    let started = js.performance.now()
+    let current = js.Worker.new("targascript.js?src=runner.tg")
+    worker = current
+
+    current.onmessage = fn(event) {
+        let message = event.data
+        if message.type == "ready" {
+            current.postMessage(code.value)
+        } else if message.type == "output" {
+            output.append(message.text)
+        } else if message.type == "done" {
+            if message.error != null { showError(message.error) }
+            let elapsed = round(js.performance.now() - started)
+            finish("Finished in ${elapsed} ms")
+        }
+    }
+
+    current.onerror = fn(event) {
+        event.preventDefault()
+        showError("The program crashed: ${event.message}")
+        finish("Crashed")
+    }
+
+    timer = js.setTimeout(fn() {
+        showError("Stopped after ${TIME_LIMIT / 1000} seconds.")
+        finish("Timed out")
+    }, TIME_LIMIT)
+}
+
+runButton.addEventListener("click", fn(event) { run() })
+stopButton.addEventListener("click", fn(event) {
+    showError("Stopped.")
+    finish("Stopped")
+})
+
+// SECTION 3: Sharing
+// ------------------
+// The code is compressed and stored in the address after #code=, so
+// a link carries the whole program.
+
+fn toBase64Url(bytes) {
+    let binary = js.String.fromCharCode.apply(null, bytes)
+    js.btoa(binary).replace("+", "-").replace("/", "_").replace("=", "")
+}
+
+fn compress(text) {
+    let stream = js.Blob.new([text]).stream().pipeThrough(js.CompressionStream.new("deflate-raw"))
+    js.Response.new(stream).arrayBuffer().then(fn(buffer) {
+        toBase64Url(js.Uint8Array.new(buffer))
+    })
+}
+
+// Fetching a data: URL turns the base64 back into bytes
+fn decompress(text) {
+    let base64 = text.replace("-", "+").replace("_", "/")
+    js.fetch("data:application/octet-stream;base64," + base64).then(fn(response) {
+        let stream = response.body.pipeThrough(js.DecompressionStream.new("deflate-raw"))
+        js.Response.new(stream).text()
+    })
+}
+
+shareButton.addEventListener("click", fn(event) {
+    compress(code.value).then(fn(encoded) {
+        js.history.replaceState(null, "", "#code=" + encoded)
+        let showLabel = fn(label) {
+            shareButton.textContent = label
+            js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
+        }
+        // Without clipboard access the link is still in the address bar
+        js.navigator.clipboard.writeText(js.location.href).then(
+            fn(result) { showLabel("Link copied") },
+            fn(error) { showLabel("Link in address bar") }
+        )
+    })
+})
+
+// SECTION 4: Examples
+// -------------------
+// examples/index.txt lists the files from the repository's examples.
+
+fn fetchText(path) {
+    js.fetch(path).then(fn(response) { response.text() })
+}
+
+fetchText("examples/index.txt").then(fn(list) {
+    repeat name in list.trim().split("\n") {
+        let option = doc.createElement("option")
+        option.value = name
+        option.textContent = name.replace(".tg", "").replace("_", " ")
+        examples.appendChild(option)
+    }
+})
+
+examples.addEventListener("change", fn(event) {
+    let name = examples.value
+    if name == "" { return null }
+    fetchText("examples/" + name).then(fn(source) {
+        js.history.replaceState(null, "", js.location.pathname)
+        setCode(source)
+        output.textContent = ""
+        status.textContent = ""
+    })
+})
+
+// SECTION 5: Start
+// ----------------
+
+let hash = js.location.hash
+if hash.startsWith("#code=") {
+    decompress(hash.replace("#code=", "")).then(fn(source) { setCode(source) })
+} else {
+    fetchText("welcome.tg").then(fn(source) { setCode(source) })
+}
+
+runButton.disabled = false
+status.textContent = "Ready"
