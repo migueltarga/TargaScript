@@ -653,6 +653,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			if result, ok := evalMoreArrayMethod(obj, method, args, line, column); ok {
 				return result
 			}
+			if result, ok := evalArrayChangeMethod(obj, method, args, line, column); ok {
+				return result
+			}
 			return newError(line, column, "arrays have no method %q%s", method, suggestion(method, arrayMethods))
 		}
 	case *object.Hash:
@@ -713,13 +716,23 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 				}
 			}
 
-			candidates := append([]string{}, hashMethods...)
+			// Methods an object's own functions don't override
+			if fn, ok := moreHashMethods[method]; ok {
+				return withPosition(fn(obj, args), line, column)
+			}
+
+			// The object's own functions are suggested before the methods
+			own := []string{}
 			for _, pair := range obj.Pairs {
 				if name, ok := pair.Key.(*object.String); ok && isCallable(pair.Value) {
-					candidates = append(candidates, name.Value)
+					own = append(own, name.Value)
 				}
 			}
-			return newError(line, column, "object has no method %q%s", method, suggestion(method, candidates))
+			hint := suggestion(method, own)
+			if hint == "" {
+				hint = suggestion(method, append([]string{}, hashMethods...))
+			}
+			return newError(line, column, "object has no method %q%s", method, hint)
 		}
 	default:
 		return newError(line, column, "cannot call method %q on %s", method, typeName(obj))

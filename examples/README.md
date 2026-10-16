@@ -12,6 +12,7 @@ TargaScript provides a rich set of built-in functions for common operations:
 
 - `print(...args)` - Print values to standard output
 - `printf(format, ...args)` - Print formatted values using format specifiers
+- `format(format, ...args)` - Format values like `printf`, returning the text instead of printing it
 - `type(arg)` - Return the type of a value as a string
 - `range(start, end)` - Create an array with integers from start to end (inclusive)
 
@@ -155,6 +156,17 @@ Arrays support the following method-style operations:
 - `array.flatten(depth)` - Nested arrays replaced by their elements, `depth` levels deep (1 by default)
 - `array.groupBy(function)` - An object of arrays, grouping the elements by what the function returns
 - `array.sortBy(function)` - Sort the array in place by what the function returns for each element, and return it
+- `array.pop()` / `array.shift()` - Remove and return the last or first element, or `null` when empty
+- `array.unshift(value)` - Add a value at the start of the array and return it
+- `array.removeAt(position)` - Remove and return the element at a position; negative positions count from the end
+
+#### Object Methods
+
+- `object.keys()` / `object.values()` - The keys or values, in insertion order
+- `object.entries()` - `[key, value]` pairs, in insertion order
+- `object.has(key)` - Whether the object has a key
+- `object.get(key, default)` - The value of a key, or `default` (null if not given) when it's missing
+- `object.remove(key)` - Remove a key and return its value
 
 Example of array method chaining:
 ```

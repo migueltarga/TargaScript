@@ -202,6 +202,22 @@ func (h *Hash) Set(key Hashable, value Object) {
 	h.Pairs[hashKey] = HashPair{Key: key.(Object), Value: value}
 }
 
+// Delete removes a key, reporting whether it was there.
+func (h *Hash) Delete(key Hashable) bool {
+	hashKey := key.HashKey()
+	if _, exists := h.Pairs[hashKey]; !exists {
+		return false
+	}
+	delete(h.Pairs, hashKey)
+	for i, k := range h.Order {
+		if k == hashKey {
+			h.Order = append(h.Order[:i], h.Order[i+1:]...)
+			break
+		}
+	}
+	return true
+}
+
 // OrderedPairs returns the pairs in insertion order.
 func (h *Hash) OrderedPairs() []HashPair {
 	pairs := make([]HashPair, 0, len(h.Order))
