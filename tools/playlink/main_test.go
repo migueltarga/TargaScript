@@ -17,16 +17,20 @@ func TestLinkRoundTrip(t *testing.T) {
 	}
 }
 
-// Every playground link in the README opens code that runs without a
-// problem, so the links can't fall behind the language.
+// Every playground link in the README and the docs opens code that runs
+// without a problem, so the links can't fall behind the language.
 func TestReadmeLinks(t *testing.T) {
-	readme, err := os.ReadFile("../../README.md")
-	if err != nil {
-		t.Fatal(err)
-	}
-	links := regexp.MustCompile(`https://migueltarga\.github\.io/TargaScript/#code=[A-Za-z0-9_-]+`).FindAllString(string(readme), -1)
-	if len(links) == 0 {
-		t.Fatal("no playground links in the README")
+	links := []string{}
+	for _, file := range []string{"../../README.md", "../../docs/COOKBOOK.md"} {
+		text, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := regexp.MustCompile(`https://migueltarga\.github\.io/TargaScript/#code=[A-Za-z0-9_-]+`).FindAllString(string(text), -1)
+		if len(found) == 0 {
+			t.Fatalf("no playground links in %s", file)
+		}
+		links = append(links, found...)
 	}
 	for _, link := range links {
 		code, err := Code(link)
