@@ -67,7 +67,7 @@ func init() {
 				format, ok := args[0].(*object.String)
 				if !ok {
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to printf must be a STRING, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to printf must be a string, got %s", typeName(args[0])),
 					}
 				}
 
@@ -95,14 +95,14 @@ func init() {
 				start, ok := args[0].(*object.Integer)
 				if !ok {
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to range must be INTEGER, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to range must be an integer, got %s", typeName(args[0])),
 					}
 				}
 
 				end, ok := args[1].(*object.Integer)
 				if !ok {
 					return &object.Error{
-						Message: fmt.Sprintf("second argument to range must be INTEGER, got %s", args[1].Type()),
+						Message: fmt.Sprintf("second argument to range must be an integer, got %s", typeName(args[1])),
 					}
 				}
 
@@ -174,7 +174,7 @@ func init() {
 					value, err := strconv.ParseInt(arg.Value, 10, 64)
 					if err != nil {
 						return &object.Error{
-							Message: fmt.Sprintf("could not convert string '%s' to INTEGER", arg.Value),
+							Message: fmt.Sprintf("cannot convert %q to an integer", arg.Value),
 						}
 					}
 					return &object.Integer{Value: value}
@@ -185,7 +185,7 @@ func init() {
 					return &object.Integer{Value: 0}
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `toInt` not supported, got %s", args[0].Type()),
+						Message: fmt.Sprintf("cannot convert %s to an integer", typeName(args[0])),
 					}
 				}
 			},
@@ -210,7 +210,7 @@ func init() {
 					value, err := strconv.ParseFloat(arg.Value, 64)
 					if err != nil {
 						return &object.Error{
-							Message: fmt.Sprintf("could not convert string '%s' to FLOAT", arg.Value),
+							Message: fmt.Sprintf("cannot convert %q to a float", arg.Value),
 						}
 					}
 					return &object.Float{Value: value}
@@ -221,7 +221,7 @@ func init() {
 					return &object.Float{Value: 0.0}
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `toFloat` not supported, got %s", args[0].Type()),
+						Message: fmt.Sprintf("cannot convert %s to a float", typeName(args[0])),
 					}
 				}
 			},
@@ -251,7 +251,7 @@ func init() {
 					return &object.Float{Value: math.Abs(arg.Value)}
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `abs` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("argument to `abs` must be a number, got %s", typeName(args[0])),
 					}
 				}
 			},
@@ -275,7 +275,7 @@ func init() {
 					value = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `sqrt` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("argument to `sqrt` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -308,7 +308,7 @@ func init() {
 					base = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to `pow` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to `pow` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -319,7 +319,7 @@ func init() {
 					exponent = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("second argument to `pow` must be a number, got %s", args[1].Type()),
+						Message: fmt.Sprintf("second argument to `pow` must be a number, got %s", typeName(args[1])),
 					}
 				}
 
@@ -345,7 +345,7 @@ func init() {
 					value = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `round` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("argument to `round` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -375,7 +375,7 @@ func init() {
 					value = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `floor` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("argument to `floor` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -405,7 +405,7 @@ func init() {
 					value = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("argument to `ceil` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("argument to `ceil` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -436,7 +436,7 @@ func init() {
 					val1 = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to `min` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to `min` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -447,7 +447,7 @@ func init() {
 					val2 = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("second argument to `min` must be a number, got %s", args[1].Type()),
+						Message: fmt.Sprintf("second argument to `min` must be a number, got %s", typeName(args[1])),
 					}
 				}
 
@@ -477,7 +477,7 @@ func init() {
 					val1 = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to `max` must be a number, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to `max` must be a number, got %s", typeName(args[0])),
 					}
 				}
 
@@ -488,7 +488,7 @@ func init() {
 					val2 = arg.Value
 				default:
 					return &object.Error{
-						Message: fmt.Sprintf("second argument to `max` must be a number, got %s", args[1].Type()),
+						Message: fmt.Sprintf("second argument to `max` must be a number, got %s", typeName(args[1])),
 					}
 				}
 
@@ -540,14 +540,14 @@ func init() {
 				timestamp, ok := args[0].(*object.Integer)
 				if !ok {
 					return &object.Error{
-						Message: fmt.Sprintf("first argument to `timeFormat` must be INTEGER, got %s", args[0].Type()),
+						Message: fmt.Sprintf("first argument to `timeFormat` must be an integer, got %s", typeName(args[0])),
 					}
 				}
 
 				format, ok := args[1].(*object.String)
 				if !ok {
 					return &object.Error{
-						Message: fmt.Sprintf("second argument to `timeFormat` must be STRING, got %s", args[1].Type()),
+						Message: fmt.Sprintf("second argument to `timeFormat` must be a string, got %s", typeName(args[1])),
 					}
 				}
 

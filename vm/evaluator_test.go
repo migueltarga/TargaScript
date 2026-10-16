@@ -233,7 +233,7 @@ if 10 > 1 {
 		},
 		{
 			`{"name": "Monkey"}[fn(x) { x }]`,
-			"unusable as hash key: FUNCTION",
+			"a function can't be an object key",
 		},
 		{
 			`999[1]`,

@@ -51,8 +51,8 @@ func TestRangeErrors(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"1..2.5", "range bounds must be integers, got INTEGER..FLOAT"},
-		{`"a".."c"`, "range bounds must be integers, got STRING..STRING"},
+		{"1..2.5", "range bounds must be integers, got an integer and a float"},
+		{`"a".."c"`, "range bounds must be integers, got a string and a string"},
 		{"repeat i in 1..\"x\" { }", "range bounds must be integers"},
 		{"1..100000000", "range too large"},
 		{"range(1, 100000000)", "range too large"},

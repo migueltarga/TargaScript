@@ -227,7 +227,7 @@ func (vm *VM) loop(base int) object.Object {
 			for i := start; i < vm.sp; i += 2 {
 				key, ok := vm.stack[i].(object.Hashable)
 				if !ok {
-					return vm.errorAt(f, ip, "unusable as hash key: %s", vm.stack[i].Type())
+					return vm.errorAt(f, ip, "%s can't be an object key", evaluator.TypeName(vm.stack[i]))
 				}
 				hash.Set(key, vm.stack[i+1])
 			}
@@ -367,7 +367,7 @@ func (vm *VM) loop(base int) object.Object {
 			s, okStart := start.(*object.Integer)
 			e, okEnd := end.(*object.Integer)
 			if !okStart || !okEnd {
-				return vm.errorAt(f, ip, "range bounds must be integers, got %s..%s", start.Type(), end.Type())
+				return vm.errorAt(f, ip, "range bounds must be integers, got %s and %s", evaluator.TypeName(start), evaluator.TypeName(end))
 			}
 			vm.push(&rangeIterator{next: s.Value, end: e.Value})
 
@@ -578,7 +578,7 @@ func (vm *VM) loop(base int) object.Object {
 			hash := vm.stack[vm.sp-1].(*object.Hash)
 			hashable, ok := key.(object.Hashable)
 			if !ok {
-				return vm.errorAt(f, ip, "unusable as hash key: %s", key.Type())
+				return vm.errorAt(f, ip, "%s can't be an object key", evaluator.TypeName(key))
 			}
 			hash.Set(hashable, value)
 

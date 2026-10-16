@@ -25,7 +25,7 @@
  },
  "\"a\"..1": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 4: range bounds must be integers, got STRING..INTEGER"
+  "value": "ERROR ERROR at line 1, column 4: range bounds must be integers, got a string and an integer"
  },
  "\"a\"[\"x\"]": {
   "output": "",
@@ -181,7 +181,7 @@
  },
  "abs(\"x\")": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 4: argument to `abs` must be a number, got STRING"
+  "value": "ERROR ERROR at line 1, column 4: argument to `abs` must be a number, got a string"
  },
  "abs(-3)": {
   "output": "",
@@ -441,7 +441,7 @@
  },
  "let s = \"a\"\ns++": {
   "output": "",
-  "value": "ERROR ERROR at line 2, column 2: operator ++ not supported for STRING"
+  "value": "ERROR ERROR at line 2, column 2: cannot use \"++\" on a string"
  },
  "let total = 0\nfn bump() { total++ }\nbump()\nbump()\ntotal": {
   "output": "",
@@ -569,7 +569,7 @@
  },
  "repeat i in 1..\"a\" { }": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 14: range bounds must be integers, got INTEGER..STRING"
+  "value": "ERROR ERROR at line 1, column 14: range bounds must be integers, got an integer and a string"
  },
  "repeat i in 3 { continue }": {
   "output": "",
@@ -581,7 +581,7 @@
  },
  "repeat x in true { }": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 1: cannot iterate over BOOLEAN"
+  "value": "ERROR ERROR at line 1, column 1: cannot iterate over a boolean"
  },
  "toString(1.5)": {
   "output": "",
@@ -629,6 +629,6 @@
  },
  "{[1]: 2}": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 1: unusable as hash key: ARRAY"
+  "value": "ERROR ERROR at line 1, column 1: an array can't be an object key"
  }
 }
