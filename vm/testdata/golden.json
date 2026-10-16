@@ -165,7 +165,7 @@
  },
  "[1, 2].map(fn(x) {\n  x + \"a\" - 1\n})": {
   "output": "",
-  "value": "ERROR ERROR at line 2, column 5: cannot use \"+\" with an integer and a string"
+  "value": "ERROR ERROR at line 2, column 5: cannot use \"+\" with an integer and a string. To make text, put the number in the string: \"${n} items\", or start with the string"
  },
  "[1].nope": {
   "output": "",

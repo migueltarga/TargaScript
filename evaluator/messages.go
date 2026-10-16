@@ -141,9 +141,25 @@ func kindName(obj object.Object) string {
 	return strings.ToLower(string(obj.Type()))
 }
 
-// operatorError reports an operator that can't be used with its operands.
+// operatorError reports an operator that can't be used with its operands,
+// with what to write instead for the usual mix-ups.
 func operatorError(line, column int, operator string, left, right object.Object) *object.Error {
-	return newError(line, column, "cannot use %q with %s and %s", operator, typeName(left), typeName(right))
+	return newError(line, column, "cannot use %q with %s and %s%s", operator, typeName(left), typeName(right), operatorHint(operator, left, right))
+}
+
+func operatorHint(operator string, left, right object.Object) string {
+	isNumber := func(o object.Object) bool { return o.Type() == object.INTEGER_OBJ || o.Type() == object.FLOAT_OBJ }
+	switch {
+	case left.Type() == object.NULL_OBJ || right.Type() == object.NULL_OBJ:
+		return ". One side is null: check where it comes from, or give it a default with ??, as in (x ?? 0)"
+	case operator == "+" && isNumber(left) && right.Type() == object.STRING_OBJ:
+		return `. To make text, put the number in the string: "${n} items", or start with the string`
+	case operator == "+" && left.Type() == object.ARRAY_OBJ:
+		return ". To add an element, use list.insert(x), or list + [x] for a new array"
+	case operator == "+" && left.Type() == object.HASH_OBJ && right.Type() == object.HASH_OBJ:
+		return ". To combine objects, use {...a, ...b}"
+	}
+	return ""
 }
 
 // NotDefined reports an unknown name, suggesting a similar one from
