@@ -1,0 +1,42 @@
+// Builtins added since the first tests
+
+test("math", fn() {
+    assertEqual(round(sin(PI / 2), 6), 1)
+    assertEqual(hypot(3, 4), 5)
+    assertEqual(clamp(15, 0, 10), 10)
+    assertEqual(sign(-2), -1)
+    assertEqual(round(log(E), 6), 1)
+})
+
+test("dates go back and forth", fn() {
+    let t = parseTime("2026-10-16 14:30", "YYYY-MM-DD HH:mm")
+    assertEqual(timeFormat(t, "DD/MM/YYYY HH:mm"), "16/10/2026 14:30")
+})
+
+test("replacePattern takes a function", fn() {
+    let data = {name: "Ana"}
+    assertEqual("Hi {{name}}".replacePattern("\{\{(\w+)\}\}", (all, key) => data[key]), "Hi Ana")
+})
+
+test("web helpers", fn() {
+    assertEqual(escapeHTML("<b>&</b>"), "&lt;b&gt;&amp;&lt;/b&gt;")
+    assertEqual(decodeURL(encodeURL("a b&c")), "a b&c")
+})
+
+test("arrays sort by several keys", fn() {
+    let people = [{n: "Bia", c: "Rio"}, {n: "Ana", c: "SP"}, {n: "Caio", c: "Rio"}]
+    assertEqual(people.sortBy(p => [p.c, p.n]).map(p => p.n), ["Bia", "Caio", "Ana"])
+})
+
+test("objects' own properties come first", fn() {
+    assertEqual(parseJSON(`{"length": 300}`).length, 300)
+    assertEqual({a: 1, b: 2}.length, 2)
+})
+
+test("functions given to map can await", fn() {
+    let doubled = await all([1, 2, 3].map(fn(n) {
+        await sleep(1)
+        n * 2
+    }))
+    assertEqual(doubled, [2, 4, 6])
+})

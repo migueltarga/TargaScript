@@ -1,0 +1,72 @@
+// Syntax added since the first tests
+
+test("match guards pick the first arm that fits", fn() {
+    fn size(n) {
+        match n {
+            0 => "none"
+            _ if n < 0 => "negative"
+            1..9 => "small"
+            _ => "big"
+        }
+    }
+    assertEqual([-1, 0, 5, 50].map(size), ["negative", "none", "small", "big"])
+})
+
+test("patterns take defaults and renames", fn() {
+    let {name: who, port = 8080, ...rest} = {name: "api", debug: true}
+    assertEqual([who, port, rest], ["api", 8080, {debug: true}])
+    let [first, second = first * 2] = [3]
+    assertEqual(second, 6)
+})
+
+test("optional chaining reaches into arrays", fn() {
+    let grid = [[1, 2], [3, 4]]
+    assertEqual(grid[1]?.[0], 3)
+    assertEqual(grid[9]?.[0], null)
+})
+
+test("throw works where a value goes", fn() {
+    let missing = try { null ?? throw "missing" } catch e { e.message }
+    assertEqual(missing, "missing")
+})
+
+test("backtick strings keep what's written", fn() {
+    let data = parseJSON(`{"path": "C:\\temp", "tags": ["a"]}`)
+    assertEqual(data.tags, ["a"])
+    assertEqual(`a\d`, "a\\d")
+    let n = 2
+    assertEqual(`${n} + ${n}`, "2 + 2")
+})
+
+test("callbacks get the position when they ask", fn() {
+    assertEqual(["a", "b"].map((x, i) => "${i}${x}"), ["0a", "1b"])
+    assertEqual([5, 6, 7].reduce((sum, x, i) => sum + x * i, 0), 20)
+})
+
+test("this is the object of a method call", fn() {
+    let counter = {
+        count: 0,
+        add: fn(n = 1) {
+            this.count += n
+            this
+        },
+        later: fn() { [1, 2].map(x => x + this.count) },
+    }
+    counter.add().add(2)
+    assertEqual(counter.count, 3)
+    assertEqual(counter.later(), [4, 5])
+})
+
+test("functions inside functions can call each other", fn() {
+    fn outer() {
+        fn even(n) { if n == 0 { true } else { odd(n - 1) } }
+        fn odd(n) { if n == 0 { false } else { even(n - 1) } }
+        [even(4), odd(3)]
+    }
+    assertEqual(outer(), [true, true])
+})
+
+test("keywords can be keys", fn() {
+    let o = {if: 1, load: fn() { 2 }}
+    assertEqual(o.if + o.load(), 3)
+})

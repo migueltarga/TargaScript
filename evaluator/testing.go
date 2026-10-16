@@ -27,19 +27,43 @@ func testBuiltin(args ...object.Object) object.Object {
 		return &object.Error{Message: fmt.Sprintf("second argument to `test` must be a function, got %s", typeName(args[1]))}
 	}
 
-	result := applyFunction(args[1], nil)
-	if err, ok := result.(*object.Error); ok {
-		testsFailed++
-		where := ""
-		if err.Line > 0 {
-			where = fmt.Sprintf(" (line %d)", err.Line)
-		}
-		fmt.Fprintf(output, "✗ %s\n    %s%s\n", name.Value, err.Message, where)
-		return NULL
+	// A test that awaits gives a promise; the program waits for the one
+	// returned here, which settles once the test is reported, whether it
+	// passed or failed
+	result := applyFunctionAsync(args[1], nil)
+	if promise, ok := result.(*object.Promise); ok && promise.Paused {
+		reported := &object.Promise{Paused: true}
+		promise.Then(func(object.Object) {
+			reportTest(name.Value, nil)
+			reported.Resolve(NULL)
+		}, func(reason object.Object) {
+			err, ok := reason.(*object.Error)
+			if !ok {
+				err = &object.Error{Message: objectToString(reason)}
+			}
+			reportTest(name.Value, err)
+			reported.Resolve(NULL)
+		})
+		return reported
 	}
-	testsPassed++
-	fmt.Fprintf(output, "✓ %s\n", name.Value)
+	err, _ := result.(*object.Error)
+	reportTest(name.Value, err)
 	return NULL
+}
+
+// reportTest prints whether a test passed, and counts it.
+func reportTest(name string, err *object.Error) {
+	if err == nil {
+		testsPassed++
+		fmt.Fprintf(output, "✓ %s\n", name)
+		return
+	}
+	testsFailed++
+	where := ""
+	if err.Line > 0 {
+		where = fmt.Sprintf(" (line %d)", err.Line)
+	}
+	fmt.Fprintf(output, "✗ %s\n    %s%s\n", name, err.Message, where)
 }
 
 // TestResults returns how many tests passed and failed since the last
