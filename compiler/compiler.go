@@ -266,9 +266,6 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			Name:         name,
 			LocalNames:   fn.localNames,
 		}
-		if compiled.HasThis {
-			compiled.SimpleCall = -1
-		}
 		for _, s := range fn.free {
 			compiled.FreeNames = append(compiled.FreeNames, s.Name)
 		}
