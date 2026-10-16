@@ -60,9 +60,13 @@ func moduleNames(program *ast.Program, dir string, seen map[string]bool) []modul
 	for _, stmt := range program.Statements {
 		switch stmt := stmt.(type) {
 		case *ast.LetStatement:
-			byName[stmt.Name.Value] = false
+			for _, name := range bindingNames(stmt.Name, stmt.Pattern) {
+				byName[name] = false
+			}
 		case *ast.ConstStatement:
-			byName[stmt.Name.Value] = true
+			for _, name := range bindingNames(stmt.Name, stmt.Pattern) {
+				byName[name] = true
+			}
 		case *ast.FunctionStatement:
 			byName[stmt.Name.Value] = false
 		case *ast.LoadStatement:

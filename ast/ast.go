@@ -61,6 +61,9 @@ type LetStatement struct {
 	Token token.Token
 	Name  *Identifier
 	Value Expression
+
+	// Pattern replaces Name in `let [a, b] = ...` and `let {a, b} = ...`
+	Pattern *Pattern
 }
 
 func (ls *LetStatement) statementNode()       {}
@@ -69,7 +72,7 @@ func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ls.TokenLiteral() + " ")
-	out.WriteString(ls.Name.String())
+	out.WriteString(bindingString(ls.Name, ls.Pattern))
 	out.WriteString(" = ")
 
 	if ls.Value != nil {
@@ -83,6 +86,9 @@ type ConstStatement struct {
 	Token token.Token
 	Name  *Identifier
 	Value Expression
+
+	// Pattern replaces Name in `const [a, b] = ...` and `const {a, b} = ...`
+	Pattern *Pattern
 }
 
 func (cs *ConstStatement) statementNode()       {}
@@ -91,7 +97,7 @@ func (cs *ConstStatement) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(cs.TokenLiteral() + " ")
-	out.WriteString(cs.Name.String())
+	out.WriteString(bindingString(cs.Name, cs.Pattern))
 	out.WriteString(" = ")
 
 	if cs.Value != nil {
@@ -663,4 +669,32 @@ func (ts *ThrowStatement) statementNode()       {}
 func (ts *ThrowStatement) TokenLiteral() string { return ts.Token.Literal }
 func (ts *ThrowStatement) String() string {
 	return "throw " + ts.Value.String()
+}
+
+// Pattern takes values apart in a declaration: `[a, b]` takes the elements
+// of an array in order, and `{a, b}` takes the properties of an object with
+// those names.
+type Pattern struct {
+	Token  token.Token
+	Object bool
+	Names  []*Identifier
+}
+
+func (p *Pattern) String() string {
+	names := []string{}
+	for _, n := range p.Names {
+		names = append(names, n.Value)
+	}
+	if p.Object {
+		return "{" + strings.Join(names, ", ") + "}"
+	}
+	return "[" + strings.Join(names, ", ") + "]"
+}
+
+// bindingString prints what a declaration declares: a name or a pattern.
+func bindingString(name *Identifier, pattern *Pattern) string {
+	if pattern != nil {
+		return pattern.String()
+	}
+	return name.String()
 }
