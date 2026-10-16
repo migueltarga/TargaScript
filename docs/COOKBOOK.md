@@ -62,6 +62,8 @@ and   **
 bat   *
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=TI4xSwQxEIX7_IpHquRcgyCWa3Fgb2ehW8Td4TYQJyGZ4zzE_35kCcdWeZn3vZkXSSD0KxihZSXMXuB5QdPrTn970Uo1ek5nlopxi7mYLlSMdTXHIO9ehAob_fXxoK0CAHcq6ZyPV3NJZcH4ivZ2i1hKoGr698dnYz6bPyCGKpNt_G7gIvFJ1qnzNRU5Xu8R7vwjD9uRySpVKJMX3AkE7v1djWEm8zTg2eJvW5hLYNl6uuyXN17Mix2gDxoHsFX_6hYAAP__)
+
 ## Reshape JSON
 
 Patterns take what you need out of each item, with defaults for what's missing:
@@ -95,6 +97,8 @@ print(toJSON(summary, 2))
 ]
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=VI-xasQwEET7_YphKwmEISkPHC4pUyRFyuPgNjkVAq0sJBsSjP89SL7G3Qi9pxlFP2OpvlSMyFKqf__6_DC3CwErJ1HPJ_BrEnZgrxJiO0uSs_8VzdEPP5O2uzLFjspdQ-LNHfy3cPS_w9Hf6HqzRG1LXVSl_GHcVw0q2Zi1PeTQfYdWhRHcAN4sxhesBACd6qkhe7pPKiGddneoOYbZ8Jnt5enqaLOUS0izmaf-7Ue5w7O19B8AAP__)
+
 ## Do several things at once
 
 A function given to `map` that awaits gives a promise, and `all` waits for all of them, so the waits overlap:
@@ -113,6 +117,8 @@ print(squares, clock() - started < 300)
 ```output
 [1, 4, 9, 16] true
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=RI4xDsIwEAR7v2LLMzIoIZTkFZSI4hSMFHFcjH0oBeLviBBIO9LO7EVRZBgP9wfnSOrxdADAI_eGIjEmqqvKT1CxgrqXcxINxThbPKNFJ0N3Jf-lk6egnQ0sQsc6YBvQBOxOmxsnWoLeu5R7NZp34SfD-h_Yo_kceAcAAP__)
 
 ## Retry what can fail
 
@@ -139,6 +145,8 @@ print(retry(unreliable))
 ```output
 done after 3 tries
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=TJDdagMhEIXvfYrTpRfalJBQetd9GJPONhJrlnFsWGTfvfgTNl6J5xvmO3oSCDuKGHFQU0AKTN7ZkydtkBWAlu929e6mjn_hAxly4dsdwynFZcBaieH7Fgh2EmK85gqvbWZQqyormIQXLTZe3yHut-7-fCxjmskKHFzAcb9veYvKKb5MMXnBCOGlONh41QYrzlbOFxAyQvK-63TpPvMytiwXicTh8b6x9m6dIHqiWR8PeIMzNWtE7_tj_whp3loWy-eWM7sguhXdftQY9R8AAP__)
 
 ## Objects with methods
 
@@ -171,6 +179,8 @@ Ana 70
 not enough money
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=jFDRSgQxDHzvVwz7tEUtFfFFOMFPib3utXCbHt0cy7H036Ved08RxTyUJpnMJDMwyLl0ZunTzD7f452OxM5jB6uxKADtrXHFbGnD3gp7f0pTlBcM3NNYafWX6RoS4mRWjbsdrqgfkK1QbuRzlLDPNP_BHodGiNfvSgsk5DSj4yTwnM6HgDGxv3Qov-_38O_9iipKHb2AmLDbPO3emDptmi39o7XarGf0T1arU44sPTGZZn_9Nvm1K_mC5bOxjT5bq1HgSFxAvc6b0U8THTyKVh8BAAD__w)
+
 ## Test your code
 
 Put tests in files ending in `_test.tg` and run `targascript test`:
@@ -194,6 +204,8 @@ test("drops punctuation", fn() {
 ✓ drops punctuation
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=jI69TgUhEEZ7nmKcCiJsbH0AE0s7C6MJucwKBmGdGYI_ue9urpvt7b7TnPOtDaSO17J-WaVPdfBjAAAue1Eu79YttU9i6xamrcYTPURV4mbx6SWG75tw-3yNHjCgM2djlEQtvvXSBGbnJDCLZkhRMgl6WJs9GlGEWO8-Rqz2-ID3VGuHx841ofOA-cJh7mzO7igk7pvANtpJR9TS23_cxYNmYrra1SX8UdjFvwEAAP__)
+
 ## Call a web API
 
 `fetch` returns a promise, and `json()` reads the body:
@@ -205,6 +217,8 @@ if !response.ok { throw "GitHub answered ${response.status}" }
 let {full_name, stargazers_count: stars} = response.json()
 print("${full_name} has ${stars} stars")
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=RI7BasMwEETv-oqt8MGGYt0DObd_ETbuWlKraIV2haFC_14a2uQ0MMwbXiKFSlI4C8EZ8MCosJNuYbZBtcjJOSxx9VFDu64b31ylwuI8J8zeebaLiTu8_J-s_AUdNFQ-wL5FfW9XwCwHVfqAqT9moqhNhoVhzK9E31tKl4w3egVRrB6_qcpl45b1dG9kwPnhun4K53kxpcass52e-ICAAlP_Q-5hF_MTAAD__w)
 
 To send data, give `fetch` a method and a body; an object is sent as JSON:
 
