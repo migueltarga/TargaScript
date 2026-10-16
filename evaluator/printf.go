@@ -73,6 +73,9 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 					return "", &object.Error{Message: fmt.Sprintf(
 						"printf %s given by * must be an integer, got %s", part, typeName(arg))}
 				}
+				if n.Value > maxStringLength {
+					return "", &object.Error{Message: fmt.Sprintf("printf %s %d is too large", part, n.Value)}
+				}
 				if part == "width" {
 					width = int(n.Value)
 				} else {
@@ -85,6 +88,11 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 			start := i
 			for i < len(format) && format[i] >= '0' && format[i] <= '9' {
 				i++
+			}
+			if i > start {
+				if n, err := strconv.Atoi(format[start:i]); err != nil || n > maxStringLength {
+					return "", &object.Error{Message: fmt.Sprintf("printf %s %s is too large", part, format[start:i])}
+				}
 			}
 			if part == "width" && i > start {
 				width, _ = strconv.Atoi(format[start:i])
@@ -117,13 +125,14 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 			text = groupThousands(text)
 		}
 		// The width goes last, so it counts the commas
-		for pad := width - utf8.RuneCountInString(text); pad > 0; pad-- {
-			if leftAligned {
-				text += " "
-			} else if strings.Contains(spec, "0") && !grouped && isNumberText(text) {
-				text = zeroPad(text)
-			} else {
-				text = " " + text
+		if pad := width - utf8.RuneCountInString(text); pad > 0 {
+			switch {
+			case leftAligned:
+				text += strings.Repeat(" ", pad)
+			case strings.Contains(spec, "0") && !grouped && isNumberText(text):
+				text = zeroPad(text, pad)
+			default:
+				text = strings.Repeat(" ", pad) + text
 			}
 		}
 		out.WriteString(text)
@@ -166,11 +175,13 @@ func isNumberText(text string) bool {
 }
 
 // zeroPad adds one 0 after the sign of a number, as %05d does.
-func zeroPad(text string) string {
+// zeroPad puts n zeros at the start of a number, after its sign.
+func zeroPad(text string, n int) string {
+	zeros := strings.Repeat("0", n)
 	if text[0] == '+' || text[0] == '-' {
-		return text[:1] + "0" + text[1:]
+		return text[:1] + zeros + text[1:]
 	}
-	return "0" + text
+	return zeros + text
 }
 
 // printfValue converts arg to the Go value the verb expects.

@@ -1,0 +1,2 @@
+go test fuzz v1
+string("printf(\"%10000010X%X\",\"\",\"\")")
