@@ -81,11 +81,11 @@ type functionScope struct {
 	recompile bool
 
 	loops int // loops open in this function, for break and continue
+	tries []openTry
 
 	// usesThis is set when this function's this is read, by it or by an
 	// arrow function inside it; the VM sets this only then
 	usesThis bool
-	tries    []openTry
 }
 
 // openTry is a try block whose handler is open at the code being compiled,
