@@ -69,6 +69,20 @@ let age = try {
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
+## 🎛️ Default Parameters
+
+Parameters can have a default value, used when the argument is missing or null. It can use the parameters before it:
+
+```
+fn greet(name, greeting = "Hello") {
+    "${greeting}, ${name}!"
+}
+print(greet("Ana"))          // Hello, Ana!
+print(greet("Ana", "Hi"))    // Hi, Ana!
+
+fn range2(start, end = start + 10) { start..end }
+```
+
 ## 🧩 Taking Values Apart
 
 `let` and `const` can take arrays and objects apart:

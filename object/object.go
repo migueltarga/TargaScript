@@ -104,15 +104,11 @@ func (e *Error) Inspect() string {
 	return "ERROR: " + e.Message
 }
 
-// inspectFunction prints a function as its source, the same way for
-// evaluated and compiled functions.
-func inspectFunction(name string, parameters []*ast.Identifier, body *ast.BlockStatement) string {
+// inspectFunction prints a function as its source.
+func inspectFunction(name string, parameters []*ast.Identifier, defaults []ast.Expression, body *ast.BlockStatement) string {
 	var out bytes.Buffer
 
-	params := []string{}
-	for _, p := range parameters {
-		params = append(params, p.String())
-	}
+	params := ast.ParameterStrings(parameters, defaults)
 
 	out.WriteString("fn")
 	if name != "" {

@@ -35,14 +35,15 @@ type CompiledFunction struct {
 	LocalNames []string
 	FreeNames  []string
 
-	// Kept to print the function the same way as an evaluated one
+	// Kept to print the function as its source
 	Parameters []*ast.Identifier
+	Defaults   []ast.Expression
 	Body       *ast.BlockStatement
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
 func (cf *CompiledFunction) Inspect() string {
-	return inspectFunction(cf.Name, cf.Parameters, cf.Body)
+	return inspectFunction(cf.Name, cf.Parameters, cf.Defaults, cf.Body)
 }
 
 // PositionAt returns the line and column of the instruction at offset, or

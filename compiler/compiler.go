@@ -90,7 +90,7 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 		}
 	}
 
-	main, err := c.compileFunction(program, "", nil, func() error {
+	main, err := c.compileFunction(program, "", nil, nil, func() error {
 		return c.compileStatements(program.Statements)
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
 // compileFunction compiles a function body, compiling it again when a
 // closure in it turns out to capture a local the body already used without a
 // cell.
-func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Identifier, body func() error) (*object.CompiledFunction, error) {
+func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Identifier, defaults []ast.Expression, body func() error) (*object.CompiledFunction, error) {
 	captured := c.captured[node]
 	if captured == nil {
 		captured = map[int]bool{}
@@ -158,6 +158,9 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			}
 		}
 
+		if err := c.compileDefaults(params, defaults); err != nil {
+			return nil, err
+		}
 		if err := body(); err != nil {
 			return nil, err
 		}
@@ -188,6 +191,26 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 		}
 		return compiled, nil
 	}
+}
+
+// compileDefaults gives parameters their default value when they are null,
+// because their argument is missing or null.
+func (c *Compiler) compileDefaults(params []*ast.Identifier, defaults []ast.Expression) error {
+	for i, value := range defaults {
+		if value == nil {
+			continue
+		}
+		s, _ := c.fn.lookupLocal(params[i].Value)
+		c.emit(token.Token{}, code.OpGetLocal, s.Index)
+		skip := c.emit(token.Token{}, code.OpJumpNotNullKeep, 9999)
+		if err := c.compileExpression(value); err != nil {
+			return err
+		}
+		c.emit(token.Token{}, code.OpSetLocal, s.Index)
+		c.changeOperands(skip, len(c.scope.instructions))
+		c.emit(token.Token{}, code.OpPop)
+	}
+	return nil
 }
 
 // emitClosure pushes the cells a closure captures and creates it.
@@ -374,12 +397,12 @@ func (c *Compiler) compileFunctionStatement(stmt *ast.FunctionStatement) error {
 		target = existing
 	}
 
-	if _, err := c.compileFunction(stmt, name, stmt.Parameters, func() error {
+	if _, err := c.compileFunction(stmt, name, stmt.Parameters, stmt.Defaults, func() error {
 		return c.compileStatements(stmt.Body.Statements)
 	}); err != nil {
 		return err
 	}
-	c.setFunctionSource(stmt.Parameters, stmt.Body)
+	c.setFunctionSource(stmt.Parameters, stmt.Defaults, stmt.Body)
 
 	if inScope && existing.Const {
 		c.emitError(stmt.Token, "cannot reassign constant: %s", name)
@@ -416,9 +439,10 @@ func (c *Compiler) emitAssignDefined(s *Symbol) {
 
 // setFunctionSource records the source of the function just compiled, to
 // print it.
-func (c *Compiler) setFunctionSource(params []*ast.Identifier, body *ast.BlockStatement) {
+func (c *Compiler) setFunctionSource(params []*ast.Identifier, defaults []ast.Expression, body *ast.BlockStatement) {
 	fn := c.constants[len(c.constants)-1].(*object.CompiledFunction)
 	fn.Parameters = params
+	fn.Defaults = defaults
 	fn.Body = body
 }
 
@@ -786,12 +810,12 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		if node.Name != nil {
 			name = node.Name.Value
 		}
-		if _, err := c.compileFunction(node, name, node.Parameters, func() error {
+		if _, err := c.compileFunction(node, name, node.Parameters, node.Defaults, func() error {
 			return c.compileStatements(node.Body.Statements)
 		}); err != nil {
 			return err
 		}
-		c.setFunctionSource(node.Parameters, node.Body)
+		c.setFunctionSource(node.Parameters, node.Defaults, node.Body)
 
 	default:
 		return fmt.Errorf("cannot compile %T", node)
