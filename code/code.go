@@ -81,6 +81,7 @@ const (
 	OpReturnValue
 	OpClosure // push a closure of constants[index] capturing n cells
 	OpPrint   // pop n values and print them
+	OpLoad    // run the file at constants[path] once and push an object of its top-level names
 	OpError   // stop with the error message in constants[index]
 )
 
@@ -153,6 +154,7 @@ var definitions = map[Opcode]*Definition{
 	OpReturnValue: {"OpReturnValue", []int{}},
 	OpClosure:     {"OpClosure", []int{2, 1}},
 	OpPrint:       {"OpPrint", []int{1}},
+	OpLoad:        {"OpLoad", []int{2, 2}},
 	OpError:       {"OpError", []int{2}},
 }
 

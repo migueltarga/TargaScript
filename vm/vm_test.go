@@ -3,6 +3,7 @@ package vm
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -19,6 +20,9 @@ type result struct {
 	value  string
 	output string
 }
+
+// sourceDir is the directory load paths are relative to.
+var sourceDir string
 
 func describe(obj object.Object) string {
 	if err, ok := obj.(*object.Error); ok {
@@ -47,6 +51,7 @@ func runVM(t *testing.T, input string) result {
 	defer evaluator.SetOutput(os.Stdout)
 
 	c := compiler.New()
+	c.Dir = sourceDir
 	bytecode, err := c.Compile(program)
 	if err != nil {
 		t.Fatalf("%q: compiler error: %s", input, err)
@@ -64,6 +69,8 @@ func runEvaluator(t *testing.T, input string) result {
 	evaluator.SetOutput(&out)
 	defer evaluator.SetOutput(os.Stdout)
 
+	evaluator.SetMainDir(sourceDir)
+	evaluator.ResetModules()
 	env := object.NewEnvironment()
 	return result{describe(evaluator.Eval(program, env)), out.String()}
 }
@@ -171,10 +178,13 @@ func TestErrorsHavePositions(t *testing.T) {
 }
 
 func TestExamplesMatchEvaluator(t *testing.T) {
+	sourceDir, _ = filepath.Abs("../examples")
+	defer func() { sourceDir = "" }()
+
 	files, _ := os.ReadDir("../examples")
 	for _, file := range files {
 		name := file.Name()
-		if !strings.HasSuffix(name, ".tg") || name == "math_string_time.tg" || name == "word_stats.tg" {
+		if !strings.HasSuffix(name, ".tg") || name == "math_string_time.tg" {
 			continue
 		}
 		source, err := os.ReadFile("../examples/" + name)

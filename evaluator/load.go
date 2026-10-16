@@ -27,6 +27,13 @@ func SetMainDir(dir string) {
 	mainDir = dir
 }
 
+// ResetModules forgets the files loaded so far, so they run again when
+// loaded.
+func ResetModules() {
+	loadedModules = map[string]*object.Environment{}
+	loadingModules = map[string]bool{}
+}
+
 // evalLoadStatement runs a file once and makes its top-level names
 // available: in the current scope, or in a hash named by the alias.
 func evalLoadStatement(node *ast.LoadStatement, env *object.Environment) object.Object {
