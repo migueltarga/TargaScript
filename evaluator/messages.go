@@ -8,12 +8,97 @@ import (
 	"github.com/migueltarga/TargaScript/object"
 )
 
-// Methods of each type, used to suggest a name when a method doesn't exist
+// Methods of each type, used to suggest a name when a method doesn't
+// exist. The methods in moreStringMethods and moreHashMethods are added
+// to these.
 var (
 	stringMethods = []string{"trim", "lower", "upper", "replace", "split", "contains", "startsWith", "endsWith", "indexOf"}
-	arrayMethods  = []string{"first", "last", "rest", "insert", "join", "map", "filter", "reduce", "contains", "indexOf", "find", "slice", "sort", "reverse"}
-	hashMethods   = []string{"keys", "values", "has", "length"}
+	arrayMethods  = []string{"first", "last", "rest", "insert", "join", "map", "filter", "reduce", "contains", "indexOf", "find", "slice", "sort", "reverse",
+		"count", "every", "flatten", "groupBy", "max", "min", "some", "sortBy", "sum", "unique", "pop", "remove", "removeAt", "shift", "unshift"}
+	hashMethods = []string{"keys", "values", "has", "length"}
 )
+
+// The names other languages use, with what to write instead
+var (
+	otherLanguageNames = map[string]string{
+		"len":        "use .length, as in list.length",
+		"int":        "use toInt(value)",
+		"parseInt":   "use toInt(value)",
+		"float":      "use toFloat(value)",
+		"parseFloat": "use toFloat(value)",
+		"str":        "use toString(value)",
+		"String":     "use toString(value)",
+		"console":    "use print(...)",
+		"println":    "use print(...)",
+		"puts":       "use print(...)",
+		"echo":       "use print(...)",
+		"typeof":     "use type(value)",
+		"require":    `use load("file.tg")`,
+		"include":    `use load("file.tg")`,
+		"nil":        "use null",
+		"None":       "use null",
+		"undefined":  "use null",
+		"True":       "use true",
+		"False":      "use false",
+		"Math":       "math functions are builtins: abs, sqrt, pow, round, floor, ceil, min, max, random",
+		"JSON":       "use parseJSON(text) and toJSON(value)",
+	}
+	otherLanguageStringMethods = map[string]string{
+		"toUpperCase": "use upper()",
+		"toUpper":     "use upper()",
+		"toLowerCase": "use lower()",
+		"toLower":     "use lower()",
+		"strip":       "use trim()",
+		"includes":    "use contains(text) or the in operator",
+		"substring":   "use slice(start, end)",
+		"substr":      "use slice(start, end)",
+		"charAt":      "use text[index]",
+		"size":        "use .length",
+		"len":         "use .length",
+	}
+	otherLanguageArrayMethods = map[string]string{
+		"push":     "use insert(value)",
+		"append":   "use insert(value)",
+		"add":      "use insert(value)",
+		"includes": "use contains(value) or the in operator",
+		"forEach":  "use repeat item in list { ... }",
+		"each":     "use repeat item in list { ... }",
+		"flat":     "use flatten()",
+		"concat":   "use list + other",
+		"any":      "use some(fn)",
+		"all":      "use every(fn)",
+		"distinct": "use unique()",
+		"uniq":     "use unique()",
+		"size":     "use .length",
+		"len":      "use .length",
+	}
+	otherLanguageHashMethods = map[string]string{
+		"hasOwnProperty": `use has(key) or "key" in object`,
+		"containsKey":    `use has(key) or "key" in object`,
+		"hasKey":         `use has(key) or "key" in object`,
+		"items":          "use entries()",
+		"size":           "use .length",
+		"len":            "use .length",
+	}
+)
+
+func init() {
+	for name := range moreStringMethods {
+		stringMethods = append(stringMethods, name)
+	}
+	for name := range moreHashMethods {
+		hashMethods = append(hashMethods, name)
+	}
+}
+
+// hint returns what to write instead of name when another language uses
+// it, else a similar name from candidates.
+func hint(name string, otherLanguages map[string]string, candidates []string) string {
+	if instead, ok := otherLanguages[name]; ok {
+		return ". In TargaScript, " + instead
+	}
+	return suggestion(name, candidates)
+}
 
 // typeName describes the type of a value for error messages, with an
 // article: "an integer", "a string".
@@ -67,7 +152,7 @@ func NotDefined(line, column int, name string, candidates []string) *object.Erro
 	for builtin := range builtins {
 		candidates = append(candidates, builtin)
 	}
-	return newError(line, column, "%q is not defined%s", name, suggestion(name, candidates))
+	return newError(line, column, "%q is not defined%s", name, hint(name, otherLanguageNames, candidates))
 }
 
 // suggestion returns ". Did you mean "x"?" for the candidate closest to

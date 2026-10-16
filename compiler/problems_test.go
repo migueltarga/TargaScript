@@ -30,7 +30,7 @@ print(len([1]))`
 		{6, 3, `"missing" is not defined`},
 		{7, 3, "break outside of a loop"},
 		{10, 5, "cannot reassign constant: max"},
-		{11, 7, `"len" is not defined`},
+		{11, 7, `"len" is not defined. In TargaScript, use .length, as in list.length`},
 	}
 	problems := c.Problems()
 	if len(problems) != len(expected) {

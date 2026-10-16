@@ -309,11 +309,11 @@
  },
  "len": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined"
+  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined. In TargaScript, use .length, as in list.length"
  },
  "len(\"abc\")": {
   "output": "",
-  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined"
+  "value": "ERROR ERROR at line 1, column 1: \"len\" is not defined. In TargaScript, use .length, as in list.length"
  },
  "let a = 1\na": {
   "output": "",
