@@ -9,6 +9,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/migueltarga/TargaScript/evaluator"
 )
 
 // osSystem gives programs run from the command line access to files, the
@@ -90,8 +92,9 @@ func (osSystem) ReadLine() (string, bool) {
 	return strings.TrimRight(line, "\r\n"), true
 }
 
-func (osSystem) RunCommand(program string, args []string, shell bool) (string, string, int, error) {
-	if shell {
+func (osSystem) RunCommand(command evaluator.Command) (string, string, int, error) {
+	program, args := command.Program, command.Args
+	if command.Shell {
 		args = []string{"-c", program}
 		program = "sh"
 		if runtime.GOOS == "windows" {
@@ -100,9 +103,16 @@ func (osSystem) RunCommand(program string, args []string, shell bool) (string, s
 		}
 	}
 	cmd := exec.Command(program, args...)
+	cmd.Dir = command.Dir
 	cmd.Stdin = os.Stdin
+	if command.Input != nil {
+		cmd.Stdin = strings.NewReader(*command.Input)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if command.Show {
+		cmd.Stdout, cmd.Stderr = evaluator.Output(), os.Stderr
+	}
 	err := cmd.Run()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
