@@ -201,6 +201,7 @@ func init() {
 	compiler.ReadFile = readFile
 	evaluator.SetHost(jsbridge.Host{})
 	evaluator.SetRegexEngine(jsbridge.Regex{})
+	evaluator.SetMathHost(jsbridge.Math{})
 	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }
