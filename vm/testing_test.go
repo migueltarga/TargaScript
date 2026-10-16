@@ -36,6 +36,39 @@ print("still running")
 	}
 }
 
+func TestDescribe(t *testing.T) {
+	var out bytes.Buffer
+	evaluator.SetOutput(&out)
+	defer evaluator.SetOutput(os.Stdout)
+	evaluator.ResetTests()
+	defer evaluator.ResetTests()
+	evaluator.SetTestFilter("parse")
+	defer evaluator.SetTestFilter("")
+
+	testEval(`
+describe("strings", fn() {
+    test("upper", fn() { assert(true) })
+})
+describe("parser", fn() {
+    describe("numbers", fn() {
+        test("integers", fn() { assert(true) })
+    })
+    test("strings", fn() { assert(false) })
+})
+`)
+
+	want := "parser\n" +
+		"  numbers\n" +
+		"    ✓ integers\n" +
+		"  ✗ strings\n      assertion failed (line 9)\n"
+	if out.String() != want {
+		t.Errorf("output:\n%s\nwant:\n%s", out.String(), want)
+	}
+	if passed, failed, skipped := evaluator.TestResults(); passed != 1 || failed != 1 || skipped != 1 {
+		t.Errorf("results: %d passed, %d failed, %d skipped", passed, failed, skipped)
+	}
+}
+
 func TestTestBuiltinErrors(t *testing.T) {
 	tests := []struct{ input, expected string }{
 		{`test("x")`, "wrong number of arguments for test. got=1, want=2"},

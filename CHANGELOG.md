@@ -36,7 +36,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 ### Tools
 
 - Errors that show the code, the calls that led to them, "Did you mean...?" for typos, and what to write instead of other languages' names and syntax (`push`, `len`, `for`, `===`...)
-- `targascript test` with `test`, `assert` and `assertEqual`, and `-run` to pick tests by name
+- `targascript test` with `test`, `describe`, `assert` and `assertEqual`, and `-run` to pick tests by name
 - `targascript check` to find problems without running, and `targascript fmt` to lay files out (also in VS Code, the playground and the language server)
 - A REPL with line editing, history and Tab completion
 - A VS Code extension with highlighting, problems as you type, hover docs, completion, snippets and Run File
