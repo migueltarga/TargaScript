@@ -727,6 +727,22 @@ func (vm *VM) loop(base int) object.Object {
 					return err
 				}
 			}
+			// Calls of this VM's closures with the right number of
+			// arguments, the usual case, start here
+			if cl, ok := vm.stack[vm.sp-1-argc].(*object.Closure); ok && cl.Runner == vm &&
+				argc == cl.Fn.NumParams && !cl.Fn.Variadic && !cl.Fn.HasThis && len(vm.frames) <= evaluator.MaxCallDepth {
+				base := vm.sp - argc
+				vm.ensureStack(base + cl.Fn.NumLocals + 256)
+				for i := vm.sp; i < base+cl.Fn.NumLocals; i++ {
+					vm.stack[i] = nil
+				}
+				vm.receiver = nil
+				vm.sp = base + cl.Fn.NumLocals
+				f = vm.newFrame(cl, base)
+				vm.frames = append(vm.frames, f)
+				ins = cl.Fn.Instructions
+				continue
+			}
 			switched, err := vm.call(f, ip, argc)
 			if err != nil {
 				return err
