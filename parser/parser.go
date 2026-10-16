@@ -618,7 +618,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 
-	lit.Parameters = p.parseFunctionParameters()
+	lit.Parameters, lit.Defaults = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
@@ -629,22 +629,36 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return lit
 }
 
-func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+// parseFunctionParameters parses the parameters of a function and their
+// default values, nil for those without one.
+func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, []ast.Expression) {
 	identifiers := []*ast.Identifier{}
+	defaults := []ast.Expression{}
 
 	for !p.peekTokenIs(token.RPAREN) {
 		p.nextToken()
 
 		if p.curTokenIs(token.ILLEGAL) && isStartingWithDigit(p.curToken.Literal) {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "invalid parameter name %q: names can't start with a digit", p.curToken.Literal)
-			return nil
+			return nil, nil
 		}
 		if !p.curTokenIs(token.IDENT) {
 			p.errorAt(p.curToken.Line, p.curToken.Column, "expected a parameter name, found %s", describe(p.curToken))
-			return nil
+			return nil, nil
 		}
 
 		identifiers = append(identifiers, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+		var defaultValue ast.Expression
+		if p.peekTokenIs(token.ASSIGN) {
+			p.nextToken()
+			p.nextToken()
+			// The value ends at the comma or parenthesis after it
+			if defaultValue = p.parseExpression(LOWEST); defaultValue == nil {
+				return nil, nil
+			}
+		}
+		defaults = append(defaults, defaultValue)
 
 		if !p.peekTokenIs(token.COMMA) {
 			break
@@ -653,10 +667,10 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	}
 
 	if !p.expectPeek(token.RPAREN) {
-		return nil
+		return nil, nil
 	}
 
-	return identifiers
+	return identifiers, defaults
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
@@ -972,7 +986,7 @@ func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 		return nil
 	}
 
-	stmt.Parameters = p.parseFunctionParameters()
+	stmt.Parameters, stmt.Defaults = p.parseFunctionParameters()
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil

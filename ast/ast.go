@@ -283,6 +283,7 @@ type FunctionLiteral struct {
 	Token      token.Token
 	Name       *Identifier
 	Parameters []*Identifier
+	Defaults   []Expression // default value of each parameter, or nil
 	Body       *BlockStatement
 }
 
@@ -291,10 +292,7 @@ func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
 func (fl *FunctionLiteral) String() string {
 	var out bytes.Buffer
 
-	params := []string{}
-	for _, p := range fl.Parameters {
-		params = append(params, p.String())
-	}
+	params := ParameterStrings(fl.Parameters, fl.Defaults)
 
 	out.WriteString(fl.TokenLiteral())
 
@@ -604,6 +602,7 @@ type FunctionStatement struct {
 	Token      token.Token
 	Name       *Identifier
 	Parameters []*Identifier
+	Defaults   []Expression // default value of each parameter, or nil
 	Body       *BlockStatement
 }
 
@@ -612,10 +611,7 @@ func (fs *FunctionStatement) TokenLiteral() string { return fs.Token.Literal }
 func (fs *FunctionStatement) String() string {
 	var out bytes.Buffer
 
-	params := []string{}
-	for _, p := range fs.Parameters {
-		params = append(params, p.String())
-	}
+	params := ParameterStrings(fs.Parameters, fs.Defaults)
 
 	out.WriteString(fs.TokenLiteral() + " ")
 	out.WriteString(fs.Name.String())
@@ -697,4 +693,17 @@ func bindingString(name *Identifier, pattern *Pattern) string {
 		return pattern.String()
 	}
 	return name.String()
+}
+
+// ParameterStrings prints parameters with their default values.
+func ParameterStrings(params []*Identifier, defaults []Expression) []string {
+	out := []string{}
+	for i, p := range params {
+		if i < len(defaults) && defaults[i] != nil {
+			out = append(out, p.String()+" = "+defaults[i].String())
+		} else {
+			out = append(out, p.String())
+		}
+	}
+	return out
 }
