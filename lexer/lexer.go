@@ -254,7 +254,7 @@ func (l *Lexer) isStartingWithDigitFollowedByLetter() bool {
 		l.readChar()
 	}
 
-	isInvalidIdent := isLetter(l.ch)
+	isInvalidIdent := isLetter(l.ch) && !l.atExponent()
 
 	l.position = pos
 	l.readPosition = readPos
@@ -285,11 +285,34 @@ func (l *Lexer) readNumber() (token.TokenType, string) {
 		}
 		l.readChar()
 	}
+	hasExponent := l.atExponent()
+	if hasExponent {
+		l.readChar()
+		if l.ch == '+' || l.ch == '-' {
+			l.readChar()
+		}
+		for isDigit(l.ch) {
+			l.readChar()
+		}
+	}
 	lit := l.input[start:l.position]
-	if hasDot {
+	if hasDot || hasExponent {
 		return token.FLOAT, lit
 	}
 	return token.INT, lit
+}
+
+// atExponent reports whether the lexer is at the exponent of a number, an e
+// or E followed by digits with an optional sign, as in 1e3 or 2.5E-4.
+func (l *Lexer) atExponent() bool {
+	if l.ch != 'e' && l.ch != 'E' {
+		return false
+	}
+	rest := l.input[l.readPosition:]
+	if len(rest) > 0 && (rest[0] == '+' || rest[0] == '-') {
+		rest = rest[1:]
+	}
+	return len(rest) > 0 && rest[0] >= '0' && rest[0] <= '9'
 }
 
 // readString reads a string literal, processing escapes. It reports whether
