@@ -562,6 +562,9 @@ type AssignmentExpression struct {
 	Token token.Token
 	Left  Expression
 	Value Expression
+
+	// Operator is set for compound assignments: "+" for +=, "??" for ??=
+	Operator string
 }
 
 func (ae *AssignmentExpression) expressionNode()      {}
@@ -570,7 +573,7 @@ func (ae *AssignmentExpression) String() string {
 	var out bytes.Buffer
 
 	out.WriteString(ae.Left.String())
-	out.WriteString(" = ")
+	out.WriteString(" " + ae.Operator + "= ")
 	out.WriteString(ae.Value.String())
 
 	return out.String()
