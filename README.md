@@ -256,6 +256,7 @@ button.addEventListener("click", fn(event) {
 - `await` waits for JavaScript promises, and a TargaScript function that awaits returns a promise to JavaScript
 - `print` writes to the browser console
 - scripts can have a `src`, and all scripts on a page share their variables
+- `load` works too, with paths relative to the script: `targascript.js` fetches the files a script loads from the same server before running it
 - in a worker, `new Worker("targascript.js?src=worker.tg")` runs `worker.tg`, and `targascript.run(source, onOutput)` runs another program in a fresh environment
 - JavaScript can call `targascriptRun(source, onOutput)`, which returns the error message or `null`
 
