@@ -55,6 +55,8 @@ repeat name, commits in byAuthor {
 }
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=RJBPS8QwEMXv-RTPsocWJFkEL0IVFdG73iXtzrbRNgmTCUsp_e6y3T9eAmHe_N68ZwxeQ_YC6QmDFUqCNoyjk4SwhwVTDMlJ4AnNBJulD6wGEmQeUKPoRWJ6MMZGpzsnfW50G0azrpnRdZkGsdxZ83V8P1t2UczZ4SkSf0fbUX2_LVYoU4rBJ0INe7BOsCdp-zLzUCm3x81lrsMvZkjP4YDi3clHbmB9OhDTDpv5KktiJaelwKJWfjM9rwlQX630Twq-rHTHIceXqSzn03VLhfrx3IU-5dbejlQpxRTJCo6_22tbzv_TZwUAkZ2XstjMR6GOdvfmd-XdtlqwOXskPZDvpF8ulKJSi_oLAAD__w)
+
 And the basics:
 
 ```
@@ -77,6 +79,8 @@ let words = "  Hello World  "
     |> (s => s.split(" "))
 print(words)                               // ["hello", "world"]
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=bJGxbvMgFIV3nuLkyoPRj4jyd4vkWN36Bh0sD1ZMXBQMFlBZlet3rwzOkpYJdNA53z33ZjF4pWJpu1GJfNd2QAV6U8Y44lgYAFCxPMRVoFi2_-uB2MqYURGT8sFZVFhoU-gMejX6qkiAwl0bE-iMhibvBt-No7bDpvQq6MFSu7LJaxvLjJK95ObDOX6d4xEJTSAlHBjzalJdhBZIUdB255E5eh8hZ1CxaPzDaZUolqSvxB9jNDftQxSQUnoVYosKzUngv8BLuzPuzl3fexVCLa86fqGuQZ_2bt1siWfG_Zl9Z-f7sJWKzI53500PUAL7vqAMqC4IMno9llwaNytfcv4sh8noWBKI8x0nOf_R0nNlDX2kfQrQvGVTy34CAAD__w)
 
 ## 🔀 Matching Values
 
@@ -102,6 +106,8 @@ fn route(req) {
 }
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=fJBBS8MwHMXv_RSP4KGDWOdkBwsTBIcePehpDInLv7bQJF0anaP0u0uTdu0E7a3vvby8XzINSfXOFu8U6xmaCACUcLscuv_rvjlWd2DaaGIn7Zpj4WWBjA6jfpMkt16v6YusKEfnzctK6GPQ2qiNokzDmk9HsaX9-QBL-0SRy42cLGGP6xeGIvNuJVyO1Qrsivnq3KjJQB_lYE_r-4fgV-KDcNEMR9vptL4yJyHJ1hv2fSmkKjTb-guOVIeKIP5C0sZBlKU5kJyQVbbQLt7MORYcS47lfJsoUcXDg89mfSTwN4E1HXZ3C9MOrf0z6MnGpDS7-p_08-tZLUfPmqI50aYBte1afgIAAP__)
+
 An arm can have a guard, `if ...`, that must also be true for it to be chosen. An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
 
 ## 🧱 Objects with Methods
@@ -123,6 +129,8 @@ repeat s in [circle(1), rect(2, 3)] {
 }
 ```
 
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=bJBBa8QgFITv_opBetAgbpJtCw30l5QebPqCwlaCCjkE_3tRk7ItvcmM73vz5kYJ0ZqV8IqdAYA3XzSBV5GrKplAZsLihcSOHrmpnxTn4D7ox-EPe7Iu6kLI2FyydRKHXN5CTnpcMi-MzNjiMbsw30iEAti11nWvOlM0lysE9TvFVQ-Pw9MLOlR2QNdhRM7IBRpoTmJTsP9Ti80Vyoc_2ArbTqptQBZoJZMQ4TzejsCDVG3NqHCV70d5a3A-iajPboSURb5cjjvvWikXKCRLLe6d86z7nmX2HQAA__8)
+
 Arrow functions inside a method see its `this`, so `this.items.map(i => i * this.rate)` works.
 
 ## 🧯 Handling Errors
@@ -143,6 +151,8 @@ let age = try {
     0
 }
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=TI7BioNADIbv8xQ_uayCuwh7W7aHHn2M1MZxwMYyBtsi8-5l1Jbewv_lz5dOceU4ydFLYXK3EosDgEEM7AUH2NiobWwloVvBP2ossD6ON1AOWtYvw0mg4tnCLIS0FtiLS859XIyP3fJW0_cvlS6hZWt7SIyvhRjUCmp05iGcc_-Pqsx_LjJN7KUCsWEIKnuex-3R2iX3DAAA__8)
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
@@ -199,6 +209,8 @@ let {name, age} = {"name": "Ana", "age": 30}
 fn minmax(list) { [list.sort().first(), list.last()] }
 let [lowest, highest] = minmax([5, 1, 9])
 ```
+
+[▶ Try it in the playground](https://migueltarga.github.io/TargaScript/#code=XI7BysMgEITvPsXgSWEJ5g__oYUc-hziQVqTCMaUKLQQ8u5lQym0t_2WYeZLocIOcS2VUMJ1yTeHHrY1hD9D6IwTHNmynwPBj2FHj00yyjPkJXtJkH5k6swuxJAxxzz7p0qxVI0Nlo-mLGtVujmmlCYcz-QZHPZjxKblEVhkiuMUSmWTd5f9J7SEk9NC3NeYq_pyJnz8CD8tWrwCAAD__w)
 
 Missing elements and properties are null, unless the name has a default: `let {port = 8080} = config`. Patterns also work in loops and parameters, and `{name, age}` is short for `{"name": name, "age": age}`:
 
