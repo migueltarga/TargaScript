@@ -31,8 +31,9 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 		if len(args) != 1 || !isCallable(args[0]) {
 			return newError(line, column, "array.find() takes one FUNCTION argument"), true
 		}
+		cb := newCallback(args[0])
 		for i, element := range arr.Elements {
-			matched := applyFunction(args[0], callbackArgs(args[0], element, i))
+			matched := applyFunction(args[0], cb.with(element, i))
 			if isError(matched) {
 				return matched, true
 			}
@@ -113,11 +114,12 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 	}
 
 	var sortErr *object.Error
+	cb := newCallback(args[0])
 	slices.SortStableFunc(arr.Elements, func(a, b object.Object) int {
 		if sortErr != nil {
 			return 0
 		}
-		switch result := applyFunction(args[0], []object.Object{a, b}).(type) {
+		switch result := applyFunction(args[0], cb.pair(a, b)).(type) {
 		case *object.Error:
 			sortErr = result
 		case *object.Integer:
@@ -202,6 +204,44 @@ func callbackArgs(fn object.Object, element object.Object, index int) []object.O
 		return []object.Object{element, &object.Integer{Value: int64(index)}}
 	}
 	return []object.Object{element}
+}
+
+// callback makes the arguments of the calls of a function given to an
+// array method. A TargaScript function copies its arguments, so they go in
+// the same slice every call.
+type callback struct {
+	fn   object.Object
+	args []object.Object
+}
+
+func newCallback(fn object.Object) *callback {
+	c := &callback{fn: fn}
+	if _, ok := fn.(*object.Closure); ok {
+		c.args = make([]object.Object, 3)
+	}
+	return c
+}
+
+// with returns the arguments for element at index.
+func (c *callback) with(element object.Object, index int) []object.Object {
+	if c.args == nil {
+		return callbackArgs(c.fn, element, index)
+	}
+	c.args[0] = element
+	if wantsArgs(c.fn, 2) {
+		c.args[1] = &object.Integer{Value: int64(index)}
+		return c.args[:2]
+	}
+	return c.args[:1]
+}
+
+// pair returns the arguments a and b, for reduce and sort.
+func (c *callback) pair(a, b object.Object) []object.Object {
+	if c.args == nil {
+		return []object.Object{a, b}
+	}
+	c.args[0], c.args[1] = a, b
+	return c.args[:2]
 }
 
 // wantsArgs reports whether fn is a TargaScript function that takes n
