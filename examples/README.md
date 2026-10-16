@@ -147,6 +147,14 @@ Arrays support the following method-style operations:
 - `array.slice(start, end)` - Copy of the elements from `start` up to (not including) `end`; negative positions count from the end, and `end` is optional
 - `array.sort()` / `array.sort(compare)` - Sort the array in place and return it. Without `compare`, elements must be all numbers or all strings; `compare(a, b)` returns a negative number when `a` comes first
 - `array.reverse()` - Reverse the array in place and return it
+- `array.some(function)` / `array.every(function)` - Whether the function returns true for some or for every element
+- `array.count(value)` / `array.count(function)` - How many elements equal `value`, or make the function return true
+- `array.sum()` - The sum of the numbers in the array
+- `array.min()` / `array.max()` - The smallest or largest element, or `null` for an empty array
+- `array.unique()` - The elements without repeats, in their first order
+- `array.flatten(depth)` - Nested arrays replaced by their elements, `depth` levels deep (1 by default)
+- `array.groupBy(function)` - An object of arrays, grouping the elements by what the function returns
+- `array.sortBy(function)` - Sort the array in place by what the function returns for each element, and return it
 
 Example of array method chaining:
 ```
