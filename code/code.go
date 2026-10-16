@@ -50,6 +50,8 @@ const (
 	OpJumpNotTruthy     // pop; jump if falsy
 	OpJumpNotTruthyKeep // jump if the top is falsy, keeping it; else pop it
 	OpJumpTruthyKeep    // jump if the top is truthy, keeping it; else pop it
+	OpJumpNotNullKeep   // jump if the top isn't null, keeping it; else pop it
+	OpJumpNullKeep      // jump if the top is null, keeping it
 	OpLoopEnter         // remember the stack height and the break and continue targets
 	OpLoopExit          // forget the innermost loop
 	OpBreak             // restore the loop's stack height and jump to its end, or to its next iteration when the operand is 1
@@ -130,6 +132,8 @@ var definitions = map[Opcode]*Definition{
 	OpJumpNotTruthy:     {"OpJumpNotTruthy", []int{2}},
 	OpJumpNotTruthyKeep: {"OpJumpNotTruthyKeep", []int{2}},
 	OpJumpTruthyKeep:    {"OpJumpTruthyKeep", []int{2}},
+	OpJumpNotNullKeep:   {"OpJumpNotNullKeep", []int{2}},
+	OpJumpNullKeep:      {"OpJumpNullKeep", []int{2}},
 	OpLoopEnter:         {"OpLoopEnter", []int{2, 2}},
 	OpLoopExit:          {"OpLoopExit", []int{}},
 	OpBreak:             {"OpBreak", []int{1}},

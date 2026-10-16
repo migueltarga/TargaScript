@@ -38,6 +38,8 @@ const (
 	DECREMENT = "--"
 	MODULO    = "%"
 	XOR       = "^"
+	NULLISH   = "??"
+	OPTIONAL  = "?."
 
 	// Delimiters
 	COMMA     = ","

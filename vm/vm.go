@@ -306,6 +306,22 @@ func (vm *VM) loop(base int) object.Object {
 				vm.sp--
 			}
 
+		case code.OpJumpNotNullKeep:
+			target := int(code.ReadUint16(ins[ip+1:]))
+			f.ip += 2
+			if vm.stack[vm.sp-1] != NULL {
+				f.ip = target
+			} else {
+				vm.sp--
+			}
+
+		case code.OpJumpNullKeep:
+			target := int(code.ReadUint16(ins[ip+1:]))
+			f.ip += 2
+			if vm.stack[vm.sp-1] == NULL {
+				f.ip = target
+			}
+
 		case code.OpLoopEnter:
 			f.loops = append(f.loops, loop{
 				sp:         vm.sp,

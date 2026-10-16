@@ -37,6 +37,10 @@ type Compiler struct {
 
 	builtinIndex map[string]int
 
+	// Jumps out of the property chain being compiled, made by ?. when its
+	// left side is null, to patch to the end of the chain
+	chainJumps *[]int
+
 	// Dir is the directory of the file being compiled, which load paths
 	// are relative to. Empty means the working directory.
 	Dir string
@@ -551,6 +555,93 @@ func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 }
 
 func (c *Compiler) compileExpression(node ast.Expression) error {
+	switch node.(type) {
+	case *ast.DotExpression, *ast.MethodCallExpression, *ast.IndexExpression, *ast.CallExpression:
+		if c.chainJumps == nil {
+			// The outermost access of a chain like a?.b.c(): every ?. in it
+			// jumps here when its left side is null
+			jumps := []int{}
+			c.chainJumps = &jumps
+			err := c.compileAccess(node)
+			c.chainJumps = nil
+			for _, jump := range jumps {
+				c.changeOperands(jump, len(c.scope.instructions))
+			}
+			return err
+		}
+		return c.compileAccess(node)
+	}
+	// Other expressions start chains of their own
+	return c.compileOperand(node)
+}
+
+// compileOperand compiles an expression that isn't part of the chain around
+// it, like an argument or an index.
+func (c *Compiler) compileOperand(node ast.Expression) error {
+	jumps := c.chainJumps
+	c.chainJumps = nil
+	defer func() { c.chainJumps = jumps }()
+	switch node.(type) {
+	case *ast.DotExpression, *ast.MethodCallExpression, *ast.IndexExpression, *ast.CallExpression:
+		return c.compileExpression(node)
+	}
+	return c.compileOther(node)
+}
+
+// optionalJump makes an access null when its left side is null, for ?.
+func (c *Compiler) optionalJump(optional bool) {
+	if optional {
+		*c.chainJumps = append(*c.chainJumps, c.emit(token.Token{}, code.OpJumpNullKeep, 9999))
+	}
+}
+
+// compileAccess compiles property and index access and calls, which can be
+// part of a chain.
+func (c *Compiler) compileAccess(node ast.Expression) error {
+	switch node := node.(type) {
+	case *ast.IndexExpression:
+		if err := c.compileExpression(node.Left); err != nil {
+			return err
+		}
+		if err := c.compileOperand(node.Index); err != nil {
+			return err
+		}
+		c.emit(node.Token, code.OpIndex)
+
+	case *ast.DotExpression:
+		if err := c.compileExpression(node.Left); err != nil {
+			return err
+		}
+		c.optionalJump(node.Optional)
+		c.emit(node.Token, code.OpGetProperty, c.addConstant(&object.String{Value: node.Property.Value}))
+
+	case *ast.MethodCallExpression:
+		if err := c.compileExpression(node.Object); err != nil {
+			return err
+		}
+		c.optionalJump(node.Optional)
+		for _, arg := range node.Arguments {
+			if err := c.compileOperand(arg); err != nil {
+				return err
+			}
+		}
+		c.emit(node.Token, code.OpCallMethod, c.addConstant(&object.String{Value: node.Method.Value}), len(node.Arguments))
+
+	case *ast.CallExpression:
+		if err := c.compileExpression(node.Function); err != nil {
+			return err
+		}
+		for _, arg := range node.Arguments {
+			if err := c.compileOperand(arg); err != nil {
+				return err
+			}
+		}
+		c.emit(node.Token, code.OpCall, len(node.Arguments))
+	}
+	return nil
+}
+
+func (c *Compiler) compileOther(node ast.Expression) error {
 	switch node := node.(type) {
 	case *ast.IntegerLiteral:
 		c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: node.Value}))
@@ -630,43 +721,6 @@ func (c *Compiler) compileExpression(node ast.Expression) error {
 	case *ast.PostfixExpression:
 		return c.compilePostfix(node)
 
-	case *ast.IndexExpression:
-		if err := c.compileExpression(node.Left); err != nil {
-			return err
-		}
-		if err := c.compileExpression(node.Index); err != nil {
-			return err
-		}
-		c.emit(node.Token, code.OpIndex)
-
-	case *ast.DotExpression:
-		if err := c.compileExpression(node.Left); err != nil {
-			return err
-		}
-		c.emit(node.Token, code.OpGetProperty, c.addConstant(&object.String{Value: node.Property.Value}))
-
-	case *ast.MethodCallExpression:
-		if err := c.compileExpression(node.Object); err != nil {
-			return err
-		}
-		for _, arg := range node.Arguments {
-			if err := c.compileExpression(arg); err != nil {
-				return err
-			}
-		}
-		c.emit(node.Token, code.OpCallMethod, c.addConstant(&object.String{Value: node.Method.Value}), len(node.Arguments))
-
-	case *ast.CallExpression:
-		if err := c.compileExpression(node.Function); err != nil {
-			return err
-		}
-		for _, arg := range node.Arguments {
-			if err := c.compileExpression(arg); err != nil {
-				return err
-			}
-		}
-		c.emit(node.Token, code.OpCall, len(node.Arguments))
-
 	case *ast.TryExpression:
 		return c.compileTry(node)
 
@@ -711,13 +765,16 @@ var infixOpcodes = map[string]code.Opcode{
 }
 
 func (c *Compiler) compileInfix(node *ast.InfixExpression) error {
-	if node.Operator == "&&" || node.Operator == "||" {
+	if node.Operator == "&&" || node.Operator == "||" || node.Operator == "??" {
 		if err := c.compileExpression(node.Left); err != nil {
 			return err
 		}
 		jump := code.OpJumpNotTruthyKeep
-		if node.Operator == "||" {
+		switch node.Operator {
+		case "||":
 			jump = code.OpJumpTruthyKeep
+		case "??":
+			jump = code.OpJumpNotNullKeep
 		}
 		pos := c.emit(token.Token{}, jump, 9999)
 		if err := c.compileExpression(node.Right); err != nil {

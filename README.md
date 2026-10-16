@@ -69,6 +69,16 @@ let age = try {
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
+## 🫥 Working with null
+
+`a ?? b` is `b` when `a` is null, and `a?.b` is null when `a` is null instead of an error. A `?.` skips the rest of the chain, so `user?.name.upper()` is null when there's no user:
+
+```
+let config = parseJSON(text)
+let port = config.port ?? 8080
+let city = user?.address?.city ?? "unknown"
+```
+
 ## ⏳ Waiting with await
 
 `await` waits for a promise and gives its result, without blocking. `sleep(ms)` returns a promise that resolves after some milliseconds:

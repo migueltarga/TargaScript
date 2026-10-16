@@ -431,7 +431,7 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 		}
 		return NULL
 	default:
-		return newError(line, column, "dot operator not supported for %s", obj.Type())
+		return newError(line, column, "cannot read property %q of %s", propertyName, typeName(obj))
 	}
 }
 
