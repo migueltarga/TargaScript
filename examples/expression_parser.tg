@@ -1,0 +1,77 @@
+// expression_parser.tg
+// A calculator for expressions like "2 * (3 + 4)": a tokenizer, a
+// recursive-descent parser that evaluates as it goes, and error handling.
+
+fn tokenize(text) {
+    let tokens = []
+    let i = 0
+    repeat i < text.length {
+        let c = text[i]
+        if c == " " { i++; continue }
+        if "0123456789".contains(c) {
+            let start = i
+            repeat i < text.length && "0123456789.".contains(text[i]) { i++ }
+            tokens.insert({kind: "number", value: toFloat(text.slice(start, i))})
+            continue
+        }
+        if "+-*/()".contains(c) {
+            tokens.insert({kind: "operator", value: c})
+            i++
+            continue
+        }
+        throw "unexpected '${c}' at position ${i}"
+    }
+    tokens
+}
+
+fn evaluate(tokens) {
+    let pos = 0
+    fn peek() { tokens[pos]?.value }
+    fn next() { pos++; tokens[pos - 1] }
+
+    // The functions call each other, in any order
+    fn primary() {
+        let token = next()
+        match token?.kind {
+            "number" => token.value
+            "operator" if token.value == "(" => {
+                let value = sum()
+                if next()?.value != ")" { throw "missing )" }
+                value
+            }
+            "operator" if token.value == "-" => -primary()
+            _ => throw "unexpected end"
+        }
+    }
+
+    fn product() {
+        let value = primary()
+        repeat peek() in ["*", "/"] {
+            let operator = next().value
+            let right = primary()
+            value = match operator { "*" => value * right, _ => value / right }
+        }
+        value
+    }
+
+    fn sum() {
+        let value = product()
+        repeat peek() in ["+", "-"] {
+            let operator = next().value
+            let right = product()
+            value = match operator { "+" => value + right, _ => value - right }
+        }
+        value
+    }
+
+    let result = sum()
+    if pos < tokens.length { throw "unexpected '${peek()}'" }
+    result
+}
+
+let calculate = text => text |> tokenize |> evaluate
+
+repeat expression in ["1 + 2 * 3", "(1 + 2) * 3", "-4 + 10 / 4", "2 * (3 + (4 - 1)) / 3", "1 +", "2 $ 3", "(1 + 2", "1 2"] {
+    let result = try { calculate(expression) } catch err { "error: ${err.message}" }
+    print(expression.padEnd(24), "=", result)
+}
