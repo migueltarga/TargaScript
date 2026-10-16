@@ -37,3 +37,11 @@ test("destructuring with rest", fn() {
     assertEqual(rest, [2, 3])
     assertEqual(others, {b: 2})
 })
+
+test("sorting keeps equal elements in their order", fn() {
+    let people = [{name: "Ana", age: 30}, {name: "Bo", age: 25}, {name: "Cy", age: 30}, {name: "Di", age: 25}]
+    assertEqual(people.sortBy(p => p.age).map(p => p.name), ["Bo", "Di", "Ana", "Cy"])
+    assertEqual(people.sortBy(p => "${p.age}").map(p => p.name), ["Bo", "Di", "Ana", "Cy"])
+    assertEqual([3, 1.5, 2, -1].sort(), [-1, 1.5, 2, 3])
+    assertEqual(["pear", "Apple", "fig"].sort(), ["Apple", "fig", "pear"])
+})

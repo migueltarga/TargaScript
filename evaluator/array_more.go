@@ -1,8 +1,6 @@
 package evaluator
 
 import (
-	"sort"
-
 	"github.com/migueltarga/TargaScript/object"
 )
 
@@ -173,30 +171,11 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 				return withPosition(keys[i], line, column), true
 			}
 		}
-		indexes := make([]int, len(arr.Elements))
-		for i := range indexes {
-			indexes[i] = i
-		}
-		var sortErr *object.Error
-		sort.SliceStable(indexes, func(a, b int) bool {
-			if sortErr != nil {
-				return false
-			}
-			lt := evalInfixExpression("<", keys[indexes[a]], keys[indexes[b]], line, column)
-			if errObj, isErr := lt.(*object.Error); isErr {
-				sortErr = newError(line, column, "cannot sort: %s", errObj.Message)
-				return false
-			}
-			return lt == TRUE
-		})
+		order, sortErr := sortedOrder(keys, line, column)
 		if sortErr != nil {
 			return sortErr, true
 		}
-		sorted := make([]object.Object, len(indexes))
-		for i, index := range indexes {
-			sorted[i] = arr.Elements[index]
-		}
-		arr.Elements = sorted
+		arr.Elements = inOrder(arr.Elements, order)
 		return arr, true
 	}
 	return nil, false
