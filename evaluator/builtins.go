@@ -20,6 +20,27 @@ type Host interface {
 	// After calls fn after the given number of milliseconds, on the
 	// goroutine that runs the program.
 	After(milliseconds int64, fn func())
+
+	// Fetch makes an HTTP request and calls done with the response, or
+	// with the error that prevented it, on the goroutine that runs the
+	// program.
+	Fetch(request FetchRequest, done func(FetchResponse, error))
+}
+
+// FetchRequest is an HTTP request made by fetch.
+type FetchRequest struct {
+	URL     string
+	Method  string
+	Headers map[string]string
+	Body    string
+}
+
+// FetchResponse is the response to a FetchRequest, with its whole body.
+type FetchResponse struct {
+	URL     string
+	Status  int
+	Headers map[string]string
+	Body    string
 }
 
 var host Host

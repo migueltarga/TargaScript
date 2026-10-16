@@ -6,6 +6,7 @@
 package jsbridge
 
 import (
+	"errors"
 	"math"
 
 	"github.com/migueltarga/TargaScript/evaluator"
@@ -430,12 +431,12 @@ func toJSPromise(p *object.Promise) uint32 {
 	return result
 }
 
-// Timers schedules the asynchronous work of builtins like sleep with
-// JavaScript's setTimeout.
-type Timers struct{}
+// Host runs the asynchronous work of builtins like sleep and fetch with
+// JavaScript's setTimeout and fetch.
+type Host struct{}
 
 // After calls fn after the given number of milliseconds.
-func (Timers) After(milliseconds int64, fn func()) {
+func (Host) After(milliseconds int64, fn func()) {
 	var id uint32
 	id = registerCallback(&object.Builtin{Fn: func(args ...object.Object) object.Object {
 		callbacks[id] = nil
@@ -452,4 +453,73 @@ func (Timers) After(milliseconds int64, fn func()) {
 	hostRelease(result)
 	hostRelease(handles[0])
 	hostRelease(handles[1])
+}
+
+// Fetch makes an HTTP request with JavaScript's fetch.
+func (Host) Fetch(request evaluator.FetchRequest, done func(evaluator.FetchResponse, error)) {
+	fail := func(reason object.Object) {
+		done(evaluator.FetchResponse{}, errors.New(rejectionText(reason)))
+	}
+
+	headers := object.NewHash()
+	for name, value := range request.Headers {
+		headers.Set(&object.String{Value: name}, &object.String{Value: value})
+	}
+	options := object.NewHash()
+	options.Set(&object.String{Value: "method"}, &object.String{Value: request.Method})
+	options.Set(&object.String{Value: "headers"}, headers)
+	if request.Body != "" {
+		options.Set(&object.String{Value: "body"}, &object.String{Value: request.Body})
+	}
+
+	pending, ok := Global().CallMethod("fetch", []object.Object{&object.String{Value: request.URL}, options}).(*Value)
+	if !ok {
+		done(evaluator.FetchResponse{}, errors.New("fetch is not available"))
+		return
+	}
+	pending.Then(func(result object.Object) {
+		response, ok := result.(*Value)
+		if !ok {
+			fail(&object.String{Value: "no response"})
+			return
+		}
+		status, _ := response.Get("status").(*object.Integer)
+		url, _ := response.Get("url").(*object.String)
+
+		headers := map[string]string{}
+		entries := Global().Get("Array").(*Value).CallMethod("from", []object.Object{
+			response.Get("headers").(*Value).CallMethod("entries", nil),
+		})
+		if list, ok := entries.(*object.Array); ok {
+			for _, entry := range list.Elements {
+				if pair, ok := entry.(*object.Array); ok && len(pair.Elements) == 2 {
+					headers[evaluator.ToDisplayString(pair.Elements[0])] = evaluator.ToDisplayString(pair.Elements[1])
+				}
+			}
+		}
+
+		text, ok := response.CallMethod("text", nil).(*Value)
+		if !ok {
+			fail(&object.String{Value: "could not read the response"})
+			return
+		}
+		text.Then(func(body object.Object) {
+			r := evaluator.FetchResponse{Headers: headers, Body: evaluator.ToDisplayString(body)}
+			if status != nil {
+				r.Status = int(status.Value)
+			}
+			if url != nil {
+				r.URL = url.Value
+			}
+			done(r, nil)
+		}, fail)
+	}, fail)
+}
+
+// rejectionText describes why a promise was rejected, as Then reports it.
+func rejectionText(reason object.Object) string {
+	if err, ok := reason.(*object.Error); ok {
+		return err.Message
+	}
+	return evaluator.ToDisplayString(reason)
 }

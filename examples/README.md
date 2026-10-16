@@ -38,6 +38,11 @@ TargaScript provides a rich set of built-in functions for common operations:
 - `parseJSON(text)` - Convert JSON text to values. Objects keep the order of their keys, and numbers without a fraction or exponent become integers
 - `toJSON(value)` / `toJSON(value, indent)` - Convert a value to JSON text, indented by a number of spaces or a string
 
+#### Asynchronous Functions
+
+- `sleep(ms)` - Return a promise that resolves after `ms` milliseconds, for `await sleep(500)`
+- `fetch(url, options)` - Make an HTTP request and return a promise of the response, with `status`, `ok`, `url`, `headers`, `text` and `json()`. Options are `method`, `headers` and `body`
+
 #### Time Functions
 
 - `now()` - Return the current Unix timestamp (seconds since Jan 1, 1970)
