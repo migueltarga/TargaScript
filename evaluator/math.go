@@ -162,3 +162,120 @@ func rangeBuiltin(args ...object.Object) object.Object {
 	}
 	return &object.Array{Elements: elements}
 }
+
+// constants are values every program can read by name, unless it declares
+// the name itself.
+var constants = map[string]object.Object{
+	"PI": &object.Float{Value: math.Pi},
+	"E":  &object.Float{Value: math.E},
+}
+
+// Constant returns the value of a constant like PI.
+func Constant(name string) (object.Object, bool) {
+	value, ok := constants[name]
+	return value, ok
+}
+
+// MathHost computes sin, log and the like. Go's versions are large in
+// WebAssembly, so the browser build uses JavaScript's Math instead.
+type MathHost interface {
+	// Math applies the function name, like "sin" or "atan2", to args
+	Math(name string, args ...float64) float64
+}
+
+var mathHost MathHost
+
+// SetMathHost sets what sin, log and the like use.
+func SetMathHost(host MathHost) {
+	mathHost = host
+}
+
+// mathNames are the functions of MathHost. A list, not a map literal,
+// because TinyGo turns each entry of a map literal into code.
+var mathNames = []string{"sin", "cos", "tan", "asin", "acos", "atan", "log", "log10", "log2", "exp", "atan2", "hypot"}
+
+// mathArity is how many numbers a function of MathHost takes.
+func mathArity(name string) int {
+	if name == "atan2" || name == "hypot" {
+		return 2
+	}
+	return 1
+}
+
+func init() {
+	for _, name := range mathNames {
+		builtins[name] = &object.Builtin{Name: name, Fn: mathBuiltin(name)}
+	}
+	builtins["trunc"] = &object.Builtin{Name: "trunc", Fn: truncBuiltin}
+	builtins["sign"] = &object.Builtin{Name: "sign", Fn: signBuiltin}
+	builtins["clamp"] = &object.Builtin{Name: "clamp", Fn: clampBuiltin}
+}
+
+// mathBuiltin is the builtin for a function of MathHost.
+func mathBuiltin(name string) func(args ...object.Object) object.Object {
+	return func(args ...object.Object) object.Object {
+		if len(args) != mathArity(name) {
+			return &object.Error{Message: fmt.Sprintf("wrong number of arguments for %s. got=%d, want=%d", name, len(args), mathArity(name))}
+		}
+		values := make([]float64, len(args))
+		for i, arg := range args {
+			n, ok := number(arg)
+			if !ok {
+				return &object.Error{Message: fmt.Sprintf("arguments to `%s` must be numbers, got %s", name, typeName(arg))}
+			}
+			values[i] = n
+		}
+		if mathHost == nil {
+			return &object.Error{Message: name + " is not available here"}
+		}
+		return &object.Float{Value: mathHost.Math(name, values...)}
+	}
+}
+
+// truncBuiltin is a number without its decimals, toward zero.
+func truncBuiltin(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for trunc. got=%d, want=1", len(args))}
+	}
+	x, ok := number(args[0])
+	if !ok {
+		return &object.Error{Message: fmt.Sprintf("argument to `trunc` must be a number, got %s", typeName(args[0]))}
+	}
+	return &object.Float{Value: math.Trunc(x)}
+}
+
+// signBuiltin is -1, 0 or 1, an integer, as the number is negative, zero or
+// positive.
+func signBuiltin(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for sign. got=%d, want=1", len(args))}
+	}
+	x, ok := number(args[0])
+	if !ok {
+		return &object.Error{Message: fmt.Sprintf("argument to `sign` must be a number, got %s", typeName(args[0]))}
+	}
+	switch {
+	case x < 0:
+		return &object.Integer{Value: -1}
+	case x > 0:
+		return &object.Integer{Value: 1}
+	}
+	return &object.Integer{Value: 0}
+}
+
+// clampBuiltin keeps a number between a minimum and a maximum.
+func clampBuiltin(args ...object.Object) object.Object {
+	if len(args) != 3 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for clamp. got=%d, want=3 (value, min, max)", len(args))}
+	}
+	value, low, high := args[0], args[1], args[2]
+	for _, arg := range args {
+		if _, ok := number(arg); !ok {
+			return &object.Error{Message: fmt.Sprintf("arguments to `clamp` must be numbers, got %s", typeName(arg))}
+		}
+	}
+	if result := extreme("max", []object.Object{value, low}, func(a, b float64) bool { return a > b }); result != nil {
+		value = result
+	}
+	return extreme("min", []object.Object{value, high}, func(a, b float64) bool { return a < b })
+}

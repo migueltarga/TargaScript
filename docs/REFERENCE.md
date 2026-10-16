@@ -381,7 +381,8 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `printf(format, ...values)` / `format(format, ...values)` | prints / returns values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`... |
 | `type(value)` | `"integer"`, `"float"`, `"string"`, `"boolean"`, `"null"`, `"array"`, `"object"`, `"function"`, `"promise"` |
 | `toString(v)`, `toInt(v)`, `toFloat(v)` | convert values |
-| `abs`, `sqrt`, `pow`, `floor`, `ceil` | math |
+| `abs`, `sqrt`, `pow`, `floor`, `ceil`, `trunc`, `sign`, `clamp(x, min, max)` | math |
+| `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2(y, x)`, `hypot(x, y)`, `log`, `log10`, `log2`, `exp` | more math, with angles in radians; `PI` and `E` are constants |
 | `round(x)`, `round(x, places)` | the nearest integer, or a float with that many decimal places: `round(3.14159, 2)` is `3.14` |
 | `min(a, b, ...)`, `max(a, b, ...)`, `min(list)`, `max(list)` | the smallest or largest number |
 | `random()`, `random(a, b)`, `random(list)` | a float from 0 to 1, an integer from `a` to `b`, or a random element |

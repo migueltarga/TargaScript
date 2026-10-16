@@ -1100,6 +1100,10 @@ func (c *Compiler) compileGet(tok token.Token, name string) {
 		c.emit(tok, code.OpNull)
 		return
 	}
+	if value, isConstant := evaluator.Constant(name); !ok && isConstant {
+		c.emit(tok, code.OpConstant, c.addConstant(value))
+		return
+	}
 	if !ok {
 		c.emitNotDefined(tok, name)
 		return
