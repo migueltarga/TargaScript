@@ -69,18 +69,49 @@ func writeTrace(b *strings.Builder, trace []Call) {
 	if len(trace) < 2 {
 		return
 	}
+
+	// The same call over and over, like in runaway recursion, is one line
+	type group struct {
+		call  Call
+		times int
+	}
+	groups := []group{}
+	for _, call := range trace {
+		if n := len(groups); n > 0 && groups[n-1].call == call {
+			groups[n-1].times++
+			continue
+		}
+		groups = append(groups, group{call, 1})
+	}
+
+	// A long trace keeps its innermost and outermost calls
+	const shownFirst, shownLast = 8, 3
+	skipped := 0
+	if len(groups) > shownFirst+shownLast+1 {
+		for _, g := range groups[shownFirst : len(groups)-shownLast] {
+			skipped += g.times
+		}
+		groups = append(groups[:shownFirst:shownFirst], groups[len(groups)-shownLast:]...)
+	}
+
 	b.WriteString("\n")
-	for i, call := range trace {
+	for i, g := range groups {
+		if i == shownFirst && skipped > 0 {
+			fmt.Fprintf(b, "\n  ... %d more calls", skipped)
+		}
 		b.WriteString("\n  ")
 		if i == 0 {
 			b.WriteString("in ")
 		} else {
 			b.WriteString("called from ")
 		}
-		if call.Function == "" {
-			fmt.Fprintf(b, "line %d", call.Line)
+		if g.call.Function == "" {
+			fmt.Fprintf(b, "line %d", g.call.Line)
 		} else {
-			fmt.Fprintf(b, "%s (line %d)", call.Function, call.Line)
+			fmt.Fprintf(b, "%s (line %d)", g.call.Function, g.call.Line)
+		}
+		if g.times > 1 {
+			fmt.Fprintf(b, ", %d times", g.times)
 		}
 	}
 }

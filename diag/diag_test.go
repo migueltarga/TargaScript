@@ -59,3 +59,28 @@ func TestFormatWithTrace(t *testing.T) {
 		t.Errorf("top-level error shows a trace:\n%s", top)
 	}
 }
+
+func TestLongTraces(t *testing.T) {
+	// Runaway recursion: the same call thousands of times is one line
+	trace := []Call{}
+	for range 5000 {
+		trace = append(trace, Call{"f", 1})
+	}
+	trace = append(trace, Call{"", 2})
+	got := Format("fn f() { f() }\nf()", Diagnostic{Line: 1, Column: 10, Message: "too deep", Trace: trace})
+	if !strings.HasSuffix(got, "\n\n  in f (line 1), 5000 times\n  called from line 2") {
+		t.Errorf("got:\n%s", got)
+	}
+
+	// Alternating calls keep the innermost and the outermost
+	trace = []Call{}
+	for i := range 40 {
+		trace = append(trace, Call{[]string{"a", "b"}[i%2], i%2 + 1})
+	}
+	trace = append(trace, Call{"", 3})
+	got = Format("x\ny\nz", Diagnostic{Line: 1, Column: 1, Message: "deep", Trace: trace})
+	lines := strings.Count(got, "called from") + strings.Count(got, "\n  in ")
+	if lines != 11 || !strings.Contains(got, "... 30 more calls") || !strings.HasSuffix(got, "called from line 3") {
+		t.Errorf("%d calls shown in:\n%s", lines, got)
+	}
+}
