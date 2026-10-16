@@ -1,0 +1,14 @@
+// Lesson 10: Waiting with await
+//
+// await waits for a promise without blocking. sleep(ms) and fetch(url)
+// return promises, and work the same here and on the command line.
+
+print("Counting down...")
+repeat i in 1..3 {
+    print(4 - i)
+    await sleep(500)
+}
+print("Go!")
+
+let response = await fetch("welcome.tg")
+print("fetched", response.text.lines().length, "lines, status", response.status)

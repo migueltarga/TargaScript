@@ -1,0 +1,17 @@
+// Lesson 12: What's next
+//
+// You've seen the whole language! From here you can:
+//
+// - Open the examples in the menu above for bigger programs
+// - Install the command line: go install github.com/migueltarga/TargaScript/cmd/targascript@latest
+// - Use TargaScript in your own web pages with <script type="text/targascript">
+// - Read the source of this playground, written in TargaScript itself
+//
+// One last program: a tiny word counter.
+
+let text = "the quick brown fox jumps over the lazy dog the end"
+let counts = text.split(" ").groupBy(fn(w) { w })
+
+repeat word, list in counts {
+    if list.length > 1 { print(word, "appears", list.length, "times") }
+}

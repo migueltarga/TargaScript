@@ -1,0 +1,14 @@
+// Lesson 4: Arrays
+//
+// Arrays hold values in order. map, filter and reduce transform them,
+// and calls can be chained.
+
+let numbers = [5, 3, 8, 1, 9, 2]
+
+print(numbers.length, numbers.first(), numbers.last())
+print(numbers.map(fn(n) { n * 2 }))
+print(numbers.filter(fn(n) { n > 4 }))
+print(numbers.sum(), numbers.max(), numbers.sort())
+
+let evens = (1..10).filter(fn(n) { n % 2 == 0 }).map(fn(n) { n * n })
+print("squares of evens:", evens)

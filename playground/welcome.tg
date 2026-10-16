@@ -1,5 +1,6 @@
 // Welcome to TargaScript!
 // Edit this code and press Run (or Ctrl+Enter).
+// New here? Take the tour: pick "1. Hello, TargaScript" in the menu above.
 
 fn greet(name) {
     return "Hello, ${name}!"

@@ -1,0 +1,16 @@
+// Lesson 2: Variables and types
+//
+// let declares a variable you can change, const one you can't.
+// type() tells what kind of value something is.
+
+let count = 1
+count = count + 1
+count++
+print("count is", count)
+
+const pi = 3.14159
+print(pi, type(pi))
+print(type(42), type("text"), type(true), type(null), type([1]), type({}))
+
+// Try changing pi below: constants can't be reassigned
+// pi = 3
