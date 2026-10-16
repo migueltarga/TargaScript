@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101418"/>
+      <stop offset="1" stop-color="#16263a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <image xlink:href="../logo.png" x="72" y="66" width="112" height="112"/>
+  <text x="208" y="146" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="76" font-weight="700" fill="#ffffff">TargaScript</text>
+  <text x="74" y="236" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" fill="#c9d6e3">A small, modern scripting language for the terminal,</text>
+  <text x="74" y="282" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="34" fill="#c9d6e3">the browser and your Go programs.</text>
+  <rect x="72" y="326" width="1056" height="232" rx="18" fill="#0b0e11" stroke="#2b3a4a"/>
+  <g font-family="Menlo, Monaco, monospace" font-size="27" xml:space="preserve">
+    <text x="104" y="378"><tspan fill="#7fb3e6">let</tspan><tspan fill="#e8e8e6"> words = text</tspan></text>
+    <text x="104" y="418"><tspan fill="#e8e8e6">    </tspan><tspan fill="#f0a35e">|&gt;</tspan><tspan fill="#e8e8e6"> (t =&gt; t.lower().splitPattern(</tspan><tspan fill="#9fd6a0">"\W+"</tspan><tspan fill="#e8e8e6">))</tspan></text>
+    <text x="104" y="458"><tspan fill="#7fb3e6">serve</tspan><tspan fill="#e8e8e6">(</tspan><tspan fill="#f2c97d">8080</tspan><tspan fill="#e8e8e6">, req =&gt; </tspan><tspan fill="#7fb3e6">match</tspan><tspan fill="#e8e8e6"> req.path {</tspan></text>
+    <text x="104" y="498"><tspan fill="#e8e8e6">    </tspan><tspan fill="#9fd6a0">"/"</tspan><tspan fill="#e8e8e6"> =&gt; {words: words.length}</tspan></text>
+    <text x="104" y="538"><tspan fill="#e8e8e6">})</tspan></text>
+  </g>
+  <text x="74" y="598" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" fill="#7fb3e6">Try it in your browser: migueltarga.github.io/TargaScript</text>
+</svg>
