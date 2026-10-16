@@ -1,0 +1,7 @@
+let words = ["alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"]
+let counts = {}
+repeat i in 1..500000 {
+    let w = words[i % 8]
+    counts[w] = (counts[w] ?? 0) + 1
+}
+print(counts.length)

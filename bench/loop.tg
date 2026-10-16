@@ -1,0 +1,3 @@
+let total = 0
+repeat i in 1..3000000 { total += i % 7 }
+print(total)

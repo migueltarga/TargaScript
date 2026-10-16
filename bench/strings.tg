@@ -1,0 +1,4 @@
+let parts = []
+repeat i in 1..200000 { parts.insert("item-${i}") }
+let text = parts.join(",")
+print(text.split(",").length, text.length)

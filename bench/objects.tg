@@ -1,0 +1,4 @@
+let items = []
+repeat i in 1..200000 { items.insert({id: i, score: (i * 7919) % 1000}) }
+let sorted = items.sortBy(x => x.score)
+print(sorted[0].score, items.map(x => x.score).sum())
