@@ -15,6 +15,7 @@ Everything in the language, in one place. Code blocks marked `targascript` run a
 - [Asynchronous code](#asynchronous-code)
 - [Loading files](#loading-files)
 - [Builtin functions](#builtin-functions)
+- [Testing](#testing)
 - [Command line](#command-line)
 - [Web pages](#web-pages)
 
@@ -314,12 +315,39 @@ Paths are relative to the file with the `load`. A file runs once, however many t
 | `sleep(ms)`, `fetch(url, options)` | promises for `await` |
 | `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit` | [command line](#command-line) only |
 
+## Testing
+
+`test(name, fn)` runs a function as a test and prints whether it passed. A failing test shows the error and its line, and the rest of the file keeps running. `assert` and `assertEqual` are the usual way to fail.
+
+```targascript
+fn slugify(text) { text.trim().lower().replace(" ", "-") }
+
+test("slugify joins words with dashes", fn() {
+    assertEqual(slugify(" Hello World "), "hello-world")
+})
+// → ✓ slugify joins words with dashes
+```
+
+`targascript test` runs every file ending in `_test.tg` under the current directory, or the files and directories given, and prints a summary:
+
+```text
+math_test.tg
+✓ adds
+✗ divides
+    assertion failed: expected 2, got 2.5 (line 9)
+
+1 passed, 1 failed
+```
+
+It exits with 1 when a test fails, when a file has an error outside a test, or when there are no tests, so it can run in CI.
+
 ## Command line
 
 ```sh
 targascript                       # the REPL; unfinished code continues on the next line
 targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(2 ** 10)'   # run code given on the command line
+targascript test                  # run the *_test.tg files, see Testing
 cat script.tg | targascript -     # run code from standard input
 ```
 

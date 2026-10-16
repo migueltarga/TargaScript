@@ -40,6 +40,13 @@ func main() {
 		return
 	}
 
+	// test runs the tests, unless there's a file named test to run
+	if len(args) > 0 && args[0] == "test" {
+		if _, err := os.Stat("test"); err != nil {
+			os.Exit(runTests(args[1:], noColor))
+		}
+	}
+
 	// - reads the program from standard input
 	if len(args) > 0 && args[0] == "-" {
 		input, err := io.ReadAll(os.Stdin)
