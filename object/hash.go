@@ -269,3 +269,37 @@ func (h *Hash) Update(key HashKey, cache *PropertyCache, value Object) bool {
 	}
 	return false
 }
+
+// NewHashFromPairs makes the object of an object literal from its keys and
+// values, one after the other in pairs. The cache of the literal remembers
+// the shape of the object it made, so the next one starts with it instead
+// of adding its keys one by one. It returns the position of a key that
+// can't be one, or -1.
+func NewHashFromPairs(pairs []Object, cache *PropertyCache) (*Hash, int) {
+	n := len(pairs) / 2
+	if s := cache.shape; s != nil && len(s.keys) == n {
+		values := make([]Object, n)
+		same := true
+		for i := 0; i < n && same; i++ {
+			key, ok := pairs[2*i].(Hashable)
+			same = ok && key.HashKey() == s.keys[i]
+			values[i] = pairs[2*i+1]
+		}
+		if same {
+			return &Hash{shape: s, values: values}, -1
+		}
+	}
+
+	h := NewHashOfSize(n)
+	for i := 0; i < len(pairs); i += 2 {
+		key, ok := pairs[i].(Hashable)
+		if !ok {
+			return nil, i
+		}
+		h.Set(key, pairs[i+1])
+	}
+	if h.shape != nil {
+		cache.shape = h.shape
+	}
+	return h, -1
+}

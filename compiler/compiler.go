@@ -1034,7 +1034,7 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 				return err
 			}
 		}
-		c.emit(node.Token, code.OpHash, len(node.Order))
+		c.emit(node.Token, code.OpHash, len(node.Order), c.cache())
 
 	case *ast.PrefixExpression:
 		if err := c.compileExpression(node.Right); err != nil {
@@ -1416,7 +1416,7 @@ func (c *Compiler) compileSpreadArgs(tok token.Token, args []ast.Expression) err
 // compileSpreadHash builds an object pair by pair, copying the properties of
 // each spread.
 func (c *Compiler) compileSpreadHash(node *ast.HashLiteral) error {
-	c.emit(token.Token{}, code.OpHash, 0)
+	c.emit(token.Token{}, code.OpHash, 0, c.cache())
 	for _, name := range node.Order {
 		pair := node.Pairs[name]
 		if pair.Value == nil {

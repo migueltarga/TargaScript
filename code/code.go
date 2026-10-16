@@ -19,7 +19,7 @@ const (
 	OpFalse
 	OpNull
 	OpArray     // pop n elements, push an array
-	OpHash      // pop n key/value pairs, push an object
+	OpHash      // pop n key/value pairs, push an object; the second operand is the cache of its shape
 	OpTemplate  // pop n parts, push them joined as a string
 	OpAppend    // pop a value and add it to the array below, or its elements when the operand is 1
 	OpHashSet   // pop a value and a key and set them in the object below
@@ -122,7 +122,7 @@ var definitions = map[Opcode]*Definition{
 	OpFalse:     {"OpFalse", []int{}},
 	OpNull:      {"OpNull", []int{}},
 	OpArray:     {"OpArray", []int{2}},
-	OpHash:      {"OpHash", []int{2}},
+	OpHash:      {"OpHash", []int{2, 2}},
 	OpTemplate:  {"OpTemplate", []int{2}},
 	OpAppend:    {"OpAppend", []int{1}},
 	OpHashSet:   {"OpHashSet", []int{}},

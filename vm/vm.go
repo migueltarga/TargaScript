@@ -335,15 +335,12 @@ func (vm *VM) loop(base int) object.Object {
 
 		case code.OpHash:
 			n := int(code.ReadUint16(ins[ip+1:]))
-			f.ip += 2
-			hash := object.NewHashOfSize(n)
+			cache := &f.cl.Fn.Caches[code.ReadUint16(ins[ip+3:])]
+			f.ip += 4
 			start := vm.sp - 2*n
-			for i := start; i < vm.sp; i += 2 {
-				key, ok := vm.stack[i].(object.Hashable)
-				if !ok {
-					return vm.errorAt(f, ip, "%s can't be an object key", evaluator.TypeName(vm.stack[i]))
-				}
-				hash.Set(key, vm.stack[i+1])
+			hash, bad := object.NewHashFromPairs(vm.stack[start:vm.sp], cache)
+			if bad >= 0 {
+				return vm.errorAt(f, ip, "%s can't be an object key", evaluator.TypeName(vm.stack[start+bad]))
 			}
 			vm.sp = start
 			vm.push(hash)
