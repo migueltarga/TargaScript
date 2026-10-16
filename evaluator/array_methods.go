@@ -30,8 +30,8 @@ func evalArraySearchMethod(arr *object.Array, method string, args []object.Objec
 		if len(args) != 1 || !isCallable(args[0]) {
 			return newError(line, column, "array.find() takes one FUNCTION argument"), true
 		}
-		for _, element := range arr.Elements {
-			matched := applyFunction(args[0], []object.Object{element})
+		for i, element := range arr.Elements {
+			matched := applyFunction(args[0], callbackArgs(args[0], element, i))
 			if isError(matched) {
 				return matched, true
 			}
@@ -197,4 +197,22 @@ func valuesEqual(a, b object.Object, depth int) bool {
 		return ok && a.Value == b.Value
 	}
 	return false
+}
+
+// callbackArgs are the arguments an array method passes its function: the
+// element, and its position too when the function takes a second
+// parameter, as in list.map((item, i) => ...). Functions with one
+// parameter, and builtins like print, get only the element.
+func callbackArgs(fn object.Object, element object.Object, index int) []object.Object {
+	if wantsArgs(fn, 2) {
+		return []object.Object{element, &object.Integer{Value: int64(index)}}
+	}
+	return []object.Object{element}
+}
+
+// wantsArgs reports whether fn is a TargaScript function that takes n
+// arguments or more.
+func wantsArgs(fn object.Object, n int) bool {
+	cl, ok := fn.(*object.Closure)
+	return ok && (cl.Fn.NumParams >= n || cl.Fn.Variadic)
 }

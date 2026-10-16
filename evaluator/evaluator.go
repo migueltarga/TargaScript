@@ -708,9 +708,9 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 			result := make([]object.Object, 0, len(obj.Elements))
-			for _, elem := range obj.Elements {
+			for i, elem := range obj.Elements {
 				// A function that awaits gives a promise, for all()
-				mappedValue := applyFunctionAsync(fn, []object.Object{elem})
+				mappedValue := applyFunctionAsync(fn, callbackArgs(fn, elem, i))
 				if isError(mappedValue) {
 					return mappedValue
 				}
@@ -729,8 +729,8 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			}
 
 			result := make([]object.Object, 0)
-			for _, elem := range obj.Elements {
-				predicate := applyFunction(fn, []object.Object{elem})
+			for i, elem := range obj.Elements {
+				predicate := applyFunction(fn, callbackArgs(fn, elem, i))
 				if isError(predicate) {
 					return predicate
 				}
@@ -754,8 +754,12 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 			initialValue := args[1]
 			accumulator := initialValue
 
-			for _, elem := range obj.Elements {
-				accumulator = applyFunction(fn, []object.Object{accumulator, elem})
+			for i, elem := range obj.Elements {
+				reduceArgs := []object.Object{accumulator, elem}
+				if wantsArgs(fn, 3) {
+					reduceArgs = append(reduceArgs, &object.Integer{Value: int64(i)})
+				}
+				accumulator = applyFunction(fn, reduceArgs)
 				if isError(accumulator) {
 					return accumulator
 				}

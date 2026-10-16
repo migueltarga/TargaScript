@@ -152,6 +152,8 @@ Array methods:
   - `removeAt(i)` removes at a position;
   - `sort()`, `sort(compare)`, `sortBy(fn)` and `reverse()` reorder it.
 
+Functions given to `map`, `filter`, `find`, `some`, `every`, `count`, `sortBy` and `groupBy` get the position too when they take a second parameter, as in `list.map((item, i) => "${i + 1}. ${item}")`; `reduce` passes it third.
+
 `array[i]` is `null` outside the array, and negative positions in `array[i]`, `slice` and `removeAt` count from the end.
 
 ## Objects
