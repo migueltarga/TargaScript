@@ -5,22 +5,25 @@
 package main
 
 import (
+	"strings"
+
+	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/jsbridge"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
+	"github.com/migueltarga/TargaScript/vm"
 )
 
-// maxNesting keeps recursion within the browser's native stack, allowing
-// about 300 nested calls of a simple recursive function. Workers have a
-// smaller stack than pages: in a Chrome worker, a function whose body is
-// just a recursive call failed at about 540 calls with no limit.
-const maxNesting = 1200
+// maxNestedRuns limits closures called from Go code, like the callbacks of
+// map or JavaScript events, which nest in the browser's small native stack.
+// Ordinary recursion runs in the VM's own frames and isn't limited by it.
+const maxNestedRuns = 100
 
-// Environment shared by the scripts of a page
-var pageEnv *object.Environment
+// Session shared by the scripts of a page
+var page *session
 
 // writer sends output to a function, a TargaScript one or a JavaScript one.
 type writer func(text string)
@@ -30,20 +33,33 @@ func (w writer) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func newEnvironment() *object.Environment {
-	env := object.NewEnvironment()
-	env.Set("NULL", evaluator.NULL)
-	env.Set("js", jsbridge.Global())
-	env.Set("targascript", targascriptObject())
-	return env
+// session compiles and runs code, keeping its variables between runs.
+type session struct {
+	compiler *compiler.Compiler
+	machine  *vm.VM
+}
+
+func newSession() *session {
+	c := compiler.New()
+	s := &session{compiler: c, machine: vm.New(c.Globals())}
+	s.machine.SetGlobal("NULL", evaluator.NULL)
+	s.machine.SetGlobal("js", jsbridge.Global())
+	s.machine.SetGlobal("targascript", targascriptObject())
+	return s
 }
 
 // current output, restored after a nested run
-var output writer
+var output writer = toConsole
+
+// toConsole is where print writes outside a run, as in event handlers. Each
+// print is one write ending in a newline, which console.log adds itself.
+func toConsole(text string) {
+	jsbridge.ConsoleLog(strings.TrimSuffix(text, "\n"))
+}
 
 // run parses and evaluates source in env, returning the error message or
 // "".
-func run(source string, env *object.Environment, out writer) string {
+func run(source string, s *session, out writer) string {
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) > 0 {
@@ -62,7 +78,11 @@ func run(source string, env *object.Environment, out writer) string {
 		evaluator.SetOutput(previous)
 	}()
 
-	if err, ok := evaluator.Eval(program, env).(*object.Error); ok {
+	bytecode, err := s.compiler.Compile(program)
+	if err != nil {
+		return err.Error()
+	}
+	if err, ok := s.machine.Run(bytecode).(*object.Error); ok {
 		return diag.Format(source, diag.Diagnostic{Line: err.Line, Column: err.Column, Message: err.Message})
 	}
 	return ""
@@ -91,7 +111,7 @@ func targascriptObject() *object.Hash {
 			out := writer(func(text string) {
 				evaluator.CallFunction(onOutput, []object.Object{&object.String{Value: text}})
 			})
-			if err := run(source.Value, newEnvironment(), out); err != "" {
+			if err := run(source.Value, newSession(), out); err != "" {
 				return &object.String{Value: err}
 			}
 			return evaluator.NULL
@@ -107,12 +127,12 @@ func targascriptObject() *object.Hash {
 //
 //go:wasmexport evaluate
 func evaluate(source, onOutput, fresh uint32) uint32 {
-	env := pageEnv
+	s := page
 	if fresh != 0 {
-		env = newEnvironment()
+		s = newSession()
 	}
 	out := writer(func(text string) { jsbridge.Invoke(onOutput, text) })
-	if err := run(jsbridge.ReadString(source), env, out); err != "" {
+	if err := run(jsbridge.ReadString(source), s, out); err != "" {
 		return jsbridge.MakeString(err)
 	}
 	return 0
@@ -126,8 +146,9 @@ func callback(id, args uint32) uint32 {
 }
 
 func init() {
-	evaluator.SetMaxNesting(maxNesting)
-	pageEnv = newEnvironment()
+	vm.MaxNestedRuns = maxNestedRuns
+	evaluator.SetOutput(output)
+	page = newSession()
 }
 
 func main() {}
