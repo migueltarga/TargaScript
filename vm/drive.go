@@ -1,0 +1,119 @@
+package vm
+
+import (
+	"github.com/migueltarga/TargaScript/evaluator"
+	"github.com/migueltarga/TargaScript/object"
+)
+
+// driver runs map, filter or reduce over an array with a function of this
+// VM that can't pause, in the VM's loop: each call of the function returns
+// to it, which notes the result and calls the function again with the next
+// element. Going through the evaluator, each call would start the loop
+// again.
+type driver struct {
+	method string
+	cl     *object.Closure
+	elems  []object.Object
+	i      int // the element of the call running
+	out    []object.Object
+	acc    object.Object
+}
+
+// drive returns a driver for receiver.method with argc arguments from the
+// register after fn, when the VM can run it, or nil.
+func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver {
+	arr, ok := receiver.(*object.Array)
+	if !ok || len(vm.frames) > evaluator.MaxCallDepth {
+		return nil
+	}
+	switch {
+	case (method == "map" || method == "filter") && argc == 1, method == "reduce" && argc == 2:
+	default:
+		return nil
+	}
+	cl, ok := vm.stack[fn+1].(*object.Closure)
+	if !ok || cl.Runner != vm || !cl.Fn.Leaf || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
+		return nil
+	}
+	d := &driver{method: method, cl: cl, elems: arr.Elements}
+	if method == "reduce" {
+		d.acc = vm.stack[fn+2]
+	} else {
+		d.out = make([]object.Object, 0, len(arr.Elements))
+	}
+	return d
+}
+
+// result is what the method returns.
+func (d *driver) result() object.Object {
+	if d.method == "reduce" {
+		return d.acc
+	}
+	return &object.Array{Elements: d.out}
+}
+
+// enter starts the call of the function for the current element, with its
+// registers from base, as map, filter and reduce pass its arguments: the
+// element, and its index when the function takes it, after the
+// accumulator for reduce.
+func (vm *VM) enter(d *driver, base int) *frame {
+	fn := d.cl.Fn
+	vm.ensureStack(base + fn.NumRegisters + 256)
+	vm.stack[base-1] = d.cl
+	var args [3]object.Object
+	n := 0
+	if d.method == "reduce" {
+		args[n] = d.acc
+		n++
+	}
+	args[n] = d.elems[d.i]
+	n++
+	if fn.NumParams > n {
+		args[n] = vm.ints.get(int64(d.i))
+		n++
+	}
+	for p := 0; p < fn.NumParams; p++ {
+		value := object.Object(NULL)
+		if p < n {
+			value = args[p]
+		}
+		vm.stack[base+p] = value
+	}
+	for i := base + fn.NumParams; i < base+fn.NumLocals; i++ {
+		vm.stack[i] = nil
+	}
+	vm.receiver = nil
+	vm.sp = base + fn.NumRegisters
+	f := vm.pushFrame(d.cl, base)
+	f.driver = d
+	return f
+}
+
+// returned notes the result of a call of the function, and reports
+// whether the method is done.
+func (d *driver) returned(value object.Object) bool {
+	switch d.method {
+	case "map":
+		d.out = append(d.out, value)
+	case "filter":
+		if evaluator.IsTruthy(value) {
+			d.out = append(d.out, d.elems[d.i])
+		}
+	default:
+		d.acc = value
+	}
+	d.i++
+	return d.i >= len(d.elems)
+}
+
+// countCall counts a call of the function against MaxSteps, as calls from
+// the evaluator are.
+func (vm *VM) countCall() *object.Error {
+	if vm.MaxSteps > 0 {
+		vm.steps++
+		if vm.steps > vm.MaxSteps {
+			return evaluator.NewError(0, 0, "the program took more than %d steps", vm.MaxSteps)
+		}
+	}
+	return nil
+}
