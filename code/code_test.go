@@ -84,7 +84,7 @@ func TestReadOperands(t *testing.T) {
 }
 
 func TestEveryOpcodeIsDefined(t *testing.T) {
-	for op := OpConstant; op <= OpAwait; op++ {
+	for op := OpConstant; op <= OpThrow; op++ {
 		if _, err := Lookup(byte(op)); err != nil {
 			t.Errorf("opcode %d has no definition", op)
 		}

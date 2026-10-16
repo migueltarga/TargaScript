@@ -248,6 +248,13 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 	case *ast.RepeatStatement:
 		return c.compileRepeat(stmt)
 
+	case *ast.ThrowStatement:
+		if err := c.compileExpression(stmt.Value); err != nil {
+			return err
+		}
+		c.emit(stmt.Token, code.OpThrow)
+		return nil
+
 	case *ast.PrintStatement:
 		for _, arg := range stmt.Arguments {
 			if err := c.compileExpression(arg); err != nil {
@@ -491,6 +498,33 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 	return nil
 }
 
+// compileTry compiles a try expression, whose value is the value of its
+// body, or of its catch block when the body fails.
+func (c *Compiler) compileTry(stmt *ast.TryExpression) error {
+	try := c.emit(token.Token{}, code.OpTry, 9999)
+	if err := c.compileBlock(stmt.Body); err != nil {
+		return err
+	}
+	c.emit(token.Token{}, code.OpTryEnd)
+	jumpEnd := c.emit(token.Token{}, code.OpJump, 9999)
+
+	// The VM jumps here with the error on the stack
+	c.changeOperands(try, len(c.scope.instructions))
+	c.fn.pushBlock()
+	if stmt.Name != nil {
+		c.emitDefine(c.fn.defineLocal(stmt.Name.Value, false))
+	}
+	c.emit(token.Token{}, code.OpPop)
+	err := c.compileStatements(stmt.Catch.Statements)
+	c.fn.popBlock()
+	if err != nil {
+		return err
+	}
+
+	c.changeOperands(jumpEnd, len(c.scope.instructions))
+	return nil
+}
+
 func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 	enter := c.emit(token.Token{}, code.OpLoopEnter, 9999, 9999)
 	start := len(c.scope.instructions)
@@ -632,6 +666,9 @@ func (c *Compiler) compileExpression(node ast.Expression) error {
 			}
 		}
 		c.emit(node.Token, code.OpCall, len(node.Arguments))
+
+	case *ast.TryExpression:
+		return c.compileTry(node)
 
 	case *ast.AwaitExpression:
 		if err := c.compileExpression(node.Value); err != nil {
