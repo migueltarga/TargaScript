@@ -337,6 +337,7 @@ targascript script.tg a b         # run a file; it sees ["a", "b"] in args
 targascript -e 'print(pow(2, 10))' # run code from the command line
 cat script.tg | targascript -     # run code from standard input
 targascript test                  # run the *_test.tg files
+targascript test --watch          # run them again whenever a .tg file changes
 targascript check                 # find problems in .tg files without running them
 targascript fmt                   # indent .tg files consistently
 targascript build app.tg          # make ./app, an executable to share, nothing to install
