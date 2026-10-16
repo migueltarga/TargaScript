@@ -29,7 +29,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 
 - JSON that keeps the order of keys, regular expressions (with function replacements), dates with readable layouts (`timeFormat`, `parseTime`)
 - Array methods like `groupBy`, `sortBy`, `chunk`, `zip`, `toObject`, `unique`, `sum`; callbacks get the index when they ask for it
-- `fetch`, `sleep`, `input`, files, environment variables and exit codes
+- `fetch`, `sleep`, `input`, files, environment variables, exit codes, and `exec` to run other programs
 - `serve(port, handler)` for HTTP servers, with `response`, `staticFile`, `escapeHTML` and handlers that can await
 - `load` for other files, also from web addresses
 

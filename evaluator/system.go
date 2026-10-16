@@ -25,6 +25,15 @@ type LineReader interface {
 	ReadLine() (string, bool)
 }
 
+// CommandRunner is a System that can run other programs, for exec.
+type CommandRunner interface {
+	// RunCommand runs a program with its arguments, or with shell set, a
+	// command line in the system's shell. It returns what the program wrote
+	// to its output and its errors, and its exit code; err is set when it
+	// couldn't start.
+	RunCommand(program string, args []string, shell bool) (stdout, stderr string, code int, err error)
+}
+
 // SetSystem sets what readFile, writeFile, listDir, env and exit use.
 func SetSystem(s System) {
 	system = s
@@ -42,6 +51,47 @@ func init() {
 	builtins["env"] = &object.Builtin{Name: "env", Fn: envBuiltin}
 	builtins["exit"] = &object.Builtin{Name: "exit", Fn: exitBuiltin}
 	builtins["input"] = &object.Builtin{Name: "input", Fn: inputBuiltin}
+	builtins["exec"] = &object.Builtin{Name: "exec", Fn: execBuiltin}
+}
+
+// execBuiltin runs a command line in the shell, exec("ls -l"), or a
+// program with a list of arguments, exec("git", ["log", "-1"]), and returns
+// {output, errors, code, ok}. A program that fails gives its code; only one
+// that can't start is an error.
+func execBuiltin(args ...object.Object) object.Object {
+	if len(args) < 1 || len(args) > 2 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for exec. got=%d, want=1 or 2", len(args))}
+	}
+	command, ok := args[0].(*object.String)
+	if !ok {
+		return &object.Error{Message: fmt.Sprintf("first argument to `exec` must be a string, got %s", typeName(args[0]))}
+	}
+	var programArgs []string
+	if len(args) == 2 {
+		list, ok := args[1].(*object.Array)
+		if !ok {
+			return &object.Error{Message: fmt.Sprintf("second argument to `exec` must be an array of arguments, got %s", typeName(args[1]))}
+		}
+		programArgs = make([]string, len(list.Elements))
+		for i, arg := range list.Elements {
+			programArgs[i] = objectToString(arg)
+		}
+	}
+	runner, ok := system.(CommandRunner)
+	if !ok {
+		return noSystem("exec")
+	}
+
+	stdout, stderr, code, err := runner.RunCommand(command.Value, programArgs, len(args) == 1)
+	if err != nil {
+		return &object.Error{Message: fmt.Sprintf("cannot run %q: %s", command.Value, err)}
+	}
+	result := object.NewHash()
+	result.Set(&object.String{Value: "output"}, &object.String{Value: stdout})
+	result.Set(&object.String{Value: "errors"}, &object.String{Value: stderr})
+	result.Set(&object.String{Value: "code"}, &object.Integer{Value: int64(code)})
+	result.Set(&object.String{Value: "ok"}, nativeBoolToBooleanObject(code == 0))
+	return result
 }
 
 func noSystem(name string) *object.Error {
