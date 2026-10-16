@@ -2,6 +2,7 @@ package repl
 
 import (
 	"github.com/migueltarga/TargaScript/diag"
+	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/parser"
 )
@@ -22,6 +23,9 @@ func Check(source, dir string) []diag.Diagnostic {
 
 	s := newSession()
 	s.compiler.Dir = dir
+	// The globals of the browser, so scripts for web pages check too
+	s.machine.SetGlobal("js", evaluator.NULL)
+	s.machine.SetGlobal("targascript", evaluator.NULL)
 	if _, err := s.compiler.Compile(program); err != nil {
 		problems = append(problems, diag.Diagnostic{Message: err.Error()})
 	}
