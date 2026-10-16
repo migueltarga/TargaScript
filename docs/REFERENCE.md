@@ -18,6 +18,7 @@ Everything in the language, in one place. For complete programs that do everyday
 - [Testing](#testing)
 - [Command line](#command-line)
 - [Web pages](#web-pages)
+- [Embedding in Go](EMBEDDING.md), in its own page
 
 ## Basics
 
@@ -37,7 +38,7 @@ print(type([1]), type({"a": 1}), type(fn() { 1 }))
 // → array object function
 ```
 
-Statements end at the end of the line; `;` can separate several on one line. Blocks are in braces, and variables declared in a block only exist in it. Everything is an expression: a block's value is the value of its last statement.
+Statements end at the end of the line, unless the next line starts with an operator like `|>`, `.`, `+` or `&&`, which continues the expression; `(`, `[` and `-` at the start of a line always begin a new statement. `;` can separate several statements on one line. Blocks are in braces, and variables declared in a block only exist in it. Everything is an expression: a block's value is the value of its last statement.
 
 Numbers are 64-bit integers or floats. Integer arithmetic that overflows is an error, and integer division truncates: `7 / 2` is `3`, `7.0 / 2` is `3.5`. Dividing a float by zero gives `Inf` or `NaN`; dividing an integer by zero is an error.
 
@@ -400,7 +401,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 
 ## Testing
 
-`test(name, fn)` runs a function as a test and prints whether it passed. A failing test shows the error and its line, and the rest of the file keeps running. `assert` and `assertEqual` are the usual way to fail.
+`test(name, fn)` runs a function as a test and prints whether it passed. A failing test shows the error and its line, and the rest of the file keeps running. The function can await, and the next test starts when it's done. `assert` and `assertEqual` are the usual way to fail.
 
 ```targascript
 fn slugify(text) { text.trim().lower().replace(" ", "-") }
