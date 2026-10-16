@@ -80,7 +80,20 @@ repeat c in "abc" { print(c) }
 
 Escapes are `\n`, `\t`, `\r`, `\"`, `\\` and `\$` (for a literal `${`); other backslashes stay as written, so `"\d+"` is `\d+`. `${value:spec}` formats like [`format`](#builtin-functions). Strings can be joined with `+`, which turns the right side into text: `"n = " + 5`.
 
-String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`. Positions count characters, and `str[i]` is `null` outside the string.
+Patterns are regular expressions in strings:
+
+```targascript
+let text = "Ana 31, Bia 25"
+print(text.matches("\d+"))                               // → true
+print(text.match("(\w+) (\d+)"))                         // → ["Ana 31", "Ana", "31"]
+print(text.matchAll("(\w+) (\d+)").map(([_, n, a]) => n)) // → ["Ana", "Bia"]
+print(text.replacePattern("(\w+) (\d+)", "$2:$1"))       // → 31:Ana, 25:Bia
+print("a1b22c".splitPattern("\d+"))                       // → ["a", "b", "c"]
+```
+
+`match` gives the match and its groups, or `null`. The command line uses Go's regular expressions and the browser JavaScript's; their common syntax (classes like `\d` and `\w`, groups, `*`, `+`, `?`, `{n,m}`, `^`, `$`, `|`) works the same in both.
+
+String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`, and with patterns `matches`, `match`, `matchAll`, `replacePattern` and `splitPattern`. Positions count characters, and `str[i]` is `null` outside the string.
 
 ## Arrays
 
