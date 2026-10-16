@@ -1,0 +1,33 @@
+// Lesson 8: Structs and enums
+//
+// A struct names a kind of object: its fields, with defaults, and its
+// methods. Calling it makes a value. An enum is a set of named values.
+
+struct Point {
+    x = 0, y = 0
+    fn plus(other) { Point(this.x + other.x, this.y + other.y) }
+    fn length() { (this.x ** 2 + this.y ** 2) ** 0.5 }
+}
+
+let p = Point(3, 4)
+print(p, p.length())
+print(p.plus(Point(1)))        // y takes its default, 0
+print(type(p), p == Point(3, 4))
+
+enum Light { Red, Yellow, Green }
+
+// A match on an enum needs an arm for every value. Try removing one:
+// the error shows up before the program runs.
+fn next(light) {
+    match light {
+        Light.Red => Light.Green
+        Light.Green => Light.Yellow
+        Light.Yellow => Light.Red
+    }
+}
+
+let light = Light.Red
+repeat 4 {
+    print(light)
+    light = next(light)
+}

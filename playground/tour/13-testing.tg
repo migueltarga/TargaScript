@@ -1,4 +1,4 @@
-// Lesson 12: Testing
+// Lesson 13: Testing
 //
 // test runs a function as a named test. assert and assertEqual fail
 // it, and a failing test shows why without stopping the others.

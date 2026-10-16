@@ -8,10 +8,11 @@ import (
 	"github.com/migueltarga/TargaScript/token"
 )
 
-// declaration is a name a file declares with fn, let or const.
+// declaration is a name a file declares with fn, let, const, struct or
+// enum.
 type declaration struct {
 	name         string
-	kind         int    // the LSP symbol kind: 12 function, 13 variable, 14 constant
+	kind         int    // the LSP symbol kind: 12 function, 13 variable, 14 constant, 23 struct, 10 enum
 	line, column int    // 0-based, of the name
 	blocks       string // the blocks it's in, like "/1/4", from the outermost
 }
@@ -42,6 +43,9 @@ func scan(source string, line, column int, found func(declaration)) string {
 			}
 		case token.IDENT:
 			kind := map[token.TokenType]int{token.FUNCTION: 12, token.LET: 13, token.CONST: 14}[previous.Type]
+			if previous.Type == token.IDENT {
+				kind = map[string]int{"struct": 23, "enum": 10}[previous.Literal]
+			}
 			if kind != 0 && found != nil {
 				found(declaration{tok.Literal, kind, tok.Line - 1, tok.Column - 1, strings.Join(open, "")})
 			}

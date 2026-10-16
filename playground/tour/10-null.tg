@@ -1,4 +1,4 @@
-// Lesson 9: Working with null
+// Lesson 10: Working with null
 //
 // ?? gives a fallback for null, and ?. reads a property only when the
 // value isn't null. Destructuring takes values apart.

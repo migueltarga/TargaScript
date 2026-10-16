@@ -238,7 +238,7 @@ func uriPath(uri string) string {
 }
 
 var keywords = []string{"let", "const", "fn", "if", "else", "return", "repeat", "in", "break",
-	"continue", "load", "as", "await", "try", "catch", "finally", "throw", "match", "true", "false", "null", "this"}
+	"continue", "load", "as", "await", "try", "catch", "finally", "throw", "match", "true", "false", "null", "this", "struct", "enum"}
 
 // completions lists the names the file declares, the builtins and the
 // keywords.
@@ -248,9 +248,10 @@ func (s *Server) completions(uri string) []any {
 	for _, d := range declarations(s.files[uri]) {
 		if !seen[d.name] {
 			seen[d.name] = true
-			kind := 6 // variable
-			if d.kind == 12 {
-				kind = 3 // function
+			// The completion kinds of variables, functions, structs and enums
+			kind := map[int]int{12: 3, 23: 22, 10: 13}[d.kind]
+			if kind == 0 {
+				kind = 6
 			}
 			items = append(items, map[string]any{"label": d.name, "kind": kind})
 		}

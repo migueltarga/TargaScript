@@ -1,4 +1,4 @@
-// Lesson 10: Waiting with await
+// Lesson 11: Waiting with await
 //
 // await waits for a promise without blocking. sleep(ms) and fetch(url)
 // return promises, and work the same here and on the command line.

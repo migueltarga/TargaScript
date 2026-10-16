@@ -1,4 +1,4 @@
-// Lesson 11: JSON
+// Lesson 12: JSON
 //
 // parseJSON and toJSON convert between text and values, keeping the
 // order of keys. Together with fetch, that's all you need for most APIs.

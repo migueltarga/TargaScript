@@ -73,6 +73,14 @@
     "storage": {
       "patterns": [
         {
+          "comment": "struct and enum are keywords only before a name",
+          "match": "\\b(struct|enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.targascript" },
+            "2": { "name": "entity.name.type.targascript" }
+          }
+        },
+        {
           "name": "storage.type.targascript",
           "match": "\\b(let|const|fn)\\b"
         }

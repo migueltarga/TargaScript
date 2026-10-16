@@ -24,6 +24,16 @@
     "body": ["match ${1:value} {", "\t${2:pattern} => ${3:result}", "\t_ => ${0:null}", "}"],
     "description": "Pick a result by matching a value"
   },
+  "Struct": {
+    "prefix": "struct",
+    "body": ["struct ${1:Name} {", "\t${2:field}", "", "\tfn ${3:method}() {", "\t\t$0", "\t}", "}"],
+    "description": "A struct, with fields and methods"
+  },
+  "Enum": {
+    "prefix": "enum",
+    "body": ["enum ${1:Name} { ${2:First}, ${0:Second} }"],
+    "description": "An enum, a set of named values"
+  },
   "Try": {
     "prefix": "try",
     "body": ["try {", "\t$1", "} catch ${2:err} {", "\t$0", "}"],

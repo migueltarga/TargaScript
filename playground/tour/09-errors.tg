@@ -1,4 +1,4 @@
-// Lesson 8: Handling errors
+// Lesson 9: Handling errors
 //
 // try runs code that may fail, and catch gets the error with its
 // message, line and column. throw raises your own.
