@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/migueltarga/TargaScript/floats"
 )
 
 // Sprintf formats args by format.
@@ -349,7 +351,7 @@ func float(s spec, verb rune, v float64) text {
 	if verb == 'F' {
 		format = 'f'
 	}
-	body := strconv.FormatFloat(v, format, precision, 64)
+	body := floats.Format(v, format, precision)
 	if s.sharp && !math.IsInf(v, 0) && !math.IsNaN(v) {
 		body = alternate(body, verb, precision)
 	}

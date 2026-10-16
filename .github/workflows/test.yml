@@ -33,7 +33,7 @@ jobs:
       - name: Run examples
         run: |
           go build -o targascript ./cmd/targascript
-          for f in examples/*.tg; do
+          for f in examples/*.tg web/testdata/*.tg; do
             # constants.tg ends with an intentional error
             [ "$f" = "examples/constants.tg" ] && continue
             echo "== $f"
@@ -82,7 +82,7 @@ jobs:
       - name: Compare examples with the CLI
         run: |
           go build -o targascript ./cmd/targascript
-          for f in examples/*.tg; do
+          for f in examples/*.tg web/testdata/*.tg; do
             # These use random numbers, the clock or load, which differ in the browser
             case "$f" in examples/math_string_time.tg|examples/word_stats.tg) continue ;; esac
             echo "== $f"

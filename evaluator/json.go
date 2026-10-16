@@ -7,6 +7,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/migueltarga/TargaScript/floats"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -296,8 +297,8 @@ func (p *jsonParser) number() (object.Object, string) {
 			return &object.Integer{Value: n}, ""
 		}
 	}
-	f, err := strconv.ParseFloat(literal, 64)
-	if err != nil {
+	f, ok := floats.Parse(literal)
+	if !ok {
 		return nil, "number " + literal + " is out of range"
 	}
 	return &object.Float{Value: f}, ""
@@ -357,7 +358,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		if math.IsInf(obj.Value, 0) || math.IsNaN(obj.Value) {
 			return &object.Error{Message: "cannot convert " + obj.Inspect() + " to JSON"}
 		}
-		out.WriteString(strconv.FormatFloat(obj.Value, 'g', -1, 64))
+		out.WriteString(floats.Format(obj.Value, 'g', -1))
 	case *object.String:
 		writeJSONString(out, obj.Value)
 	case *object.Array:

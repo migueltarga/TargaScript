@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
+	"github.com/migueltarga/TargaScript/floats"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
@@ -891,8 +892,8 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 func (p *Parser) parseFloatLiteral() ast.Expression {
 	lit := &ast.FloatLiteral{Token: p.curToken}
 
-	value, err := strconv.ParseFloat(strings.ReplaceAll(p.curToken.Literal, "_", ""), 64)
-	if err != nil {
+	value, ok := floats.Parse(strings.ReplaceAll(p.curToken.Literal, "_", ""))
+	if !ok {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for a number", p.curToken.Literal)
 		return nil
 	}

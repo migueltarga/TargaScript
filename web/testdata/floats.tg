@@ -1,0 +1,13 @@
+// Floats in every format, which the browser formats and reads with
+// JavaScript's help: its output must be the command line's
+let xs = [0.1, 0.2, 0.3, 1.5, 2.5, 0.125, 0.375, 1e21, 1e20, 123456789.0, 1e-7, 0.0001, 1e100, 1e-300,
+    1.7976931348623157e308, 5e-324, 99.995, 0.045, 1234.5678, -0.0, 3.0, 1e15, 123.456, 9.5, 0.95,
+    999999.5, 1e16, 12345678901234567890.0, -2.675, 0.000123456789, 6.02214076e23, 1.0 / 3.0]
+repeat x in xs {
+    print(x, "${x:.2f}", "${x:.0f}", "${x:e}", "${x:.3e}", "${x:g}", toJSON(x), toFloat(toString(x)))
+    printf("%f %.1f %.10f %e %.0e %g %.3g %.15g %G %+.2f %#.0f %#g\n", x, x, x, x, x, x, x, x, x, x, x, x)
+}
+repeat s in ["1e400", "inf", "-Infinity", "nan", "0x1p-2", "1_000.5", "abc", "1e", ".5", "1.", "0x1.8p1", "2.2250738585072014e-308", " 1"] {
+    print(s, try { toFloat(s) } catch e { "error" })
+}
+print(parseJSON("[1.5, 2.5e-3, -0.0, 12345678901234567890]"))
