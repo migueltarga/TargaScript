@@ -50,6 +50,29 @@ let [first, ...rest] = [1, 2, 3]
 print(person.address?.city ?? "unknown")   // unknown
 ```
 
+## 🔀 Matching Values
+
+`match` picks the first arm whose values match, comparing with `==`. A range matches the numbers between its ends, and `_` matches anything:
+
+```
+fn describe(n) {
+    match n {
+        0 => "none"
+        1, 2 => "a few"
+        3..9 => "several"
+        _ => "many"
+    }
+}
+
+let grade = match true {
+    score >= 90 => "A"
+    score >= 80 => "B"
+    _ => "C"
+}
+```
+
+An arm can run a block, `=> { ... }`, and a match with no matching arm is null.
+
 ## 🧯 Handling Errors
 
 `try` runs a block and, if anything in it fails, runs the `catch` block with the error. `throw` raises an error of your own:

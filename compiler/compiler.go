@@ -906,6 +906,9 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 	case *ast.TryExpression:
 		return c.compileTry(node)
 
+	case *ast.MatchExpression:
+		return c.compileMatch(node)
+
 	case *ast.AwaitExpression:
 		if err := c.compileExpression(node.Value); err != nil {
 			return err
@@ -1232,4 +1235,69 @@ func restName(pattern *ast.Pattern) []*ast.Identifier {
 		return nil
 	}
 	return []*ast.Identifier{pattern.Rest}
+}
+
+// compileMatch compiles a match expression. The subject stays on the stack
+// while the arms test it, and the chosen arm replaces it with its value.
+func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
+	if err := c.compileOperand(node.Subject); err != nil {
+		return err
+	}
+
+	ends := []int{}
+	for _, arm := range node.Arms {
+		toBody := []int{}
+		nextArm := -1
+		for _, pattern := range arm.Patterns {
+			c.emit(token.Token{}, code.OpDup)
+			if r, ok := pattern.(*ast.InfixExpression); ok && r.Operator == ".." {
+				// A range matches the values between its ends
+				if err := c.compileOperand(r.Left); err != nil {
+					return err
+				}
+				if err := c.compileOperand(r.Right); err != nil {
+					return err
+				}
+				c.emit(r.Token, code.OpInRange)
+			} else {
+				if err := c.compileOperand(pattern); err != nil {
+					return err
+				}
+				c.emit(node.Token, code.OpEqual)
+			}
+			miss := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+			toBody = append(toBody, c.emit(token.Token{}, code.OpJump, 9999))
+			c.changeOperands(miss, len(c.scope.instructions))
+		}
+		if arm.Patterns != nil {
+			nextArm = c.emit(token.Token{}, code.OpJump, 9999)
+		}
+
+		for _, jump := range toBody {
+			c.changeOperands(jump, len(c.scope.instructions))
+		}
+		c.emit(token.Token{}, code.OpPop) // the subject
+		var err error
+		if block, ok := arm.Body.(*ast.BlockStatement); ok {
+			err = c.compileBlock(block)
+		} else {
+			err = c.compileOperand(arm.Body.(ast.Expression))
+		}
+		if err != nil {
+			return err
+		}
+		ends = append(ends, c.emit(token.Token{}, code.OpJump, 9999))
+
+		if nextArm >= 0 {
+			c.changeOperands(nextArm, len(c.scope.instructions))
+		}
+	}
+
+	// No arm matched
+	c.emit(token.Token{}, code.OpPop)
+	c.emit(token.Token{}, code.OpNull)
+	for _, jump := range ends {
+		c.changeOperands(jump, len(c.scope.instructions))
+	}
+	return nil
 }

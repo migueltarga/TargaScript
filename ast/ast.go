@@ -753,3 +753,42 @@ type SpreadExpression struct {
 func (se *SpreadExpression) expressionNode()      {}
 func (se *SpreadExpression) TokenLiteral() string { return se.Token.Literal }
 func (se *SpreadExpression) String() string       { return "..." + se.Value.String() }
+
+// MatchExpression picks the first arm whose patterns match Subject:
+//
+//	match n {
+//	    0 => "none"
+//	    1, 2 => "a few"
+//	    3..9 => "several"
+//	    _ => "many"
+//	}
+type MatchExpression struct {
+	Token   token.Token
+	Subject Expression
+	Arms    []*MatchArm
+}
+
+// MatchArm is one `patterns => body` of a match. A nil Patterns is `_`,
+// which matches anything. Body is an expression or a block.
+type MatchArm struct {
+	Patterns []Expression
+	Body     Node
+}
+
+func (me *MatchExpression) expressionNode()      {}
+func (me *MatchExpression) TokenLiteral() string { return me.Token.Literal }
+func (me *MatchExpression) String() string {
+	arms := []string{}
+	for _, arm := range me.Arms {
+		patterns := "_"
+		if arm.Patterns != nil {
+			list := []string{}
+			for _, p := range arm.Patterns {
+				list = append(list, p.String())
+			}
+			patterns = strings.Join(list, ", ")
+		}
+		arms = append(arms, patterns+" => "+arm.Body.String())
+	}
+	return "match " + me.Subject.String() + " { " + strings.Join(arms, "; ") + " }"
+}

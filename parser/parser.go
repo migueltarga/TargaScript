@@ -93,6 +93,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
 	p.registerPrefix(token.SPREAD, p.parseSpreadExpression)
 	p.registerPrefix(token.TRY, p.parseTryExpression)
+	p.registerPrefix(token.MATCH, p.parseMatchExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
@@ -860,6 +861,64 @@ func (p *Parser) parseTryExpression() ast.Expression {
 	stmt.Catch = p.parseBlockStatement()
 
 	return stmt
+}
+
+func (p *Parser) parseMatchExpression() ast.Expression {
+	expression := &ast.MatchExpression{Token: p.curToken}
+
+	p.nextToken()
+	expression.Subject = p.parseExpression(LOWEST)
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.RBRACE) {
+		if p.peekTokenIs(token.EOF) {
+			p.errorAt(expression.Token.Line, expression.Token.Column, "this match is never closed, add a \"}\" after its last arm")
+			return nil
+		}
+		p.nextToken()
+		arm := &ast.MatchArm{}
+
+		// _ matches anything, and leaves Patterns nil
+		if !(p.curTokenIs(token.IDENT) && p.curToken.Literal == "_" && p.peekTokenIs(token.ARROW)) {
+			for {
+				pattern := p.parseExpression(LOWEST)
+				if pattern == nil {
+					return nil
+				}
+				arm.Patterns = append(arm.Patterns, pattern)
+				if !p.peekTokenIs(token.COMMA) {
+					break
+				}
+				p.nextToken()
+				p.nextToken()
+			}
+		}
+
+		if !p.expectPeek(token.ARROW) {
+			return nil
+		}
+		p.nextToken()
+		// Braces start a block; an object needs parentheses: => ({"a": 1})
+		if p.curTokenIs(token.LBRACE) {
+			arm.Body = p.parseBlockStatement()
+		} else {
+			arm.Body = p.parseExpression(LOWEST)
+		}
+		if arm.Body == nil {
+			return nil
+		}
+		expression.Arms = append(expression.Arms, arm)
+
+		// Arms can be separated by commas as well as by new lines
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+	}
+	p.nextToken()
+
+	return expression
 }
 
 func (p *Parser) parseThrowStatement() ast.Statement {

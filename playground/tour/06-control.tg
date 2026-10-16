@@ -1,7 +1,7 @@
 // Lesson 6: Decisions and loops
 //
-// if decides, repeat loops. repeat x in ... goes over a range, array,
-// string or object, and repeat condition { } loops while it's true.
+// if and match decide, repeat loops. repeat x in ... goes over a range,
+// array, string or object, and repeat condition { } loops while it's true.
 
 fn describe(n) {
     if n < 0 {
@@ -13,6 +13,17 @@ fn describe(n) {
     }
 }
 print(describe(-5), describe(0), describe(7))
+
+// match picks the first arm that matches; _ matches anything
+fn size(n) {
+    match n {
+        0 => "none"
+        1, 2 => "a few"
+        3..9 => "several"
+        _ => "many"
+    }
+}
+print(size(1), size(5), size(50))
 
 repeat i in 1..5 {
     if i == 3 { continue }

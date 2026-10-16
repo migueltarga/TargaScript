@@ -256,6 +256,15 @@ func (vm *VM) loop(base int) object.Object {
 			}
 			vm.push(result)
 
+		case code.OpInRange:
+			end := vm.pop()
+			start := vm.pop()
+			value := vm.pop()
+			above := evaluator.Infix(">=", value, start, 0, 0)
+			below := evaluator.Infix("<=", value, end, 0, 0)
+			// Values that can't be compared with the ends don't match
+			vm.push(nativeBool(above == TRUE && below == TRUE))
+
 		case code.OpMinus, code.OpBang:
 			operator := "-"
 			if op == code.OpBang {
