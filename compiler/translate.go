@@ -40,11 +40,12 @@ func inRegister(r int) where { return where{register: r, constant: -1} }
 
 // translation is the state of translating one function.
 type translation struct {
-	in        instructions
-	flow      *emitFlow
-	cells     []bool
-	constants []object.Object
-	targets   map[int]bool
+	in    instructions
+	flow  *emitFlow
+	c     *Compiler
+	fn    *functionScope
+	scope *compilation
+	at    int // the next stack instruction to translate
 
 	out       []code.Word
 	positions []object.Position
@@ -61,9 +62,6 @@ type translation struct {
 	// the next value of an iterator, for an assignment of it to make it
 	// write the variable instead, or -1
 	iterNext int
-	// jumps are the jumps of the stack code, as their offset and their
-	// target's
-	jumps [][2]int
 	// layouts are where the values are at the targets of jumps that leave
 	// some in the variables or constants they came from
 	layouts map[int][]where
@@ -73,24 +71,64 @@ type translation struct {
 }
 
 // fixup is a jump to point at the new place of its target: the operand
-// (0 for A, 1 for B, 2 for C) of instruction at.
+// (0 for A, 1 for B, 2 for C) of instruction at, going where the stack
+// instruction src goes, which may be set after it's translated.
 type fixup struct {
-	at, operand, target int
+	at, operand, src int
 }
 
 // translationError stops a translation that met code it can't handle.
 type translationError struct{ message string }
 
-// translate returns the register code of a function's stack code, its
-// positions, and how many registers it needs.
-func translate(ins instructions, flow *emitFlow, positions []object.Position, numLocals int, cells []bool, constants []object.Object) (out []code.Word, pos []object.Position, registers int, err error) {
-	if flow.err != nil {
-		return nil, nil, 0, flow.err
+// newTranslation starts translating the stack code of a function to
+// register code, which advance does as the compiler makes it.
+func newTranslation(c *Compiler, fn *functionScope, scope *compilation) *translation {
+	return &translation{c: c, fn: fn, scope: scope, flow: scope.flow, lastWrite: -1, iterNext: -1, layouts: map[int][]where{}}
+}
+
+// advance translates the instructions made so far that can be: the ones
+// whose next instruction is made, and for jumps whose target is. At the end
+// of the function, final translates the rest.
+func (t *translation) advance(final bool) {
+	if t.flow.err != nil {
+		return
 	}
-	t := &translation{
-		in: ins, flow: flow, cells: cells, constants: constants,
-		targets: jumpTargets(ins), oldPos: positions, newAt: make([]int, len(ins)+1), lastWrite: -1, iterNext: -1,
-		jumps: jumpList(ins), layouts: map[int][]where{},
+	defer func() {
+		if r := recover(); r != nil {
+			e, ok := r.(translationError)
+			if !ok {
+				panic(r)
+			}
+			t.flow.err = errors.New(e.message)
+		}
+	}()
+	t.in, t.oldPos = t.scope.instructions, t.scope.positions
+	for t.at < len(t.in) && (final || t.ready(t.at)) {
+		t.at = t.step(t.at)
+	}
+}
+
+// ready reports whether the instruction at can be translated now.
+func (t *translation) ready(at int) bool {
+	if at+1 >= len(t.in) {
+		return false
+	}
+	switch t.in[at].op {
+	case code.OpJump, code.OpJumpNotTruthy, code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep,
+		code.OpJumpNotNullKeep, code.OpJumpNullKeep:
+		// They look at their target
+		target := t.in[at].args[0]
+		return target != placeholder && target < len(t.in)
+	}
+	return true
+}
+
+// finish translates what's left of the function and returns its register
+// code, its positions, and how many registers it needs.
+func (t *translation) finish(numLocals int) (out []code.Word, pos []object.Position, registers int, err error) {
+	t.advance(true)
+	if t.flow.err != nil {
+		return nil, nil, 0, t.flow.err
 	}
 	defer func() {
 		if r := recover(); r != nil {
@@ -101,9 +139,9 @@ func translate(ins instructions, flow *emitFlow, positions []object.Position, nu
 			err = errors.New(e.message)
 		}
 	}()
-	t.run()
+	t.end()
 	relocate(t.out, numLocals)
-	return t.out, t.positions, numLocals + maxDepth(flow.depths) + 2, nil
+	return t.out, t.positions, numLocals + maxDepth(t.flow.depths) + 2, nil
 }
 
 func maxDepth(depths []int) int {
@@ -154,7 +192,7 @@ func (t *translation) emitWrite(old int, op code.Op, a, b, c int) {
 // load puts a value in register r.
 func (t *translation) load(old int, r int, w where) {
 	if w.constant >= 0 {
-		if n, ok := t.constants[w.constant].(*object.Integer); ok && n.Value >= -32768 && n.Value <= 32767 {
+		if n, ok := t.c.constants[w.constant].(*object.Integer); ok && n.Value >= -32768 && n.Value <= 32767 {
 			t.emitWrite(old, code.RLoadI, r, int(n.Value), 0)
 		} else {
 			t.emitWrite(old, code.RLoadK, r, w.constant, 0)
@@ -236,9 +274,9 @@ func (t *translation) referenced(r int) bool {
 
 func (t *translation) u16(at, n int) int { return t.in.arg(at, n) }
 
-func (t *translation) jump(old int, op code.Op, a, b, c, operand, target int) {
+func (t *translation) jump(old int, op code.Op, a, b, c, operand, src int) {
 	at := t.emit(old, op, a, b, c)
-	t.fixups = append(t.fixups, fixup{at, operand, target})
+	t.fixups = append(t.fixups, fixup{at, operand, src})
 	t.straight = len(t.out)
 }
 
@@ -247,7 +285,7 @@ func (t *translation) smallInt(w where) (int, bool) {
 	if w.constant < 0 {
 		return 0, false
 	}
-	n, ok := t.constants[w.constant].(*object.Integer)
+	n, ok := t.c.constants[w.constant].(*object.Integer)
 	if !ok || n.Value < -32768 || n.Value > 32767 {
 		return 0, false
 	}
@@ -311,74 +349,91 @@ func jumpOps(op code.Opcode) ([3]code.Op, bool) {
 	return [3]code.Op{}, false
 }
 
-func (t *translation) run() {
+// step translates the stack instruction at, and returns the next one to
+// translate.
+func (t *translation) step(at int) int {
 	in := t.in
-	for at := 0; at < len(in); {
-		op := in[at].op
-		next := at + 1
-		d := t.flow.depths[at]
-		if d < 0 {
-			// Nothing reaches this code
-			t.newAt[at] = len(t.out)
-			at = next
-			continue
+	op := in[at].op
+	next := at + 1
+	t.setNewAt(at)
+	d := t.flow.depths[at]
+	if d < 0 {
+		// Nothing reaches this code
+		return next
+	}
+	if layout := t.layouts[at]; layout != nil {
+		// Jumps come here with the values the layout keeps where they
+		// came from, and the others in their own places
+		if len(t.stack) == d {
+			t.placeFor(at, layout, at)
 		}
-		if layout := t.layouts[at]; layout != nil {
-			// Jumps come here with the values the layout keeps where they
-			// came from, and the others in their own places
-			if len(t.stack) == d {
-				t.placeFor(at, layout, at)
-			}
-			t.stack = append(t.stack[:0], layout...)
-			t.lastWrite = -1
-			t.straight = len(t.out)
-		} else if t.targets[at] {
-			// Jumps come here with every value in its own place
-			if len(t.stack) == d {
-				t.placeFor(at, nil, at)
-			}
-			t.stack = t.stack[:0]
-			for i := 0; i < d; i++ {
+		t.stack = append(t.stack[:0], layout...)
+		t.lastWrite = -1
+		t.straight = len(t.out)
+	} else if t.flow.targets[at] {
+		// Jumps come here with every value in its own place
+		if len(t.stack) == d {
+			t.placeFor(at, nil, at)
+		}
+		t.stack = t.stack[:0]
+		for i := 0; i < d; i++ {
+			t.push(inRegister(t.own(i)))
+		}
+		t.lastWrite = -1
+		t.straight = len(t.out)
+	}
+	if len(t.stack) != d {
+		t.fail("wrong stack depth at", at)
+	}
+	t.setNewAt(at)
+	next = t.instruction(at, op, next, d)
+	switch op {
+	case code.OpJump, code.OpReturnValue, code.OpThrow, code.OpError, code.OpBreak:
+		// What comes next is reached only by jumps, with every value
+		// in its place
+		t.stack = t.stack[:0]
+		if next < len(in) {
+			for i := 0; i < t.flow.depths[next]; i++ {
 				t.push(inRegister(t.own(i)))
 			}
-			t.lastWrite = -1
-			t.straight = len(t.out)
 		}
-		if len(t.stack) != d {
-			t.fail("wrong stack depth at", at)
-		}
-		t.newAt[at] = len(t.out)
-		next = t.instruction(at, op, next, d)
-		switch op {
-		case code.OpJump, code.OpReturnValue, code.OpThrow, code.OpError, code.OpBreak:
-			// What comes next is reached only by jumps, with every value
-			// in its place
-			t.stack = t.stack[:0]
-			if next < len(in) {
-				for i := 0; i < t.flow.depths[next]; i++ {
-					t.push(inRegister(t.own(i)))
-				}
-			}
-			t.lastWrite = -1
-		}
-		at = next
+		t.lastWrite = -1
 	}
-	t.newAt[len(in)] = len(t.out)
+	return next
+}
 
+// setNewAt notes that the stack instruction at starts at the end of the
+// register code.
+func (t *translation) setNewAt(at int) {
+	for len(t.newAt) <= at {
+		t.newAt = append(t.newAt, -1)
+	}
+	t.newAt[at] = len(t.out)
+}
+
+// end points the jumps at their targets, now that all are known, and
+// shortens the code.
+func (t *translation) end() {
+	t.setNewAt(len(t.in))
 	for _, f := range t.fixups {
-		target := t.newAt[f.target]
-		if target < 0 {
-			t.fail("jump to code not translated at", f.target)
+		src := t.in[f.src]
+		target := src.args[0]
+		if src.op == code.OpBreak {
+			target = t.flow.breaks[f.src].target
+		}
+		at := t.newAt[target]
+		if at < 0 {
+			t.fail("jump to code not translated at", target)
 		}
 		w := t.out[f.at]
 		a, b, c := w.A(), w.B(), w.C()
 		switch f.operand {
 		case 0:
-			a = target
+			a = at
 		case 1:
-			b = target
+			b = at
 		default:
-			c = target
+			c = at
 		}
 		t.out[f.at] = code.MakeWord(w.Op(), a, b, c)
 	}
@@ -475,7 +530,7 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 		layout[i] = inRegister(t.own(i))
 	}
 	// Only code between the jump and its target may jump into it
-	for _, j := range t.jumps {
+	for _, j := range jumpList(t.in) {
 		if j[1] > at && j[1] <= target && (j[0] < at || j[0] >= target) {
 			return layout
 		}
@@ -492,7 +547,7 @@ func (t *translation) keptLayout(at, next, target, d int) []where {
 		switch {
 		case w.constant >= 0:
 			layout[i] = w
-		case w.register < tempBase && !written[w.register] && !(w.register < len(t.cells) && t.cells[w.register]):
+		case w.register < tempBase && !written[w.register] && !(w.register < len(t.fn.cells) && t.fn.cells[w.register]):
 			layout[i] = w
 		}
 	}
@@ -524,7 +579,7 @@ func (t *translation) placeFor(old int, layout []where, target int) {
 // fused reports whether the instruction at next is op and nothing jumps
 // to it, so the one before can do its work.
 func (t *translation) fused(next int, op code.Opcode) bool {
-	return next < len(t.in) && !t.targets[next] && t.in[next].op == op
+	return next < len(t.in) && !t.flow.targets[next] && t.in[next].op == op
 }
 
 // instruction translates the stack instruction at at, and returns where
@@ -536,7 +591,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 
 	case code.OpGetLocal:
 		x := t.u16(at, 0)
-		if x < len(t.cells) && t.cells[x] {
+		if x < len(t.fn.cells) && t.fn.cells[x] {
 			t.keep(at, t.own(d))
 			t.emitWrite(at, code.RGetCell, t.own(d), x, 0)
 			t.push(inRegister(t.own(d)))
@@ -601,7 +656,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 	case code.OpSetLocal:
 		x := t.u16(at, 0)
 		value := t.pop()
-		if x < len(t.cells) && t.cells[x] {
+		if x < len(t.fn.cells) && t.fn.cells[x] {
 			r := t.register(at, value, t.own(d-1))
 			t.emit(at, code.RSetCell, x, r, 0)
 			t.push(inRegister(r))
@@ -678,13 +733,13 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 
 	case code.OpJump:
 		t.placeFor(at, nil, t.u16(at, 0))
-		t.jump(at, code.RJump, 0, 0, 0, 0, t.u16(at, 0))
+		t.jump(at, code.RJump, 0, 0, 0, 0, at)
 
 	case code.OpJumpNotTruthy:
 		value := t.secure(at, t.pop(), t.own(d-1))
 		t.placeFor(at, nil, t.u16(at, 0))
 		r := t.register(at, value, t.own(d-1))
-		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, t.u16(at, 0))
+		t.jump(at, code.RJumpFalsy, r, 0, 0, 1, at)
 
 	case code.OpJumpNotTruthyKeep, code.OpJumpTruthyKeep, code.OpJumpNotNullKeep, code.OpJumpNullKeep:
 		// The value goes with the jump, in its own place; the ones below
@@ -706,7 +761,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		case code.OpJumpNullKeep:
 			rop = code.RJumpNull
 		}
-		t.jump(at, rop, t.own(d-1), 0, 0, 1, t.u16(at, 0))
+		t.jump(at, rop, t.own(d-1), 0, 0, 1, at)
 		if op != code.OpJumpNullKeep {
 			t.pop()
 		}
@@ -719,12 +774,11 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		if b.tries > 0 {
 			t.emit(at, code.RTryEnd, b.tries, 0, 0)
 		}
-		target := b.target
 		// The values the loop started with are in their places already,
 		// as the loop's start is a place jumps go to
 		t.stack = t.stack[:b.depth]
 		t.place(at, 0)
-		t.jump(at, code.RJump, 0, 0, 0, 0, target)
+		t.jump(at, code.RJump, 0, 0, 0, 0, at)
 
 	case code.OpIterStart:
 		value := t.pop()
@@ -747,7 +801,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		if t.u16(at, 1) == 1 {
 			rop = code.RIterNextPair
 		}
-		t.jump(at, rop, t.own(d-1), t.own(d), 0, 2, t.u16(at, 0))
+		t.jump(at, rop, t.own(d-1), t.own(d), 0, 2, at)
 		t.push(inRegister(t.own(d)))
 		if rop == code.RIterNextPair {
 			t.push(inRegister(t.own(d + 1)))
@@ -890,7 +944,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		// The catch block is a place jumps go to, with the error after the
 		// values the try started with
 		t.place(at, 0)
-		t.jump(at, code.RTry, t.own(d), 0, 0, 1, t.u16(at, 0))
+		t.jump(at, code.RTry, t.own(d), 0, 0, 1, at)
 
 	case code.OpTryEnd:
 		t.emit(at, code.RTryEnd, 1, 0, 0)
@@ -915,18 +969,17 @@ func (t *translation) binary(at int, op code.Opcode, next int, d int) int {
 	p := d - 2
 
 	if forms, ok := jumpOps(op); ok && t.fused(next, code.OpJumpNotTruthy) {
-		target := t.u16(next, 0)
 		left, right = t.secure(at, left, t.own(p)), t.secure(at, right, t.own(p+1))
 		t.place(at, 0)
 		l := t.register(at, left, t.own(p))
 		switch n, small := t.smallInt(right); {
 		case small:
-			t.jump(at, forms[1], l, n, 0, 2, target)
+			t.jump(at, forms[1], l, n, 0, 2, next)
 		case right.constant >= 0 && forms[2] != 0:
-			t.jump(at, forms[2], l, right.constant, 0, 2, target)
+			t.jump(at, forms[2], l, right.constant, 0, 2, next)
 		default:
 			r := t.register(at, right, t.own(p+1))
-			t.jump(at, forms[0], l, r, 0, 2, target)
+			t.jump(at, forms[0], l, r, 0, 2, next)
 		}
 		return next + 1
 	}
