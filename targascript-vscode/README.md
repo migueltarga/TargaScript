@@ -12,6 +12,8 @@ This extension provides syntax highlighting for TargaScript (.tg) files in Visua
 
 TargaScript is a programming language designed by Miguel Targa. For more information about the language, visit the [TargaScript GitHub repository](https://github.com/migueltarga/TargaScript).
 
+You can also try it without installing anything in the [online playground](https://migueltarga.github.io/TargaScript/).
+
 ## Example
 
 Here's how TargaScript code looks with this syntax highlighting:
