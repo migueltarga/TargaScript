@@ -293,7 +293,11 @@ func evalPostfixExpression(node *ast.PostfixExpression, env *object.Environment)
 	var updated object.Object
 	switch current := current.(type) {
 	case *object.Integer:
-		updated = &object.Integer{Value: current.Value + delta}
+		value, ok := addInt(current.Value, delta)
+		if !ok {
+			return newError(line, column, "integer overflow")
+		}
+		updated = &object.Integer{Value: value}
 	case *object.Float:
 		updated = &object.Float{Value: current.Value + float64(delta)}
 	default:
@@ -505,8 +509,11 @@ func evalMinusPrefixOperatorExpression(right object.Object, line, column int) ob
 
 	switch right.Type() {
 	case object.INTEGER_OBJ:
-		value := right.(*object.Integer).Value
-		return &object.Integer{Value: -value}
+		value, ok := subInt(0, right.(*object.Integer).Value)
+		if !ok {
+			return newError(line, column, "integer overflow")
+		}
+		return &object.Integer{Value: value}
 	case object.FLOAT_OBJ:
 		value := right.(*object.Float).Value
 		return &object.Float{Value: -value}
@@ -520,17 +527,15 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 	rightVal := right.(*object.Integer).Value
 
 	switch operator {
-	case "+":
-		return &object.Integer{Value: leftVal + rightVal}
-	case "-":
-		return &object.Integer{Value: leftVal - rightVal}
-	case "*":
-		return &object.Integer{Value: leftVal * rightVal}
-	case "/":
-		if rightVal == 0 {
+	case "+", "-", "*", "/":
+		if operator == "/" && rightVal == 0 {
 			return newError(line, column, "division by zero")
 		}
-		return &object.Integer{Value: leftVal / rightVal}
+		value, ok := integerArithmetic[operator](leftVal, rightVal)
+		if !ok {
+			return newError(line, column, "integer overflow")
+		}
+		return &object.Integer{Value: value}
 	case "%":
 		if rightVal == 0 {
 			return newError(line, column, "modulo by zero")
