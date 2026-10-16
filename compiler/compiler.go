@@ -262,8 +262,12 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
 			HasThis:      hasThis && fn.usesThis,
+			SimpleCall:   len(params),
 			Name:         name,
 			LocalNames:   fn.localNames,
+		}
+		if compiled.HasThis {
+			compiled.SimpleCall = -1
 		}
 		for _, s := range fn.free {
 			compiled.FreeNames = append(compiled.FreeNames, s.Name)
@@ -580,6 +584,9 @@ func (c *Compiler) setFunctionSource(params []*ast.Identifier, defaults []ast.Ex
 	fn.Defaults = defaults
 	fn.Rest = rest
 	fn.Variadic = rest
+	if rest {
+		fn.SimpleCall = -1
+	}
 	fn.Body = body
 }
 

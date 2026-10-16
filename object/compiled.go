@@ -49,6 +49,11 @@ type CompiledFunction struct {
 	// null
 	HasThis bool
 
+	// SimpleCall is the number of arguments with which a call needs no
+	// work on them: NumParams, or -1 for functions with rest parameters or
+	// this
+	SimpleCall int
+
 	// Names of the locals and captured variables, for error messages
 	LocalNames []string
 	FreeNames  []string
