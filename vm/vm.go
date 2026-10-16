@@ -312,6 +312,9 @@ func (vm *VM) loop(base int) object.Object {
 		ip := f.ip
 		op := code.Opcode(ins[ip])
 		f.ip++
+		if checkDepths {
+			vm.checkDepth(f, ip)
+		}
 
 		switch op {
 		case code.OpConstant:

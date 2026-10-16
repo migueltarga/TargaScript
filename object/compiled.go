@@ -42,6 +42,11 @@ type CompiledFunction struct {
 	// time, so they need no lock.
 	Caches []PropertyCache
 
+	// Depths has the number of values on the stack above the locals at each
+	// instruction, kept only by builds with the vmcheck tag, whose VM checks
+	// them as it runs
+	Depths []int
+
 	// Positions, sorted by offset, for error messages
 	Positions []Position
 

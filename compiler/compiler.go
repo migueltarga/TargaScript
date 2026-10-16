@@ -247,9 +247,14 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 		}
 
 		fuse(scope.instructions)
+		depths, err := stackDepths(scope.instructions)
+		if err != nil {
+			return nil, fmt.Errorf("internal error in %s: %w", functionName(name), err)
+		}
 		compiled := &object.CompiledFunction{
 			Instructions: scope.instructions,
 			Caches:       make([]object.PropertyCache, scope.caches),
+			Depths:       keptDepths(depths),
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
 			HasThis:      hasThis && fn.usesThis,

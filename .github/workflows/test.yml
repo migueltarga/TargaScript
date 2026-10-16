@@ -30,6 +30,9 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Test with the VM checking the compiler's stack depths
+        run: go test -tags vmcheck ./compiler ./vm ./repl
+
       - name: Run examples
         run: |
           go build -o targascript ./cmd/targascript
