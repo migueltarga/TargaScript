@@ -74,8 +74,8 @@ jobs:
           size=$(wc -c < build/targascript.wasm)
           gzipped=$(gzip -9 -c build/targascript.wasm | wc -c)
           echo "targascript.wasm: $size bytes, $gzipped gzipped"
-          if [ "$size" -gt 520000 ]; then
-            echo "targascript.wasm is over 520 KB"
+          if [ "$size" -gt 440000 ]; then
+            echo "targascript.wasm is over 440 KB"
             exit 1
           fi
 
