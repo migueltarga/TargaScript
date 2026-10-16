@@ -65,6 +65,10 @@ type VM struct {
 	// awaited was rejected
 	pendingError *object.Error
 
+	// receiver is the object of the method call about to start, for its
+	// function's this
+	receiver object.Object
+
 	// asyncBases are the bases of the runs that can pause at an await
 	// besides the outermost one: closures called with CallClosureAsync
 	// and resumed fibers, which nothing waits for
@@ -683,10 +687,12 @@ func (vm *VM) loop(base int) object.Object {
 			f.ip += 2
 			args := vm.pop().(*object.Array)
 			if cl := vm.ownMethod(vm.stack[vm.sp-1], name); cl != nil {
+				receiver := vm.stack[vm.sp-1]
 				vm.stack[vm.sp-1] = cl
 				for _, arg := range args.Elements {
 					vm.push(arg)
 				}
+				vm.receiver = receiver
 				if err := vm.callClosure(cl, len(args.Elements)); err != nil {
 					return vm.positioned(f, ip, err)
 				}
@@ -768,8 +774,10 @@ func (vm *VM) loop(base int) object.Object {
 			argc := int(ins[ip+3])
 			f.ip += 3
 			// An object's own function runs like any call, so it can await
-			if cl := vm.ownMethod(vm.stack[vm.sp-1-argc], name); cl != nil {
+			receiver := vm.stack[vm.sp-1-argc]
+			if cl := vm.ownMethod(receiver, name); cl != nil {
 				vm.stack[vm.sp-1-argc] = cl
+				vm.receiver = receiver
 				if err := vm.callClosure(cl, argc); err != nil {
 					return vm.positioned(f, ip, err)
 				}
@@ -943,6 +951,14 @@ func (vm *VM) callClosure(cl *object.Closure, argc int) *object.Error {
 	for i := base + fn.NumParams; i < base+fn.NumLocals; i++ {
 		vm.stack[i] = nil
 	}
+	if fn.HasThis {
+		this := vm.receiver
+		if this == nil {
+			this = NULL
+		}
+		vm.stack[base+fn.NumParams] = this
+	}
+	vm.receiver = nil
 	vm.sp = base + fn.NumLocals
 
 	vm.frames = append(vm.frames, vm.newFrame(cl, base))

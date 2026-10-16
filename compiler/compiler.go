@@ -202,6 +202,18 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			}
 		}
 
+		// Functions have their own this, set when they're called as a
+		// method; arrow functions see the one around them
+		hasThis := !isArrow(node)
+		if hasThis {
+			s := c.fn.defineLocal("this", true)
+			if s.Cell {
+				c.emit(token.Token{}, code.OpGetLocal, s.Index)
+				c.emit(token.Token{}, code.OpNewCell, s.Index)
+				c.emit(token.Token{}, code.OpPop)
+			}
+		}
+
 		if err := c.compileDefaults(params, defaults); err != nil {
 			return nil, err
 		}
@@ -231,6 +243,7 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			Instructions: scope.instructions,
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
+			HasThis:      hasThis,
 			Name:         name,
 			Positions:    scope.positions,
 			LocalNames:   fn.localNames,
@@ -243,6 +256,12 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 		}
 		return compiled, nil
 	}
+}
+
+// isArrow reports whether a function is an arrow function, x => ...
+func isArrow(node ast.Node) bool {
+	fn, ok := node.(*ast.FunctionLiteral)
+	return ok && fn.Arrow
 }
 
 // compileDefaults gives parameters their default value when they are null,
@@ -1075,6 +1094,11 @@ func (c *Compiler) compileIf(node *ast.IfExpression) error {
 // compileGet pushes the value of a variable.
 func (c *Compiler) compileGet(tok token.Token, name string) {
 	s, ok := c.resolve(name)
+	if !ok && name == "this" {
+		// Outside functions, this is null
+		c.emit(tok, code.OpNull)
+		return
+	}
 	if !ok {
 		c.emitNotDefined(tok, name)
 		return
