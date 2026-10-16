@@ -74,7 +74,7 @@ func executeFile(input string, debug bool, noColor bool, trace bool) (err error)
 
 	err = repl.EvalSource(input, os.Stdout, noColor, debug, false, trace)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "\033[31mExecution Error: %v\033[0m\n", err)
+		fmt.Fprintf(os.Stderr, "\033[31m%v\033[0m\n", err)
 		return err
 	}
 	return nil

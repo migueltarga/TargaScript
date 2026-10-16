@@ -5,8 +5,7 @@
 package main
 
 import (
-	"strings"
-
+	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/jsbridge"
 	"github.com/migueltarga/TargaScript/lexer"
@@ -48,7 +47,11 @@ func run(source string, env *object.Environment, out writer) string {
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) > 0 {
-		return strings.Join(p.Errors(), "\n")
+		diagnostics := []diag.Diagnostic{}
+		for _, e := range p.Diagnostics() {
+			diagnostics = append(diagnostics, diag.Diagnostic{Line: e.Line, Column: e.Column, Message: e.Message})
+		}
+		return diag.FormatAll(source, diagnostics)
 	}
 
 	previous := output
@@ -60,7 +63,7 @@ func run(source string, env *object.Environment, out writer) string {
 	}()
 
 	if err, ok := evaluator.Eval(program, env).(*object.Error); ok {
-		return jsbridge.ErrorMessage(err)
+		return diag.Format(source, diag.Diagnostic{Line: err.Line, Column: err.Column, Message: err.Message})
 	}
 	return ""
 }
