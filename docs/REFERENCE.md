@@ -368,7 +368,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `encodeURL(text)`, `decodeURL(text)` | text for a part of a URL, like a query value, and back |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
-| `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
+| `input`, `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing
 
@@ -406,7 +406,7 @@ targascript test                  # run the *_test.tg files, see Testing
 cat script.tg | targascript -     # run code from standard input
 ```
 
-Scripts see their arguments in `args`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
+Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
 
 ### Web servers
 

@@ -18,6 +18,13 @@ type System interface {
 
 var system System
 
+// LineReader is a System that can read the lines a user types, for input.
+type LineReader interface {
+	// ReadLine returns the next line without its line break, or false at
+	// the end of the input.
+	ReadLine() (string, bool)
+}
+
 // SetSystem sets what readFile, writeFile, listDir, env and exit use.
 func SetSystem(s System) {
 	system = s
@@ -34,6 +41,7 @@ func init() {
 	builtins["listDir"] = &object.Builtin{Name: "listDir", Fn: listDirBuiltin}
 	builtins["env"] = &object.Builtin{Name: "env", Fn: envBuiltin}
 	builtins["exit"] = &object.Builtin{Name: "exit", Fn: exitBuiltin}
+	builtins["input"] = &object.Builtin{Name: "input", Fn: inputBuiltin}
 }
 
 func noSystem(name string) *object.Error {
@@ -148,4 +156,24 @@ func exitBuiltin(args ...object.Object) object.Object {
 	}
 	system.Exit(int(code))
 	return NULL
+}
+
+// inputBuiltin prints the prompt, if any, and returns the line the user
+// types, or null when the input has ended.
+func inputBuiltin(args ...object.Object) object.Object {
+	if len(args) > 1 {
+		return &object.Error{Message: fmt.Sprintf("wrong number of arguments for input. got=%d, want=0 or 1", len(args))}
+	}
+	reader, ok := system.(LineReader)
+	if !ok {
+		return noSystem("input")
+	}
+	if len(args) == 1 {
+		fmt.Fprint(output, objectToString(args[0]))
+	}
+	line, ok := reader.ReadLine()
+	if !ok {
+		return NULL
+	}
+	return &object.String{Value: line}
 }
