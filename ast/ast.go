@@ -306,6 +306,10 @@ type FunctionLiteral struct {
 
 	// Arrow is set for functions written x => body
 	Arrow bool
+
+	// ImplicitIt is set for an argument that uses it without defining it,
+	// as in xs.map(it * 2): a function of it, unless it is a variable
+	ImplicitIt bool
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -315,6 +319,9 @@ func (fl *FunctionLiteral) String() string {
 
 	params := ParameterStrings(fl.Parameters, fl.Defaults, fl.Rest)
 
+	if fl.ImplicitIt {
+		return fl.Body.String()
+	}
 	if fl.Arrow {
 		return "(" + strings.Join(params, ", ") + ") => " + fl.Body.String()
 	}

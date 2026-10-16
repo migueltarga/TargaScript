@@ -18,6 +18,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 - Destructuring of arrays and objects, with rest, defaults and renaming: `let {port = 8080, host: h, ...rest} = config`
 - Spread in arrays, objects and calls; rest parameters
 - Arrow functions, default parameters, and `this` in methods
+- `it` for short functions: `people.filter(it.age > 25).map(it.name)`
 - The pipe operator: `data |> parse |> summarize`
 - `??`, `?.`, `?.[` and `??=`; `**`; `+=` and the other compound assignments
 - `try`/`catch`/`finally`/`throw`, with `throw` usable as a value: `x ?? throw "missing"`

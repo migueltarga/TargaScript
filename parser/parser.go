@@ -88,6 +88,11 @@ type Parser struct {
 	// inMatchPatterns is set while parsing the patterns of a match arm,
 	// where => ends the patterns instead of starting an arrow function
 	inMatchPatterns bool
+
+	// usesIt has an entry for each call argument and function body being
+	// parsed, set when it uses it directly, not in an argument or function
+	// inside it
+	usesIt []bool
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -761,12 +766,49 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	if p.peekTokenIs(token.ARROW) && !p.inMatchPatterns {
 		return p.parseArrowFunction(ident.Token, []*ast.Identifier{ident}, []ast.Expression{nil}, nil)
 	}
+	if ident.Value == "it" && len(p.usesIt) > 0 {
+		p.usesIt[len(p.usesIt)-1] = true
+	}
 	return ident
+}
+
+// parseArguments parses the arguments of a call. An argument that uses it
+// becomes a function of it: xs.map(it * 2) is xs.map(it => it * 2).
+func (p *Parser) parseArguments() []ast.Expression {
+	list := []ast.Expression{}
+	for !p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		tok := p.curToken
+		p.usesIt = append(p.usesIt, false)
+		arg := p.parseExpression(LOWEST)
+		uses := p.usesIt[len(p.usesIt)-1]
+		p.usesIt = p.usesIt[:len(p.usesIt)-1]
+		if uses && arg != nil {
+			it := &ast.Identifier{Token: tok, Value: "it"}
+			arg = &ast.FunctionLiteral{
+				Token: tok, Parameters: []*ast.Identifier{it}, Defaults: []ast.Expression{nil}, Patterns: []*ast.Pattern{nil},
+				Arrow: true, ImplicitIt: true,
+				Body: &ast.BlockStatement{Token: tok, Statements: []ast.Statement{&ast.ExpressionStatement{Token: tok, Expression: arg}}},
+			}
+		}
+		list = append(list, arg)
+		if !p.peekTokenIs(token.COMMA) {
+			break
+		}
+		p.nextToken()
+	}
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return list
 }
 
 // parseArrowFunction parses the body of an arrow function, after its
 // parameters, with => as the next token: an expression, or a block.
 func (p *Parser) parseArrowFunction(tok token.Token, params []*ast.Identifier, defaults []ast.Expression, patterns []*ast.Pattern) ast.Expression {
+	// An it in the body isn't the argument's
+	p.usesIt = append(p.usesIt, false)
+	defer func() { p.usesIt = p.usesIt[:len(p.usesIt)-1] }()
 	p.nextToken() // =>
 	lit := &ast.FunctionLiteral{Token: tok, Parameters: params, Defaults: defaults, Patterns: patterns, Arrow: true}
 	p.nextToken()
@@ -921,6 +963,7 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	}
 
 	p.nextToken()
+	usedIt := len(p.usesIt) > 0 && p.usesIt[len(p.usesIt)-1]
 	exps := []ast.Expression{p.parseExpression(LOWEST)}
 	// (a, b) can only be the parameters of an arrow function
 	for p.peekTokenIs(token.COMMA) {
@@ -934,6 +977,10 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	}
 
 	if p.peekTokenIs(token.ARROW) && !p.inMatchPatterns {
+		// Parameters named it aren't uses of it
+		if len(p.usesIt) > 0 {
+			p.usesIt[len(p.usesIt)-1] = usedIt
+		}
 		params := []*ast.Identifier{}
 		defaults := []ast.Expression{}
 		patterns := []*ast.Pattern{}
@@ -1059,6 +1106,9 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curToken}
+	// An it in the function isn't the argument's
+	p.usesIt = append(p.usesIt, false)
+	defer func() { p.usesIt = p.usesIt[:len(p.usesIt)-1] }()
 
 	if p.peekTokenIs(token.IDENT) {
 		p.nextToken()
@@ -1200,7 +1250,7 @@ func (p *Parser) parsePipeExpression(value ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {
-	return p.parseExpressionList(token.RPAREN)
+	return p.parseArguments()
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
@@ -1621,7 +1671,7 @@ func (p *Parser) parseDotExpression(left ast.Expression) ast.Expression {
 
 		p.nextToken()
 
-		methodCall.Arguments = p.parseExpressionList(token.RPAREN)
+		methodCall.Arguments = p.parseArguments()
 		if methodCall.Arguments == nil {
 			return nil
 		}
@@ -1674,6 +1724,8 @@ func (p *Parser) parseContinueStatement() *ast.ContinueStatement {
 
 func (p *Parser) parseFunctionStatement() *ast.FunctionStatement {
 	stmt := &ast.FunctionStatement{Token: p.curToken}
+	p.usesIt = append(p.usesIt, false)
+	defer func() { p.usesIt = p.usesIt[:len(p.usesIt)-1] }()
 
 	if !p.peekTokenIs(token.IDENT) {
 		p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected a function name after \"fn\", found %s", describe(p.peekToken))

@@ -210,6 +210,9 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			c.initialized[name] = true
 		}
 		c.fn = newFunctionScope(c.fn, captured)
+		if lit, ok := node.(*ast.FunctionLiteral); ok {
+			c.fn.implicitIt = lit.ImplicitIt
+		}
 		c.scope = &compilation{outer: c.scope}
 
 		for _, p := range params {
@@ -638,6 +641,26 @@ func (c *Compiler) emitDefine(s *Symbol) {
 	default:
 		c.emit(token.Token{}, code.OpSetLocal, s.Index)
 	}
+}
+
+// itIsVariable reports whether it is a variable of the program where an
+// argument uses it, so the argument isn't a function of it. The it of an
+// argument around this one doesn't count: the innermost argument has its
+// own. A global counts once its declaration is compiled, as globals exist
+// before.
+func (c *Compiler) itIsVariable() bool {
+	for fn := c.fn; fn != nil; fn = fn.outer {
+		if fn.implicitIt {
+			return false
+		}
+		for _, block := range fn.blocks {
+			if _, ok := block["it"]; ok {
+				return true
+			}
+		}
+	}
+	_, ok := c.globals.symbols["it"]
+	return ok && c.initialized["it"]
 }
 
 // resolve finds the variable a name refers to.
@@ -1116,6 +1139,10 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		c.emit(node.Token, code.OpAwait)
 
 	case *ast.FunctionLiteral:
+		if node.ImplicitIt && c.itIsVariable() {
+			// The argument is the value of the variable it
+			return c.compileExpression(node.Body.Statements[0].(*ast.ExpressionStatement).Expression)
+		}
 		name := ""
 		if node.Name != nil {
 			name = node.Name.Value
