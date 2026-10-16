@@ -1,11 +1,10 @@
 package vm
 
 import (
-	"slices"
-
 	"github.com/migueltarga/TargaScript/compiler"
 	"github.com/migueltarga/TargaScript/evaluator"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 )
 
 // modules are the files loaded by a program and the files it loads, each
@@ -56,7 +55,7 @@ func (vm *VM) load(path, shown string, line, column int) object.Object {
 	}
 
 	names := append([]string{}, c.Globals().Names()...)
-	slices.Sort(names)
+	order.Strings(names)
 	exports := object.NewHash()
 	for _, name := range names {
 		if value := module.global(name); value != nil {

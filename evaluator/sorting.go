@@ -2,32 +2,25 @@ package evaluator
 
 import (
 	"cmp"
-	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 )
 
 // sortedOrder returns the indexes of keys in the order < puts them, keeping
 // equal keys in their order. Keys that are all integers or all strings are
 // compared directly, which is many times faster than going through <.
 func sortedOrder(keys []object.Object, line, column int) ([]int, *object.Error) {
-	order := make([]int, len(keys))
-	for i := range order {
-		order[i] = i
-	}
-
 	if ints, ok := allInts(keys); ok {
-		slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(ints[a], ints[b]) })
-		return order, nil
+		return order.Stable(len(keys), func(a, b int) int { return cmp.Compare(ints[a], ints[b]) }), nil
 	}
 	if texts, ok := allStrings(keys); ok {
-		slices.SortStableFunc(order, func(a, b int) int { return strings.Compare(texts[a], texts[b]) })
-		return order, nil
+		return order.Stable(len(keys), func(a, b int) int { return strings.Compare(texts[a], texts[b]) }), nil
 	}
 
 	var sortErr *object.Error
-	slices.SortStableFunc(order, func(a, b int) int {
+	sorted := order.Stable(len(keys), func(a, b int) int {
 		if sortErr != nil {
 			return 0
 		}
@@ -43,7 +36,7 @@ func sortedOrder(keys []object.Object, line, column int) ([]int, *object.Error) 
 		}
 		return 0
 	})
-	return order, sortErr
+	return sorted, sortErr
 }
 
 func allInts(values []object.Object) ([]int64, bool) {

@@ -1,10 +1,9 @@
 package evaluator
 
 import (
-	"slices"
-
 	"github.com/migueltarga/TargaScript/diag"
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 )
 
 // The operations below are shared with the virtual machine, so compiled code
@@ -106,7 +105,7 @@ func BuiltinNames() []string {
 	for name := range builtins {
 		names = append(names, name)
 	}
-	slices.Sort(names)
+	order.Strings(names)
 	return names
 }
 

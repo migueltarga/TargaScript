@@ -4,6 +4,7 @@ import (
 	"cmp"
 
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/order"
 )
 
 // evalArraySearchMethod handles the array methods that search, slice or
@@ -105,20 +106,23 @@ func clampSliceIndex(index, length int64) int64 {
 // Without one, elements must all be numbers or all be strings.
 func sortArray(arr *object.Array, args []object.Object, line, column int) *object.Error {
 	if len(args) == 0 {
-		order, err := sortedOrder(arr.Elements, line, column)
+		sorted, err := sortedOrder(arr.Elements, line, column)
 		if err == nil {
-			arr.Elements = inOrder(arr.Elements, order)
+			arr.Elements = inOrder(arr.Elements, sorted)
 		}
 		return err
 	}
 
+	// The order is made first and applied only without errors, so a
+	// failed sort leaves the array as it was
 	var sortErr *object.Error
 	cb := newCallback(args[0])
-	mergeSort(arr.Elements, func(a, b object.Object) int {
+	xs := arr.Elements
+	sorted := order.Stable(len(xs), func(a, b int) int {
 		if sortErr != nil {
 			return 0
 		}
-		switch result := applyFunction(args[0], cb.pair(a, b)).(type) {
+		switch result := applyFunction(args[0], cb.pair(xs[a], xs[b])).(type) {
 		case *object.Error:
 			sortErr = result
 		case *object.Integer:
@@ -129,7 +133,10 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 			sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
 		}
 		return 0
-	}, func() bool { return sortErr != nil })
+	})
+	if sortErr == nil {
+		copy(xs, order.Permute(xs, sorted))
+	}
 	return sortErr
 }
 
