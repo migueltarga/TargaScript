@@ -18,13 +18,16 @@ const (
 	TEMPLATE = "TEMPLATE"
 
 	// Operators
-	ASSIGN    = "="
-	EQ        = "=="
-	NOT_EQ    = "!="
-	PLUS      = "+"
-	MINUS     = "-"
-	ASTERISK  = "*"
-	POWER     = "**"
+	ASSIGN   = "="
+	EQ       = "=="
+	NOT_EQ   = "!="
+	PLUS     = "+"
+	MINUS    = "-"
+	ASTERISK = "*"
+	POWER    = "**"
+
+	// OP_ASSIGN is a compound assignment, like += or ??=
+	OP_ASSIGN = "OP="
 	SLASH     = "/"
 	BANG      = "!"
 	LT        = "<"

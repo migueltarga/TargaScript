@@ -201,8 +201,20 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	}
 
+	// x += 1 and the like: an operator followed by =
+	if compoundable[tok.Type] && l.peekChar() == '=' {
+		l.readChar()
+		tok = l.newToken(token.OP_ASSIGN, tok.Literal+"=", tokenLine, tokenColumn)
+	}
+
 	l.readChar()
 	return tok
+}
+
+// compoundable are the operators that form compound assignments, like +=.
+var compoundable = map[token.TokenType]bool{
+	token.PLUS: true, token.MINUS: true, token.ASTERISK: true, token.SLASH: true,
+	token.MODULO: true, token.POWER: true, token.NULLISH: true,
 }
 
 func (l *Lexer) skipWhitespace() {

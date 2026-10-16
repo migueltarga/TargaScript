@@ -29,28 +29,29 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
-	token.EQ:       EQUALS,
-	token.NOT_EQ:   EQUALS,
-	token.LT:       LESSGREATER,
-	token.GT:       LESSGREATER,
-	token.LT_EQ:    LESSGREATER,
-	token.GT_EQ:    LESSGREATER,
-	token.RANGE:    RANGE,
-	token.PLUS:     SUM,
-	token.MINUS:    SUM,
-	token.SLASH:    PRODUCT,
-	token.ASTERISK: PRODUCT,
-	token.POWER:    POWER,
-	token.MODULO:   PRODUCT,
-	token.XOR:      SUM,
-	token.LPAREN:   CALL,
-	token.LBRACKET: INDEX,
-	token.DOT:      INDEX,
-	token.ASSIGN:   ASSIGN,
-	token.AND:      AND,
-	token.OR:       OR,
-	token.NULLISH:  NULLISH,
-	token.OPTIONAL: INDEX,
+	token.EQ:        EQUALS,
+	token.NOT_EQ:    EQUALS,
+	token.LT:        LESSGREATER,
+	token.GT:        LESSGREATER,
+	token.LT_EQ:     LESSGREATER,
+	token.GT_EQ:     LESSGREATER,
+	token.RANGE:     RANGE,
+	token.PLUS:      SUM,
+	token.MINUS:     SUM,
+	token.SLASH:     PRODUCT,
+	token.ASTERISK:  PRODUCT,
+	token.POWER:     POWER,
+	token.MODULO:    PRODUCT,
+	token.XOR:       SUM,
+	token.LPAREN:    CALL,
+	token.LBRACKET:  INDEX,
+	token.DOT:       INDEX,
+	token.ASSIGN:    ASSIGN,
+	token.OP_ASSIGN: ASSIGN,
+	token.AND:       AND,
+	token.OR:        OR,
+	token.NULLISH:   NULLISH,
+	token.OPTIONAL:  INDEX,
 
 	// Postfix x++ and x-- bind to their operand like indexing
 	token.INCREMENT: INDEX,
@@ -131,6 +132,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.OPTIONAL, p.parseDotExpression)
 	p.registerInfix(token.NULLISH, p.parseInfixExpression)
 	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
+	p.registerInfix(token.OP_ASSIGN, p.parseAssignmentExpression)
 	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
 	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
 
@@ -1161,6 +1163,9 @@ func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
 	expr := &ast.AssignmentExpression{
 		Token: p.curToken,
 		Left:  left,
+	}
+	if p.curTokenIs(token.OP_ASSIGN) {
+		expr.Operator = strings.TrimSuffix(p.curToken.Literal, "=")
 	}
 
 	p.nextToken()

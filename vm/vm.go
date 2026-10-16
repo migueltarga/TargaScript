@@ -292,6 +292,12 @@ func (vm *VM) loop(base int) object.Object {
 			vm.sp--
 		case code.OpDup:
 			vm.push(vm.stack[vm.sp-1])
+		case code.OpSlide:
+			n := int(ins[ip+1])
+			f.ip++
+			vm.stack[vm.sp-1-n] = vm.stack[vm.sp-1]
+			vm.sp -= n
+
 		case code.OpDup2:
 			vm.push(vm.stack[vm.sp-2])
 			vm.push(vm.stack[vm.sp-2])

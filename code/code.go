@@ -48,8 +48,9 @@ const (
 
 	// Stack
 	OpPop
-	OpDup  // push a copy of the top value
-	OpDup2 // push copies of the two top values
+	OpDup   // push a copy of the top value
+	OpDup2  // push copies of the two top values
+	OpSlide // keep the top value and remove the n values below it
 
 	// Jumps
 	OpJump              // jump to the operand
@@ -138,9 +139,10 @@ var definitions = map[Opcode]*Definition{
 	OpBang:         {"OpBang", []int{}},
 	OpIncrement:    {"OpIncrement", []int{1}},
 
-	OpPop:  {"OpPop", []int{}},
-	OpDup:  {"OpDup", []int{}},
-	OpDup2: {"OpDup2", []int{}},
+	OpPop:   {"OpPop", []int{}},
+	OpDup:   {"OpDup", []int{}},
+	OpDup2:  {"OpDup2", []int{}},
+	OpSlide: {"OpSlide", []int{1}},
 
 	OpJump:              {"OpJump", []int{2}},
 	OpJumpNotTruthy:     {"OpJumpNotTruthy", []int{2}},

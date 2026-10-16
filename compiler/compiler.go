@@ -1052,6 +1052,9 @@ func (c *Compiler) emitNotDefined(tok token.Token, name string) {
 }
 
 func (c *Compiler) compileAssignment(node *ast.AssignmentExpression) error {
+	if node.Operator != "" {
+		return c.compileCompoundAssignment(node)
+	}
 	switch target := node.Left.(type) {
 	case *ast.Identifier:
 		if err := c.compileExpression(node.Value); err != nil {
@@ -1300,5 +1303,69 @@ func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
 	for _, jump := range ends {
 		c.changeOperands(jump, len(c.scope.instructions))
 	}
+	return nil
+}
+
+// compileCompoundAssignment compiles x op= value, which reads the target
+// once. x ??= value only assigns when x is null.
+func (c *Compiler) compileCompoundAssignment(node *ast.AssignmentExpression) error {
+	// below is how many values the target leaves under its current value:
+	// none for a variable, the object for obj.name, and two for c[i]
+	below := 0
+	var set func()
+	switch target := node.Left.(type) {
+	case *ast.Identifier:
+		c.compileGet(target.Token, target.Value)
+		set = func() { c.compileSet(node.Token, target.Value) }
+	case *ast.IndexExpression:
+		if err := c.compileExpression(target.Left); err != nil {
+			return err
+		}
+		if err := c.compileExpression(target.Index); err != nil {
+			return err
+		}
+		c.emit(token.Token{}, code.OpDup2)
+		c.emit(target.Token, code.OpIndex)
+		below = 2
+		set = func() { c.emit(node.Token, code.OpSetIndex) }
+	case *ast.DotExpression:
+		if err := c.compileExpression(target.Left); err != nil {
+			return err
+		}
+		name := c.addConstant(&object.String{Value: target.Property.Value})
+		c.emit(token.Token{}, code.OpDup)
+		c.emit(target.Token, code.OpGetProperty, name)
+		below = 1
+		set = func() { c.emit(node.Token, code.OpSetProperty, name) }
+	default:
+		c.emitError(node.Token, "invalid assignment target: %T", node.Left)
+		return nil
+	}
+
+	if node.Operator == "??" {
+		keep := c.emit(token.Token{}, code.OpJumpNotNullKeep, 9999)
+		if err := c.compileOperand(node.Value); err != nil {
+			return err
+		}
+		set()
+		end := c.emit(token.Token{}, code.OpJump, 9999)
+		// Not null: keep the current value, without what was below it
+		c.changeOperands(keep, len(c.scope.instructions))
+		if below > 0 {
+			c.emit(token.Token{}, code.OpSlide, below)
+		}
+		c.changeOperands(end, len(c.scope.instructions))
+		return nil
+	}
+
+	op, ok := infixOpcodes[node.Operator]
+	if !ok {
+		return fmt.Errorf("unknown operator %s=", node.Operator)
+	}
+	if err := c.compileOperand(node.Value); err != nil {
+		return err
+	}
+	c.emit(node.Token, op)
+	set()
 	return nil
 }
