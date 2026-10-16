@@ -1,0 +1,31 @@
+// lib/text.tg
+// Small text helpers loaded by word_stats.tg
+
+const VOWELS = "aeiou"
+
+// Split a sentence into lowercase words, dropping punctuation
+fn words(text) {
+    let cleaned = ""
+    repeat c in text.lower() {
+        if c == " " || "abcdefghijklmnopqrstuvwxyz".contains(c) {
+            cleaned = cleaned + c
+        }
+    }
+    return cleaned.split(" ").filter(fn(w) { w.length > 0 })
+}
+
+// Count the vowels in a word
+fn vowelCount(word) {
+    let count = 0
+    repeat c in word {
+        if VOWELS.contains(c) { count++ }
+    }
+    count
+}
+
+// Pad a string with spaces on the right up to width
+fn padRight(s, width) {
+    let padded = s
+    repeat padded.length < width { padded = padded + " " }
+    padded
+}

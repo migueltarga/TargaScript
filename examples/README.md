@@ -218,6 +218,12 @@ For comprehensive examples, see `dot_notation.tg` which demonstrates all availab
    - String manipulation techniques
    - Date and time handling
 
+5. **word_stats.tg** - Word statistics for a short text
+   - String interpolation with `${...}`, ranges with `a..b` and `x++`
+   - Iterating over strings and objects
+   - Sorting, slicing and searching arrays
+   - Loading helpers from `lib/text.tg` with `load ... as`
+
 ### Applications and Algorithms
 
 1. **fibonacci.tg** - Multiple implementations of the Fibonacci sequence
