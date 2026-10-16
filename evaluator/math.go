@@ -39,7 +39,7 @@ func extreme(name string, args []object.Object, better func(a, b float64) bool) 
 	if len(args) == 1 {
 		array, ok := args[0].(*object.Array)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("%s takes an array or two or more numbers, got %s", name, typeName(args[0]))}
+			return &object.Error{Message: name + " takes an array or two or more numbers, got " + typeName(args[0])}
 		}
 		// Like list.max(), an empty array has none
 		if len(array.Elements) == 0 {
@@ -103,7 +103,7 @@ func randomBuiltin(args ...object.Object) object.Object {
 	case 1:
 		array, ok := args[0].(*object.Array)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("random takes nothing, an array or two integers, got %s", typeName(args[0]))}
+			return &object.Error{Message: "random takes nothing, an array or two integers, got " + typeName(args[0])}
 		}
 		if len(array.Elements) == 0 {
 			return NULL
@@ -113,7 +113,7 @@ func randomBuiltin(args ...object.Object) object.Object {
 		low, lowOk := args[0].(*object.Integer)
 		high, highOk := args[1].(*object.Integer)
 		if !lowOk || !highOk {
-			return &object.Error{Message: strfmt.Sprintf("random(a, b) takes two integers, got %s and %s", typeName(args[0]), typeName(args[1]))}
+			return &object.Error{Message: "random(a, b) takes two integers, got " + typeName(args[0]) + " and " + typeName(args[1])}
 		}
 		if low.Value > high.Value {
 			return &object.Error{Message: strfmt.Sprintf("random(a, b) needs a <= b, got %d and %d", low.Value, high.Value)}

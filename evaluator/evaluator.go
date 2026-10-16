@@ -74,7 +74,7 @@ func setProperty(obj object.Object, propertyName string, val object.Object, line
 		return withPosition(external.Set(propertyName, val), line, column)
 	}
 
-	return newError(line, column, "cannot set a property of %s", typeName(obj))
+	return errorText(line, column, "cannot set a property of "+typeName(obj))
 }
 
 // setIndex stores val in container[index].
@@ -97,7 +97,7 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 	if hash, ok := container.(*object.Hash); ok {
 		hashable, ok := index.(object.Hashable)
 		if !ok {
-			return newError(line, column, "%s can't be an object key", typeName(index))
+			return errorText(line, column, typeName(index)+" can't be an object key")
 		}
 
 		hash.Set(hashable, val)
@@ -112,7 +112,7 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 		return withPosition(external.Set(name, val), line, column)
 	}
 
-	return newError(line, column, "cannot use [] on %s", typeName(container))
+	return errorText(line, column, "cannot use [] on "+typeName(container))
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
@@ -146,7 +146,7 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		start, startOk := left.(*object.Integer)
 		end, endOk := right.(*object.Integer)
 		if !startOk || !endOk {
-			return newError(line, column, "range bounds must be integers, got %s and %s", typeName(left), typeName(right))
+			return errorText(line, column, "range bounds must be integers, got "+typeName(left)+" and "+typeName(right))
 		}
 		return integerRange(start.Value, end.Value, line, column)
 	}
@@ -241,11 +241,11 @@ func evalInExpression(value, collection object.Object, line, column int) object.
 	case *object.String:
 		part, ok := value.(*object.String)
 		if !ok {
-			return newError(line, column, "cannot look for %s in a string, only for a string", typeName(value))
+			return errorText(line, column, "cannot look for "+typeName(value)+" in a string, only for a string")
 		}
 		return nativeBoolToBooleanObject(strings.Contains(collection.Value, part.Value))
 	}
-	return newError(line, column, "cannot use \"in\" with %s, only with an array, an object or a string", typeName(collection))
+	return errorText(line, column, "cannot use \"in\" with "+typeName(collection)+", only with an array, an object or a string")
 }
 
 // maxRepeatLength keeps "x" * n from asking for more memory than any
@@ -291,7 +291,7 @@ func evalMinusPrefixOperatorExpression(right object.Object, line, column int) ob
 		value := right.(*object.Float).Value
 		return &object.Float{Value: -value}
 	default:
-		return newError(line, column, "cannot use \"-\" on %s", typeName(right))
+		return errorText(line, column, "cannot use \"-\" on "+typeName(right))
 	}
 }
 
@@ -423,6 +423,11 @@ func wrongType(line, column int, what, want string, got object.Object) *object.E
 	return &object.Error{Message: what + " must be " + want + ", got " + typeName(got), Line: line, Column: column}
 }
 
+// errorText is an error with a message made already.
+func errorText(line, column int, message string) *object.Error {
+	return &object.Error{Message: message, Line: line, Column: column}
+}
+
 func newError(line, column int, format string, a ...interface{}) *object.Error {
 	return &object.Error{
 		Message: strfmt.Sprintf(format, a...),
@@ -498,7 +503,7 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		}
 		return &object.String{Value: string(chars[idx])}
 	default:
-		return newError(line, column, "cannot use [] on %s", typeName(left))
+		return errorText(line, column, "cannot use [] on "+typeName(left))
 	}
 }
 
@@ -528,7 +533,7 @@ func evalHashIndexExpression(hash, index object.Object, line, column int) object
 
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return newError(line, column, "%s can't be an object key", typeName(index))
+		return errorText(line, column, typeName(index)+" can't be an object key")
 	}
 
 	pair, ok := hashObject.Get(key.HashKey())
@@ -571,7 +576,7 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = strfmt.Sprintf(". To read it only when there's a value, write ?.%s", propertyName)
+			hint = ". To read it only when there's a value, write ?." + propertyName
 		}
 		return newError(line, column, "cannot read property %q of %s%s", propertyName, typeName(obj), hint)
 	}
@@ -894,7 +899,7 @@ func evalMethodCallExpression(obj object.Object, method string, args []object.Ob
 	default:
 		hint := ""
 		if obj.Type() == object.NULL_OBJ {
-			hint = strfmt.Sprintf(". To call it only when there's a value, write ?.%s()", method)
+			hint = ". To call it only when there's a value, write ?." + method + "()"
 		}
 		return newError(line, column, "cannot call method %q on %s%s", method, typeName(obj), hint)
 	}

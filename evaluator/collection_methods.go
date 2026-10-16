@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/migueltarga/TargaScript/object"
-	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -35,7 +34,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: "unusable as object key: " + typeName(args[0])}
 		}
 		if pair, ok := h.Get(key.HashKey()); ok {
 			return pair.Value
@@ -51,7 +50,7 @@ var moreHashMethods = map[string]func(h *object.Hash, args []object.Object) obje
 		}
 		key, ok := args[0].(object.Hashable)
 		if !ok {
-			return &object.Error{Message: strfmt.Sprintf("unusable as object key: %s", typeName(args[0]))}
+			return &object.Error{Message: "unusable as object key: " + typeName(args[0])}
 		}
 		var value object.Object = NULL
 		if pair, ok := h.Get(key.HashKey()); ok {

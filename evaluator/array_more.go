@@ -59,7 +59,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			switch element.(type) {
 			case *object.Integer, *object.Float:
 			default:
-				return newError(line, column, "array.sum() can only add numbers, got %s", typeName(element)), true
+				return errorText(line, column, "array.sum() can only add numbers, got "+typeName(element)), true
 			}
 			total = evalInfixExpression("+", total, element, line, column)
 			if isError(total) {
@@ -83,7 +83,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 		for _, element := range arr.Elements[1:] {
 			better := evalInfixExpression(operator, element, best, line, column)
 			if errObj, isErr := better.(*object.Error); isErr {
-				return newError(line, column, "cannot find the %s: %s", method, errObj.Message), true
+				return errorText(line, column, "cannot find the "+method+": "+errObj.Message), true
 			}
 			if better == TRUE {
 				best = element
@@ -147,7 +147,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			}
 			hashable, ok := key.(object.Hashable)
 			if !ok {
-				return newError(line, column, "array.groupBy() function must return a string, number or boolean, got %s", typeName(key)), true
+				return errorText(line, column, "array.groupBy() function must return a string, number or boolean, got "+typeName(key)), true
 			}
 			var group object.Object = NULL
 			if pair, ok := groups.Get(hashable.HashKey()); ok {
@@ -187,7 +187,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 
 func callbackArg(method string, args []object.Object, line, column int) (object.Object, *object.Error) {
 	if len(args) != 1 || !isCallable(args[0]) {
-		return nil, newError(line, column, "array.%s() takes a function", method)
+		return nil, errorText(line, column, "array."+method+"() takes a function")
 	}
 	return args[0], nil
 }

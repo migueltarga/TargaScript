@@ -158,9 +158,7 @@ func init() {
 					}
 					return &object.Integer{Value: 0}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("cannot convert %s to an integer", typeName(args[0])),
-					}
+					return &object.Error{Message: "cannot convert " + typeName(args[0]) + " to an integer"}
 				}
 			},
 		},
@@ -192,9 +190,7 @@ func init() {
 					}
 					return &object.Float{Value: 0.0}
 				default:
-					return &object.Error{
-						Message: strfmt.Sprintf("cannot convert %s to a float", typeName(args[0])),
-					}
+					return &object.Error{Message: "cannot convert " + typeName(args[0]) + " to a float"}
 				}
 			},
 		},

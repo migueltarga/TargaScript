@@ -135,13 +135,13 @@ func pad(name, s string, args []object.Object, atStart bool) object.Object {
 		return wrongType(0, 0, "width for string."+name+"()", "an integer", args[0])
 	}
 	if width.Value > maxStringLength {
-		return &object.Error{Message: strfmt.Sprintf("string.%s() would make a string too long", name)}
+		return &object.Error{Message: "string." + name + "() would make a string too long"}
 	}
 	fill := " "
 	if len(args) == 2 {
 		f, ok := args[1].(*object.String)
 		if !ok || f.Value == "" {
-			return &object.Error{Message: strfmt.Sprintf("fill for string.%s() must be a non-empty string", name)}
+			return &object.Error{Message: "fill for string." + name + "() must be a non-empty string"}
 		}
 		fill = f.Value
 	}

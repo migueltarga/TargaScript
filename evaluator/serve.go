@@ -82,7 +82,7 @@ func serveBuiltin(args ...object.Object) object.Object {
 	}
 	port, ok := args[0].(*object.Integer)
 	if !ok || port.Value < 0 || port.Value > 65535 {
-		return &object.Error{Message: strfmt.Sprintf("the port for serve must be an integer from 0 to 65535, got %s", args[0].Inspect())}
+		return &object.Error{Message: "the port for serve must be an integer from 0 to 65535, got " + args[0].Inspect()}
 	}
 	handler := args[1]
 	if !isCallable(handler) {
@@ -121,7 +121,7 @@ func responseBuiltin(args ...object.Object) object.Object {
 		case "status":
 			status, ok := pair.Value.(*object.Integer)
 			if !ok || status.Value < 100 || status.Value > 999 {
-				return &object.Error{Message: strfmt.Sprintf("the status of a response must be an integer from 100 to 999, got %s", pair.Value.Inspect())}
+				return &object.Error{Message: "the status of a response must be an integer from 100 to 999, got " + pair.Value.Inspect()}
 			}
 			r.Status = int(status.Value)
 		case "headers":

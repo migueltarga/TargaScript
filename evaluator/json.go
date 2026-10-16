@@ -298,7 +298,7 @@ func (p *jsonParser) number() (object.Object, string) {
 	}
 	f, err := strconv.ParseFloat(literal, 64)
 	if err != nil {
-		return nil, strfmt.Sprintf("number %s is out of range", literal)
+		return nil, "number " + literal + " is out of range"
 	}
 	return &object.Float{Value: f}, ""
 }
@@ -355,7 +355,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		out.WriteString(strconv.FormatInt(obj.Value, 10))
 	case *object.Float:
 		if math.IsInf(obj.Value, 0) || math.IsNaN(obj.Value) {
-			return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", obj.Inspect())}
+			return &object.Error{Message: "cannot convert " + obj.Inspect() + " to JSON"}
 		}
 		out.WriteString(strconv.FormatFloat(obj.Value, 'g', -1, 64))
 	case *object.String:
@@ -407,7 +407,7 @@ func encodeJSON(out *strings.Builder, obj object.Object, indent string, depth in
 		newline(depth)
 		out.WriteByte('}')
 	default:
-		return &object.Error{Message: strfmt.Sprintf("cannot convert %s to JSON", typeName(obj))}
+		return &object.Error{Message: "cannot convert " + typeName(obj) + " to JSON"}
 	}
 	return nil
 }

@@ -130,7 +130,7 @@ func sortArray(arr *object.Array, args []object.Object, line, column int) *objec
 		case *object.Float:
 			return cmp.Compare(result.Value, 0)
 		default:
-			sortErr = newError(line, column, "array.sort() compare function must return a number, got %s", typeName(result))
+			sortErr = errorText(line, column, "array.sort() compare function must return a number, got "+typeName(result))
 		}
 		return 0
 	})

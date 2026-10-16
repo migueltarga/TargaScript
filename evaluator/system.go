@@ -139,7 +139,7 @@ func execBuiltin(args ...object.Object) object.Object {
 	if len(rest) > 0 {
 		options, ok := rest[0].(*object.Hash)
 		if !ok || len(rest) > 1 {
-			return &object.Error{Message: strfmt.Sprintf("exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got %s", typeName(rest[0]))}
+			return &object.Error{Message: "exec takes a command, then a list of arguments or options like {\"dir\": \"src\"}, got " + typeName(rest[0])}
 		}
 		if err := execOptions(options, &command); err != nil {
 			return err

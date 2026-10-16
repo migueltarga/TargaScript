@@ -50,7 +50,7 @@ func fetchWithHost(h Host, args ...object.Object) object.Object {
 	promise := object.NewPromise()
 	h.Fetch(request, func(response FetchResponse, err error) {
 		if err != nil {
-			promise.Reject(&object.Error{Message: strfmt.Sprintf("fetch %s failed: %s", request.URL, err)})
+			promise.Reject(&object.Error{Message: "fetch " + request.URL + " failed: " + err.Error()})
 			return
 		}
 		promise.Resolve(responseObject(response))

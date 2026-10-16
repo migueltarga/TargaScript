@@ -91,7 +91,7 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 			}
 			if i > start {
 				if n, err := strconv.Atoi(format[start:i]); err != nil || n > maxStringLength {
-					return "", &object.Error{Message: strfmt.Sprintf("printf %s %s is too large", part, format[start:i])}
+					return "", &object.Error{Message: "printf " + part + " " + format[start:i] + " is too large"}
 				}
 			}
 			if part == "width" && i > start {
