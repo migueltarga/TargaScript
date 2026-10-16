@@ -28,6 +28,7 @@ TargaScript is a lightweight scripting language with a clean, intuitive syntax. 
 |---|---|---|---|
 | Runs in a web page with no build step | ✅ `<script type="text/targascript">`, ~200 KB | ⚠️ through Pyodide, several MB | ✅ |
 | One file to install, no runtime | ✅ | ❌ | ❌ |
+| Turn a script into an executable to share | ✅ `targascript build` | ⚠️ with PyInstaller | ⚠️ single executable apps, experimental |
 | HTTP server in a few lines, no library | ✅ `serve(8080, fn(req) {...})` | ⚠️ `http.server`, low level | ⚠️ `http.createServer`, low level |
 | Test runner, no library | ✅ `targascript test` | ✅ `unittest` | ✅ `node --test` |
 | `await` at the top of a script | ✅ | ❌ needs `asyncio.run` | ✅ in modules |
