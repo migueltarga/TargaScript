@@ -2,6 +2,11 @@
 
 All notable changes to the "TargaScript" extension will be documented in this file.
 
+## [0.3.0] - 2026-10-15
+
+- Highlight `/* */` block comments and toggle them with the block comment command
+- Highlight numbers with an exponent, like `1e3` and `2.5E-4`
+
 ## [0.2.0] - 2026-10-15
 
 - Highlight `${...}` interpolation inside strings
