@@ -1,0 +1,14 @@
+// Lesson 11: JSON
+//
+// parseJSON and toJSON convert between text and values, keeping the
+// order of keys. Together with fetch, that's all you need for most APIs.
+
+let text = "{\"name\": \"TargaScript\", \"tags\": [\"fun\", \"small\"], \"stars\": 42}"
+let data = parseJSON(text)
+
+print(data.name, "has", data.stars, "stars")
+print("tags:", data.tags.join(", "))
+
+data.stars++
+print(toJSON(data))
+print(toJSON({"nested": {"ok": true}}, 2))

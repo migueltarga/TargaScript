@@ -18,6 +18,7 @@ let runButton = byId("run")
 let stopButton = byId("stop")
 let shareButton = byId("share")
 let examples = byId("examples")
+let nextButton = byId("next")
 
 const TIME_LIMIT = 10000
 
@@ -200,23 +201,50 @@ shareButton.addEventListener("click", fn(event) {
     js.setTimeout(fn() { shareButton.textContent = "Share" }, 2000)
 })
 
-// SECTION 4: Examples
-// -------------------
-// examples/index.txt lists the files from the repository's examples.
+// SECTION 4: Tour and examples
+// -----------------------------
+// tour/index.txt lists the lessons as file|title, and examples/index.txt
+// the repository's examples. Both go in the same menu.
 
 fn fetchText(path) {
     let response = await js.fetch(path)
     await response.text()
 }
 
-examples.addEventListener("change", fn(event) {
-    let name = examples.value
-    if name == "" { return null }
-    let source = fetchText("examples/" + name)
+let lessons = []
+
+fn addGroup(label, entries) {
+    let group = doc.createElement("optgroup")
+    group.label = label
+    repeat entry in entries {
+        let [path, title] = entry
+        let option = doc.createElement("option")
+        option.value = path
+        option.textContent = title
+        group.appendChild(option)
+    }
+    examples.appendChild(group)
+}
+
+fn openFile(path) {
+    setCode(fetchText(path))
     js.history.replaceState(null, "", js.location.pathname)
-    setCode(source)
     output.textContent = ""
     status.textContent = ""
+
+    // Lessons lead to the next one
+    let lesson = lessons.indexOf(path)
+    nextButton.hidden = lesson < 0 || lesson == lessons.length - 1
+}
+
+examples.addEventListener("change", fn(event) {
+    if examples.value != "" { openFile(examples.value) }
+})
+
+nextButton.addEventListener("click", fn(event) {
+    let next = lessons[lessons.indexOf(examples.value) + 1]
+    examples.value = next
+    openFile(next)
 })
 
 // SECTION 5: Start
@@ -231,9 +259,13 @@ if hash.startsWith("#code=") {
 runButton.disabled = false
 status.textContent = "Ready"
 
-repeat name in fetchText("examples/index.txt").trim().split("\n") {
-    let option = doc.createElement("option")
-    option.value = name
-    option.textContent = name.replace(".tg", "").replace("_", " ")
-    examples.appendChild(option)
+let tour = []
+repeat line in fetchText("tour/index.txt").lines() {
+    let [file, title] = line.split("|")
+    lessons.insert("tour/" + file)
+    tour.insert(["tour/" + file, "${lessons.length}. ${title}"])
 }
+addGroup("Tour", tour)
+
+let files = fetchText("examples/index.txt").lines()
+addGroup("Examples", files.map(fn(name) { ["examples/" + name, name.replace(".tg", "").replace("_", " ")] }))

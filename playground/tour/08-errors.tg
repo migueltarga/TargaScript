@@ -1,0 +1,22 @@
+// Lesson 8: Handling errors
+//
+// try runs code that may fail, and catch gets the error with its
+// message, line and column. throw raises your own.
+
+fn divide(a, b) {
+    if b == 0 { throw "can't divide by zero" }
+    a / b
+}
+
+print(divide(10, 2))
+
+let result = try {
+    divide(1, 0)
+} catch err {
+    print("Oops:", err.message, "(line ${err.line})")
+    0
+}
+print("result:", result)
+
+// Errors without try stop the program and show where they happened:
+// print(undefinedName)

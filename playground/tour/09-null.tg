@@ -1,0 +1,17 @@
+// Lesson 9: Working with null
+//
+// ?? gives a fallback for null, and ?. reads a property only when the
+// value isn't null. Destructuring takes values apart.
+
+let settings = {"theme": "dark"}
+print(settings.size ?? 14)
+
+let user = {"name": "Ana", "address": null}
+print(user.address?.city ?? "no city")
+
+let [first, second] = ["gold", "silver", "bronze"]
+let {name} = user
+print(first, second, name)
+
+let defaults = {"port": 80, "host": "localhost"}
+print({...defaults, "port": 8080})

@@ -1,0 +1,22 @@
+// Lesson 7: Functions
+//
+// fn makes functions. The last value is returned, or use return.
+// Parameters can have defaults, and functions are values too.
+
+fn greet(name, greeting = "Hello") {
+    "${greeting}, ${name}!"
+}
+print(greet("Ana"), greet("Bia", "Hi"))
+
+fn sum(...numbers) { numbers.reduce(fn(a, b) { a + b }, 0) }
+print(sum(1, 2, 3, 4))
+
+// A closure remembers the variables around it
+fn counter() {
+    let count = 0
+    fn() { count++ }
+}
+let next = counter()
+next()
+next()
+print("counted", next())

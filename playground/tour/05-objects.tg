@@ -1,0 +1,16 @@
+// Lesson 5: Objects
+//
+// Objects map keys to values and keep keys in the order you add them.
+// Read properties with a dot or with brackets.
+
+let person = {"name": "Ana", "age": 31}
+person.city = "Lisbon"
+person["age"]++
+
+print(person)
+print(person.name, "is", person.age)
+print(person.keys(), person.has("city"))
+
+repeat key, value in person {
+    print("  ${key}: ${value}")
+}

@@ -1,0 +1,24 @@
+// Lesson 6: Decisions and loops
+//
+// if decides, repeat loops. repeat x in ... goes over a range, array,
+// string or object, and repeat condition { } loops while it's true.
+
+fn describe(n) {
+    if n < 0 {
+        "negative"
+    } else if n == 0 {
+        "zero"
+    } else {
+        "positive"
+    }
+}
+print(describe(-5), describe(0), describe(7))
+
+repeat i in 1..5 {
+    if i == 3 { continue }
+    print("i =", i)
+}
+
+let n = 1
+repeat n < 100 { n = n * 2 }
+print("first power of 2 over 100:", n)

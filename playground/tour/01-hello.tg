@@ -1,0 +1,13 @@
+// Lesson 1: Hello, TargaScript
+//
+// print writes values separated by spaces. Strings use double quotes,
+// and ${...} puts any expression inside a string.
+//
+// Press Run (or Ctrl+Enter), change something, and run again.
+
+print("Hello, world!")
+
+let name = "TargaScript"
+let year = 2025
+print("Hello from ${name}, born in ${year}!")
+print("2 + 2 =", 2 + 2)
