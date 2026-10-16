@@ -76,7 +76,7 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 	// Names declared at the top level are globals from the start, so
 	// functions can use globals defined after them
 	for _, stmt := range program.Statements {
-		if name := declaredName(stmt); name != "" {
+		for _, name := range declaredNames(stmt) {
 			c.globals.define(name)
 		}
 		if load, ok := stmt.(*ast.LoadStatement); ok {
@@ -99,16 +99,28 @@ func (c *Compiler) Compile(program *ast.Program) (*Bytecode, error) {
 	return &Bytecode{Main: main, Constants: c.constants}, nil
 }
 
-func declaredName(stmt ast.Statement) string {
+// declaredNames returns the names a statement declares.
+func declaredNames(stmt ast.Statement) []string {
 	switch stmt := stmt.(type) {
 	case *ast.LetStatement:
-		return stmt.Name.Value
+		return bindingNames(stmt.Name, stmt.Pattern)
 	case *ast.ConstStatement:
-		return stmt.Name.Value
+		return bindingNames(stmt.Name, stmt.Pattern)
 	case *ast.FunctionStatement:
-		return stmt.Name.Value
+		return []string{stmt.Name.Value}
 	}
-	return ""
+	return nil
+}
+
+func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
+	if pattern == nil {
+		return []string{name.Value}
+	}
+	names := []string{}
+	for _, n := range pattern.Names {
+		names = append(names, n.Value)
+	}
+	return names
 }
 
 // compileFunction compiles a function body, compiling it again when a
@@ -226,9 +238,15 @@ func (c *Compiler) compileStatement(stmt ast.Statement) error {
 		return c.compileExpression(stmt.Expression)
 
 	case *ast.LetStatement:
+		if stmt.Pattern != nil {
+			return c.compileDestructuring(stmt.Token, stmt.Pattern, stmt.Value, false)
+		}
 		return c.compileLet(stmt.Token, stmt.Name.Value, stmt.Value, false)
 
 	case *ast.ConstStatement:
+		if stmt.Pattern != nil {
+			return c.compileDestructuring(stmt.Token, stmt.Pattern, stmt.Value, true)
+		}
 		return c.compileLet(stmt.Token, stmt.Name.Value, stmt.Value, true)
 
 	case *ast.FunctionStatement:
@@ -308,6 +326,39 @@ func (c *Compiler) compileLet(tok token.Token, name string, value ast.Expression
 		return nil
 	}
 	c.emitAssignDefined(target)
+	return nil
+}
+
+// compileDestructuring compiles `let [a, b] = value` and `let {a, b} =
+// value`. Its value is the whole value, like a let's.
+func (c *Compiler) compileDestructuring(tok token.Token, pattern *ast.Pattern, value ast.Expression, isConst bool) error {
+	if err := c.compileExpression(value); err != nil {
+		return err
+	}
+
+	for _, name := range pattern.Names {
+		existing, inScope := c.lookupCurrentScope(name.Value)
+		if inScope && isConst {
+			c.emitError(tok, "identifier already declared: %s", name.Value)
+			return nil
+		}
+		if inScope && existing.Const {
+			c.emitError(tok, "cannot reassign constant: %s", name.Value)
+			return nil
+		}
+	}
+
+	for i, name := range pattern.Names {
+		c.emit(token.Token{}, code.OpDup)
+		if pattern.Object {
+			c.emit(pattern.Token, code.OpGetProperty, c.addConstant(&object.String{Value: name.Value}))
+		} else {
+			c.emit(token.Token{}, code.OpConstant, c.addConstant(&object.Integer{Value: int64(i)}))
+			c.emit(pattern.Token, code.OpIndex)
+		}
+		c.emitDefine(c.define(name.Value, isConst))
+		c.emit(token.Token{}, code.OpPop)
+	}
 	return nil
 }
 

@@ -69,6 +69,20 @@ let age = try {
 
 The error is an object with `message`, `line` and `column`. Like `if`, `try` is an expression: its value is the value of whichever block ran last. `throw err` inside a `catch` raises the same error again.
 
+## 🧩 Taking Values Apart
+
+`let` and `const` can take arrays and objects apart:
+
+```
+let [first, second] = [10, 20, 30]
+let {name, age} = {"name": "Ana", "age": 30}
+
+fn minmax(list) { [list.sort().first(), list.last()] }
+let [lowest, highest] = minmax([5, 1, 9])
+```
+
+Missing elements and properties are null.
+
 ## 🫥 Working with null
 
 `a ?? b` is `b` when `a` is null, and `a?.b` is null when `a` is null instead of an error. A `?.` skips the rest of the chain, so `user?.name.upper()` is null when there's no user:

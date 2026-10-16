@@ -248,11 +248,17 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	if !p.expectPeek(token.IDENT) {
-		return nil
+	if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
+		p.nextToken()
+		if stmt.Pattern = p.parsePattern(); stmt.Pattern == nil {
+			return nil
+		}
+	} else {
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	}
-
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
@@ -269,6 +275,33 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	return stmt
 }
 
+// parsePattern parses `[a, b]` or `{a, b}` after let or const, with the
+// opening bracket as the current token.
+func (p *Parser) parsePattern() *ast.Pattern {
+	pattern := &ast.Pattern{Token: p.curToken, Object: p.curTokenIs(token.LBRACE)}
+	closing := token.TokenType(token.RBRACKET)
+	if pattern.Object {
+		closing = token.RBRACE
+	}
+
+	for !p.peekTokenIs(closing) {
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		pattern.Names = append(pattern.Names, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+		if !p.peekTokenIs(closing) && !p.expectPeek(token.COMMA) {
+			return nil
+		}
+	}
+	p.nextToken()
+
+	if len(pattern.Names) == 0 {
+		p.errorAt(pattern.Token.Line, pattern.Token.Column, "expected at least one name in %s", pattern.String())
+		return nil
+	}
+	return pattern
+}
+
 func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	stmt := &ast.ConstStatement{Token: p.curToken}
 
@@ -278,11 +311,17 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 		return nil
 	}
 
-	if !p.expectPeek(token.IDENT) {
-		return nil
+	if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
+		p.nextToken()
+		if stmt.Pattern = p.parsePattern(); stmt.Pattern == nil {
+			return nil
+		}
+	} else {
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 	}
-
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil

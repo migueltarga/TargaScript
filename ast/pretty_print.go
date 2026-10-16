@@ -59,7 +59,7 @@ func prettyPrintNode(node Node, level int) string {
 		result += indent + "}"
 
 	case *LetStatement:
-		result += fmt.Sprintf("let %s = ", n.Name.Value)
+		result += fmt.Sprintf("let %s = ", bindingString(n.Name, n.Pattern))
 		if n.Value != nil {
 			result += "\n" + prettyPrintNode(n.Value, level+1)
 		} else {
