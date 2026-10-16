@@ -12,17 +12,17 @@
 // Strengths: Simple, elegant implementation
 // Weaknesses: Very inefficient for large n due to redundant calculations
 fn fibonacci_recursive(num) {
-  // Base cases
-  if num <= 1 {
-    return num
-  }
-  
-  // Recursive case: F(n) = F(n-1) + F(n-2)
-  let fib1 = fibonacci_recursive(num-1)
-  let fib2 = fibonacci_recursive(num-2)
-  let result = fib1 + fib2
-  
-  return result
+    // Base cases
+    if num <= 1 {
+        return num
+    }
+
+    // Recursive case: F(n) = F(n-1) + F(n-2)
+    let fib1 = fibonacci_recursive(num-1)
+    let fib2 = fibonacci_recursive(num-2)
+    let result = fib1 + fib2
+
+    return result
 }
 
 // ======================================================================
@@ -33,26 +33,26 @@ fn fibonacci_recursive(num) {
 // Strengths: Efficient, works well for large values of n
 // Weaknesses: Not as mathematically elegant as the recursive version
 fn fibonacci_iterative(num) {
-  // Base cases
-  if num <= 1 {
-    return num
-  }
-  
-  // Initialize variables for iterative calculation
-  let a = 0  // F(0)
-  let b = 1  // F(1)
-  let result = 0
-  
-  // Calculate F(n) iteratively by summing the previous two numbers
-  let counter = 2
-  repeat counter <= num {
-    result = a + b  // New Fibonacci number
-    a = b           // Shift values for next iteration
-    b = result
-    counter = counter + 1
-  }
-  
-  return result
+    // Base cases
+    if num <= 1 {
+        return num
+    }
+
+    // Initialize variables for iterative calculation
+    let a = 0  // F(0)
+    let b = 1  // F(1)
+    let result = 0
+
+    // Calculate F(n) iteratively by summing the previous two numbers
+    let counter = 2
+    repeat counter <= num {
+        result = a + b  // New Fibonacci number
+        a = b           // Shift values for next iteration
+        b = result
+        counter = counter + 1
+    }
+
+    return result
 }
 
 // ======================================================================
@@ -62,30 +62,30 @@ fn fibonacci_iterative(num) {
 // Space Complexity: O(n) - for storing the sequence
 // Returns an array containing the first 'term_count' Fibonacci numbers
 fn generate_fibonacci_sequence(term_count) {
-  // Handle edge cases
-  if term_count <= 0 {
-    return []
-  }
-  if term_count == 1 {
-    return [0]
-  }
-  if term_count == 2 {
-    return [0, 1]
-  }
-  
-  // Start with the first two Fibonacci numbers
-  let sequence = [0, 1]
-  let idx = 2
-  
-  // Generate the rest of the sequence
-  repeat idx < term_count {
-    // Add the next Fibonacci number to the sequence
-    let next = sequence[idx-1] + sequence[idx-2]
-    sequence = sequence.insert(next)
-    idx = idx + 1
-  }
-  
-  return sequence
+    // Handle edge cases
+    if term_count <= 0 {
+        return []
+    }
+    if term_count == 1 {
+        return [0]
+    }
+    if term_count == 2 {
+        return [0, 1]
+    }
+
+    // Start with the first two Fibonacci numbers
+    let sequence = [0, 1]
+    let idx = 2
+
+    // Generate the rest of the sequence
+    repeat idx < term_count {
+        // Add the next Fibonacci number to the sequence
+        let next = sequence[idx-1] + sequence[idx-2]
+        sequence = sequence.insert(next)
+        idx = idx + 1
+    }
+
+    return sequence
 }
 
 // ======================================================================
@@ -101,7 +101,7 @@ print("Iterative Fibonacci of 10:", fibonacci_iterative(10))
 print("\nFibonacci sequence (10 terms):")
 let seq = generate_fibonacci_sequence(10)
 repeat val in seq {
-  print(val)
+    print(val)
 }
 
 // 3. Performance comparison between methods
@@ -115,4 +115,4 @@ print("Iterative result:", fibonacci_iterative(test_size))
 print("\nVerification of Fibonacci values:")
 print("Fib(10) =", fibonacci_recursive(10))  // Should be 55
 print("Fib(15) =", fibonacci_iterative(15))  // Should be 610
-print("Fib(20) =", fibonacci_iterative(20))  // Should be 6765 
+print("Fib(20) =", fibonacci_iterative(20))  // Should be 6765

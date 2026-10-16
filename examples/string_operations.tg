@@ -173,4 +173,4 @@ if domain_and_path.length > 1 {
 }
 
 print("")
-print("String operations demonstration completed!") 
+print("String operations demonstration completed!")

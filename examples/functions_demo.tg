@@ -140,4 +140,4 @@ let sum = numbers.reduce(fn(acc, x) { return acc + x }, 0)
 print("    Sum of all elements:", sum)
 
 print("")
-print("Built-in functions demo completed successfully!") 
+print("Built-in functions demo completed successfully!")

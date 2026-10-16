@@ -49,4 +49,4 @@ counter--
 print("counter-- twice -> " + counter)
 
 print("")
-print("Basic operators demonstration completed!") 
+print("Basic operators demonstration completed!")

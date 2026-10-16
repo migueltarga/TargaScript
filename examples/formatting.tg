@@ -134,8 +134,8 @@ let name1 = "Laptop"
 let price1 = 1299.99
 let stock1 = 15
 let value1 = price1 * toFloat(stock1)
-printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
-       id1, name1, price1, stock1, value1)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n",
+    id1, name1, price1, stock1, value1)
 
 // Product 2
 let id2 = 205
@@ -143,8 +143,8 @@ let name2 = "Smartphone"
 let price2 = 699.50
 let stock2 = 42
 let value2 = price2 * toFloat(stock2)
-printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
-       id2, name2, price2, stock2, value2)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n",
+    id2, name2, price2, stock2, value2)
 
 // Product 3
 let id3 = 316
@@ -152,12 +152,12 @@ let name3 = "Wireless Earbuds"
 let price3 = 149.00
 let stock3 = 78
 let value3 = price3 * toFloat(stock3)
-printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n", 
-       id3, name3, price3, stock3, value3)
+printf("  %3d | %-15s | $%8.2f | %5d | $%9.2f\n",
+    id3, name3, price3, stock3, value3)
 
 print("  ========================")
 let total_value = value1 + value2 + value3
 printf("  TOTAL INVENTORY VALUE: $%11.2f\n", total_value)
 
 print("")
-print("Format specifiers and printf demonstration completed!") 
+print("Format specifiers and printf demonstration completed!")

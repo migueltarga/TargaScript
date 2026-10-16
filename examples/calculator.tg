@@ -9,35 +9,35 @@ print("==========================")
 
 // Define calculator functions
 fn add(a, b) {
-  return a + b
+    return a + b
 }
 
 fn subtract(a, b) {
-  return a - b
+    return a - b
 }
 
 fn multiply(a, b) {
-  return a * b
+    return a * b
 }
 
 fn divide(a, b) {
-  if b == 0 {
-    print("Error: Division by zero")
-    return 0
-  }
-  return a / b
+    if b == 0 {
+        print("Error: Division by zero")
+        return 0
+    }
+    return a / b
 }
 
 fn square(a) {
-  return a * a
+    return a * a
 }
 
 fn sqrt_func(a) {
-  if a < 0 {
-    print("Error: Cannot calculate square root of negative number")
-    return 0
-  }
-  return sqrt(a)
+    if a < 0 {
+        print("Error: Cannot calculate square root of negative number")
+        return 0
+    }
+    return sqrt(a)
 }
 
 // Demonstration values
@@ -76,4 +76,4 @@ let formula_result = add(multiply(a, b), divide(square(a), b))
 print("a × b + (a² ÷ b) = " + formula_result)
 
 print("")
-print("Calculator demonstration completed!") 
+print("Calculator demonstration completed!")

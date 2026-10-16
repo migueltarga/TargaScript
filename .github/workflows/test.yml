@@ -43,6 +43,9 @@ jobs:
       - name: Run the TargaScript tests
         run: ./targascript test tests
 
+      - name: Check that the TargaScript files are formatted
+        run: ./targascript fmt --check examples tests bench playground
+
       - name: Check the tour, the tests and the benchmarks
         # Files using the browser's js object are left out
         run: ./targascript check tests bench playground/tour playground/welcome.tg

@@ -118,4 +118,4 @@ print("    Current time:", timeFormat(current_time, "HH:mm:ss"))
 print("    One hour later:", timeFormat(future_time, "HH:mm:ss"))
 
 print("")
-print("Extended Built-in Functions demonstration completed!") 
+print("Extended Built-in Functions demonstration completed!")

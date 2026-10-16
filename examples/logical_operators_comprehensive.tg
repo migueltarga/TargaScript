@@ -229,4 +229,4 @@ print("    ([] || [1, 2, 3]) && (0 || true) =", ([] || [1, 2, 3]) && (0 || true)
 print("    !(\"\" || 0) && (!false && \"success\") =", !("" || 0) && (!false && "success"))
 
 print("")
-print("Logical operators comprehensive test completed!") 
+print("Logical operators comprehensive test completed!")
