@@ -2,7 +2,8 @@
 package compiler
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/code"
@@ -84,11 +85,11 @@ func (c *Compiler) Problems() []Problem {
 			problems = append(problems, p)
 		}
 	}
-	sort.SliceStable(problems, func(i, j int) bool {
-		if problems[i].Line != problems[j].Line {
-			return problems[i].Line < problems[j].Line
+	slices.SortStableFunc(problems, func(a, b Problem) int {
+		if a.Line != b.Line {
+			return cmp.Compare(a.Line, b.Line)
 		}
-		return problems[i].Column < problems[j].Column
+		return cmp.Compare(a.Column, b.Column)
 	})
 	return problems
 }
@@ -664,7 +665,7 @@ func (c *Compiler) knownNames() []string {
 			}
 		}
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 

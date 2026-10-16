@@ -2,7 +2,6 @@ package ast
 
 import (
 	"bytes"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -181,10 +180,16 @@ func (pe *PrefixExpression) String() string {
 
 // nodeString is the String of a node, or "" for one missing because of a
 // syntax error, so error messages can show a partly parsed expression.
-func nodeString(node Node) string {
-	if node == nil || reflect.ValueOf(node).IsNil() {
+func nodeString(node Node) (s string) {
+	if node == nil {
 		return ""
 	}
+	// A nil pointer in the interface panics on its fields
+	defer func() {
+		if recover() != nil {
+			s = ""
+		}
+	}()
 	return node.String()
 }
 

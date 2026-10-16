@@ -1,7 +1,7 @@
 package evaluator
 
 import (
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
@@ -191,7 +191,7 @@ func suggestion(name string, candidates []string) string {
 	limit := min(2, (len(name)+1)/4)
 	best, bestDistance := "", limit+1
 
-	sort.Strings(candidates)
+	slices.Sort(candidates)
 	for _, candidate := range candidates {
 		if candidate == name {
 			continue

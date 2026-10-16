@@ -1,7 +1,7 @@
 package evaluator
 
 import (
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/object"
@@ -112,7 +112,7 @@ func responseObject(response FetchResponse) *object.Hash {
 	for name := range response.Headers {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	for _, name := range names {
 		headers.Set(&object.String{Value: strings.ToLower(name)}, &object.String{Value: response.Headers[name]})
 	}

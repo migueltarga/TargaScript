@@ -2,7 +2,7 @@ package compiler
 
 import (
 	"path"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -128,7 +128,7 @@ func moduleNames(program *ast.Program, dir string, seen map[string]bool) []modul
 	for name, isConst := range byName {
 		names = append(names, moduleName{name, isConst})
 	}
-	sort.Slice(names, func(i, j int) bool { return names[i].name < names[j].name })
+	slices.SortFunc(names, func(a, b moduleName) int { return strings.Compare(a.name, b.name) })
 	return names
 }
 

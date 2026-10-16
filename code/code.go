@@ -4,7 +4,6 @@ package code
 
 import (
 	"bytes"
-	"encoding/binary"
 
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -217,7 +216,7 @@ func Make(op Opcode, operands ...int) []byte {
 		width := def.OperandWidths[i]
 		switch width {
 		case 2:
-			binary.BigEndian.PutUint16(instruction[offset:], uint16(o))
+			instruction[offset], instruction[offset+1] = byte(o>>8), byte(o)
 		case 1:
 			instruction[offset] = byte(o)
 		}
@@ -244,7 +243,7 @@ func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
 }
 
 func ReadUint16(ins Instructions) uint16 {
-	return binary.BigEndian.Uint16(ins)
+	return uint16(ins[0])<<8 | uint16(ins[1])
 }
 
 func ReadUint8(ins Instructions) uint8 {

@@ -1,8 +1,6 @@
 package object
 
 import (
-	"sort"
-
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/code"
 )
@@ -73,7 +71,16 @@ func (cf *CompiledFunction) Inspect() string {
 // zeros if unknown.
 func (cf *CompiledFunction) PositionAt(offset int) (int, int) {
 	positions := cf.Positions
-	i := sort.Search(len(positions), func(i int) bool { return positions[i].Offset > offset })
+	// The first position after offset
+	i, j := 0, len(positions)
+	for i < j {
+		h := int(uint(i+j) >> 1)
+		if positions[h].Offset > offset {
+			j = h
+		} else {
+			i = h + 1
+		}
+	}
 	if i == 0 {
 		return 0, 0
 	}
