@@ -677,6 +677,19 @@ func (ts *ThrowStatement) String() string {
 	return "throw " + ts.Value.String()
 }
 
+// ThrowExpression is throw used where a value goes, as in
+// `value ?? throw "missing"` or `_ => throw "unknown"`. It never gives one.
+type ThrowExpression struct {
+	Token token.Token
+	Value Expression
+}
+
+func (te *ThrowExpression) expressionNode()      {}
+func (te *ThrowExpression) TokenLiteral() string { return te.Token.Literal }
+func (te *ThrowExpression) String() string {
+	return "throw " + te.Value.String()
+}
+
 // Pattern takes values apart in a declaration: `[a, b]` takes the elements
 // of an array in order, and `{a, b}` takes the properties of an object with
 // those names.

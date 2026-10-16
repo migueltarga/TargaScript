@@ -930,6 +930,12 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 		}
 		c.emit(node.Token, code.OpCall, 2)
 
+	case *ast.ThrowExpression:
+		if err := c.compileExpression(node.Value); err != nil {
+			return err
+		}
+		c.emit(node.Token, code.OpThrow)
+
 	case *ast.AwaitExpression:
 		if err := c.compileExpression(node.Value); err != nil {
 			return err
