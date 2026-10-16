@@ -1,6 +1,6 @@
 # TargaScript Reference
 
-Everything in the language, in one place. Code blocks marked `targascript` run as written; `// →` shows what a line prints or evaluates to.
+Everything in the language, in one place. For complete programs that do everyday jobs, see the [cookbook](COOKBOOK.md). Code blocks marked `targascript` run as written; `// →` shows what a line prints or evaluates to.
 
 - [Basics](#basics)
 - [Operators](#operators)
