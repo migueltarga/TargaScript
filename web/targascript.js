@@ -4,7 +4,8 @@
 // page's <script type="text/targascript"> tags in order. In a worker created
 // with new Worker("targascript.js?src=a.tg&src=b.tg") it runs those files.
 // Once loaded, targascriptRun(source, onOutput) runs a program in a fresh
-// environment and returns its error message, or null.
+// environment and returns its error message, or null. When the program
+// pauses at an await, it returns a promise of one of those instead.
 //
 // In Node, require() returns a function that takes the bytes of
 // targascript.wasm and resolves to targascriptRun.
@@ -157,7 +158,7 @@
   const imports = { targascript: host, wasi_snapshot_preview1: system };
 
   // Runs source, in a fresh environment or the shared one, and returns the
-  // error message or null.
+  // error message or null, or a promise of them if the program awaits.
   const evaluate = (source, onOutput, fresh) => {
     const s = handle(String(source));
     const o = handle(onOutput);
@@ -222,8 +223,12 @@
       globalThis.targascriptRun = start(instance);
       for (const script of scripts()) {
         const source = await script.load();
+        const report = (error) => {
+          if (error) console.error(`TargaScript error in ${script.name}: ${error}`);
+        };
         const error = evaluate(source, toConsole, false);
-        if (error) console.error(`TargaScript error in ${script.name}: ${error}`);
+        if (error instanceof Promise) error.then(report);
+        else report(error);
       }
     })
     .catch((err) => console.error("TargaScript:", err));

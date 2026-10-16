@@ -7,7 +7,8 @@ js.onmessage = fn(event) {
     let onOutput = fn(text) {
         js.postMessage({"type": "output", "text": text})
     }
-    let error = targascript.run(event.data, onOutput)
+    // Programs that await finish later, so run returns a promise for them
+    let error = await targascript.run(event.data, onOutput)
     js.postMessage({"type": "done", "error": error})
 }
 

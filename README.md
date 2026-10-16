@@ -119,10 +119,21 @@ button.addEventListener("click", fn(event) {
 - numbers, strings, booleans, `null`/`undefined` and arrays become TargaScript values. Arrays and objects passed to JavaScript are copied
 - TargaScript functions passed to JavaScript, such as event handlers, can be called from JavaScript
 - a JavaScript exception becomes a TargaScript error
+- `await` waits for JavaScript promises, and a TargaScript function that awaits returns a promise to JavaScript
 - `print` writes to the browser console
 - scripts can have a `src`, and all scripts on a page share their variables
 - in a worker, `new Worker("targascript.js?src=worker.tg")` runs `worker.tg`, and `targascript.run(source, onOutput)` runs another program in a fresh environment
 - JavaScript can call `targascriptRun(source, onOutput)`, which returns the error message or `null`
+
+`await` makes asynchronous code read like ordinary code:
+
+```html
+<script type="text/targascript">
+let response = await js.fetch("https://api.github.com/repos/migueltarga/TargaScript")
+let repo = await response.json()
+js.document.body.append("${repo.full_name} has ${repo.stargazers_count} stars")
+</script>
+```
 
 Build it with [TinyGo](https://tinygo.org) 0.39:
 

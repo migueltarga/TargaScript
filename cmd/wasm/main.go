@@ -48,18 +48,16 @@ func newSession() *session {
 	return s
 }
 
-// current output, restored after a nested run
-var output writer = toConsole
-
 // toConsole is where print writes outside a run, as in event handlers. Each
 // print is one write ending in a newline, which console.log adds itself.
 func toConsole(text string) {
 	jsbridge.ConsoleLog(strings.TrimSuffix(text, "\n"))
 }
 
-// run parses and evaluates source in env, returning the error message or
-// "".
-func run(source string, s *session, out writer) string {
+// run parses and runs source in a session, sending its output to out. It
+// returns null when the program finished, the error message as a string
+// when it failed, or a promise of one of those when it paused at an await.
+func run(source string, s *session, out writer) object.Object {
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) > 0 {
@@ -67,25 +65,33 @@ func run(source string, s *session, out writer) string {
 		for _, e := range p.Diagnostics() {
 			diagnostics = append(diagnostics, diag.Diagnostic{Line: e.Line, Column: e.Column, Message: e.Message})
 		}
-		return diag.FormatAll(source, diagnostics)
+		return &object.String{Value: diag.FormatAll(source, diagnostics)}
 	}
-
-	previous := output
-	output = out
-	evaluator.SetOutput(out)
-	defer func() {
-		output = previous
-		evaluator.SetOutput(previous)
-	}()
 
 	bytecode, err := s.compiler.Compile(program)
 	if err != nil {
-		return err.Error()
+		return &object.String{Value: err.Error()}
 	}
-	if err, ok := s.machine.Run(bytecode).(*object.Error); ok {
-		return diag.Format(source, diag.Diagnostic{Line: err.Line, Column: err.Column, Message: err.Message})
+	s.machine.Output = out
+	return outcome(source, s.machine.Run(bytecode))
+}
+
+// outcome turns the result of a run into what run returns.
+func outcome(source string, result object.Object) object.Object {
+	switch result := result.(type) {
+	case *object.Error:
+		return &object.String{Value: diag.Format(source, diag.Diagnostic{
+			Line: result.Line, Column: result.Column, Message: result.Message,
+		})}
+	case *object.Promise:
+		done := object.NewPromise()
+		result.Then(
+			func(object.Object) { done.Resolve(evaluator.NULL) },
+			func(reason object.Object) { done.Resolve(outcome(source, reason)) },
+		)
+		return done
 	}
-	return ""
+	return evaluator.NULL
 }
 
 // targascriptObject is the `targascript` value scripts see. Its run function
@@ -111,10 +117,7 @@ func targascriptObject() *object.Hash {
 			out := writer(func(text string) {
 				evaluator.CallFunction(onOutput, []object.Object{&object.String{Value: text}})
 			})
-			if err := run(source.Value, newSession(), out); err != "" {
-				return &object.String{Value: err}
-			}
-			return evaluator.NULL
+			return run(source.Value, newSession(), out)
 		},
 	})
 	return hash
@@ -131,11 +134,12 @@ func evaluate(source, onOutput, fresh uint32) uint32 {
 	if fresh != 0 {
 		s = newSession()
 	}
-	out := writer(func(text string) { jsbridge.Invoke(onOutput, text) })
-	if err := run(jsbridge.ReadString(source), s, out); err != "" {
-		return jsbridge.MakeString(err)
-	}
-	return 0
+	// Output can arrive after this returns, when the program awaits
+	fn := jsbridge.Keep(onOutput)
+	out := writer(func(text string) {
+		fn.Call([]object.Object{&object.String{Value: text}})
+	})
+	return jsbridge.Return(run(jsbridge.ReadString(source), s, out))
 }
 
 // callback runs a TargaScript function passed to JavaScript.
@@ -147,7 +151,7 @@ func callback(id, args uint32) uint32 {
 
 func init() {
 	vm.MaxNestedRuns = maxNestedRuns
-	evaluator.SetOutput(output)
+	evaluator.SetOutput(writer(toConsole))
 	page = newSession()
 }
 

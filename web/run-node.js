@@ -8,9 +8,9 @@ const path = require("path");
 const load = require(path.join(__dirname, "targascript.js"));
 
 const [wasmPath, file] = process.argv.slice(2);
-load(fs.readFileSync(wasmPath)).then((run) => {
+load(fs.readFileSync(wasmPath)).then(async (run) => {
   let output = "";
-  const error = run(fs.readFileSync(file, "utf8"), (text) => { output += text; });
+  const error = await run(fs.readFileSync(file, "utf8"), (text) => { output += text; });
   process.stdout.write(output);
   if (error) {
     process.stderr.write(`${error}\n`);
