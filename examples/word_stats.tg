@@ -1,0 +1,68 @@
+// word_stats.tg
+// ===============================================================
+// Word statistics for a short text
+// This example shows string interpolation, ranges, ++, iterating
+// over strings and objects, array methods and loading other files.
+// ===============================================================
+
+load "lib/text.tg" as text
+
+let poem = "The quick brown fox jumps over the lazy dog. The dog sleeps, the fox runs!"
+
+print("Word Statistics")
+print("===============")
+
+// SECTION 1: Splitting into words
+// -------------------------------
+// text.words iterates over each character of the string
+
+let list = text.words(poem)
+print("")
+print("1. Words:")
+print("  ${list.length} words: ${list.slice(0, 5)} ...")
+
+// SECTION 2: Counting with an object
+// ----------------------------------
+// counts[word]++ increments a value stored in an object
+
+let counts = {}
+repeat word in list {
+    if counts[word] == null {
+        counts[word] = 0
+    }
+    counts[word]++
+}
+
+print("")
+print("2. Word counts (in order of appearance):")
+repeat word in counts {
+    print("  ${text.padRight(word, 8)} ${counts[word]}")
+}
+
+// SECTION 3: Sorting and searching
+// --------------------------------
+// sort() and reverse() change the array in place, slice() copies
+
+let unique = []
+repeat word in counts { unique.insert(word) }
+
+let byCount = unique.slice(0).sort(fn(a, b) { counts[b] - counts[a] })
+print("")
+print("3. Sorting and searching:")
+print("  Alphabetical: ${unique.slice(0).sort()}")
+print("  Most common:  ${byCount.slice(0, 3)}")
+print("  First word with 5 letters: ${unique.find(fn(w) { w.length == 5 })}")
+print("  Has \"cat\"? ${unique.contains("cat")}   Position of \"fox\": ${unique.indexOf("fox")}")
+
+// SECTION 4: Characters and ranges
+// --------------------------------
+// str[i] reads one character, a..b builds an inclusive range
+
+let longest = unique.reduce(fn(best, w) { if w.length > best.length { w } else { best } }, "")
+print("")
+print("4. The longest word is \"${longest}\":")
+repeat i in 0..longest.length - 1 {
+    print("  ${i}: ${longest[i]}")
+}
+print("  Vowels: ${text.vowelCount(longest)}")
+print("  Squares of 1..5: ${(1..5).map(fn(n) { n * n })}")
