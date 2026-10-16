@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -180,5 +181,16 @@ func TestFormatting(t *testing.T) {
 	end := edit["range"].(map[string]any)["end"].(map[string]any)
 	if edit["newText"] != "fn f() {\n    return 1\n}\n" || end["line"].(float64) != 2 || end["character"].(float64) != 1 {
 		t.Errorf("edit: %v", edit)
+	}
+}
+
+// Structs and enums show in the outline with their own kinds
+func TestStructAndEnumSymbols(t *testing.T) {
+	got := []string{}
+	for _, d := range declarations("struct Point { x, y }\nenum Status { On, Off }\nlet struct = 1\n") {
+		got = append(got, d.name+":"+strconv.Itoa(d.kind))
+	}
+	if strings.Join(got, " ") != "Point:23 Status:10 struct:13" {
+		t.Errorf("got %v", got)
 	}
 }
