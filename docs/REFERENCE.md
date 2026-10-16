@@ -54,7 +54,7 @@ From loosest to tightest:
 | `<` `>` `<=` `>=` | comparison of numbers or strings |
 | `..` | inclusive range of integers: `1..3` is `[1, 2, 3]` |
 | `+` `-` `^` | addition (and joining strings or arrays), subtraction, bitwise xor |
-| `*` `/` `%` | multiplication, division, remainder |
+| `*` `/` `%` | multiplication (and repeating strings: `"-" * 3`), division, remainder |
 | `**` | power, grouping to the right: `2 ** 3 ** 2` is `512` |
 | `-x` `!x` | negation, not |
 | `x++` `x--` `f()` `a[i]` `o.p` `o?.p` | increment, call, index, property, optional property |

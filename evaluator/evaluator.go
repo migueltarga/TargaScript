@@ -154,6 +154,10 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		leftVal := left.(*object.String).Value
 		rightVal := objectToString(right)
 		return &object.String{Value: leftVal + rightVal}
+	case left.Type() == object.STRING_OBJ && right.Type() == object.INTEGER_OBJ && operator == "*":
+		return repeatString(left.(*object.String).Value, right.(*object.Integer).Value, line, column)
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.STRING_OBJ && operator == "*":
+		return repeatString(right.(*object.String).Value, left.(*object.Integer).Value, line, column)
 	case left.Type() == object.ARRAY_OBJ && right.Type() == object.ARRAY_OBJ && operator == "+":
 		leftElements := left.(*object.Array).Elements
 		rightElements := right.(*object.Array).Elements
@@ -171,6 +175,20 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 	default:
 		return operatorError(line, column, operator, left, right)
 	}
+}
+
+// maxRepeatLength keeps "x" * n from asking for more memory than any
+// program needs.
+const maxRepeatLength = 1 << 28
+
+func repeatString(text string, count int64, line, column int) object.Object {
+	if count < 0 {
+		return newError(line, column, "cannot repeat a string a negative number of times (%d)", count)
+	}
+	if text != "" && count > maxRepeatLength/int64(len(text)) {
+		return newError(line, column, "the repeated string would be too long")
+	}
+	return &object.String{Value: strings.Repeat(text, int(count))}
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
