@@ -70,3 +70,16 @@ test("keywords can be keys", fn() {
     let o = {if: 1, load: fn() { 2 }}
     assertEqual(o.if + o.load(), 3)
 })
+
+test("arrow functions see the this of the method around them", fn() {
+    let cart = {
+        items: [2, 3],
+        factor: 10,
+        total: fn() { this.items.map(x => x * this.factor).sum() },
+        plain: fn(n) { n + 1 },
+    }
+    assertEqual(cart.total(), 50)
+    assertEqual(cart.plain(1), 2)
+    fn outside() { this }
+    assertEqual(outside(), null)
+})

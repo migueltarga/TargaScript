@@ -336,7 +336,7 @@ func (vm *VM) loop(base int) object.Object {
 		case code.OpHash:
 			n := int(code.ReadUint16(ins[ip+1:]))
 			f.ip += 2
-			hash := object.NewHash()
+			hash := object.NewHashOfSize(n)
 			start := vm.sp - 2*n
 			for i := start; i < vm.sp; i += 2 {
 				key, ok := vm.stack[i].(object.Hashable)
@@ -379,6 +379,72 @@ func (vm *VM) loop(base int) object.Object {
 				return err
 			}
 			vm.push(result)
+
+		case code.OpBinaryConst:
+			// The operator's position is that of the instruction it replaced
+			op := code.Opcode(ins[ip+1])
+			right := vm.constants[code.ReadUint16(ins[ip+2:])]
+			left := vm.stack[vm.sp-1]
+			f.ip += 3
+			if l, ok := left.(*object.Integer); ok {
+				if r, ok := right.(*object.Integer); ok {
+					if result := vm.intBinary(op, l.Value, r.Value); result != nil {
+						vm.stack[vm.sp-1] = result
+						continue
+					}
+				}
+			}
+			result := vm.binary(f, ip+3, op, left, right)
+			if err, ok := result.(*object.Error); ok {
+				return err
+			}
+			vm.stack[vm.sp-1] = result
+
+		case code.OpCompareJump:
+			op := code.Opcode(ins[ip+1])
+			right := vm.stack[vm.sp-1]
+			left := vm.stack[vm.sp-2]
+			vm.sp -= 2
+			truthy, err := vm.compare(f, ip, op, left, right)
+			if err != nil {
+				return err
+			}
+			if truthy {
+				f.ip += 3
+			} else {
+				f.ip = int(code.ReadUint16(ins[ip+2:]))
+			}
+
+		case code.OpCompareConstJump:
+			// The comparison's position is that of the instruction it replaced
+			op := code.Opcode(ins[ip+1])
+			right := vm.constants[code.ReadUint16(ins[ip+2:])]
+			left := vm.stack[vm.sp-1]
+			vm.sp--
+			truthy, err := vm.compare(f, ip+3, op, left, right)
+			if err != nil {
+				return err
+			}
+			if truthy {
+				f.ip += 6
+			} else {
+				f.ip = int(code.ReadUint16(ins[ip+4:]))
+			}
+
+		case code.OpSetLocalPop:
+			i := int(code.ReadUint16(ins[ip+1:]))
+			f.ip += 3
+			vm.sp--
+			if cell, ok := vm.stack[f.base+i].(*object.Cell); ok {
+				cell.Value = vm.stack[vm.sp]
+			} else {
+				vm.stack[f.base+i] = vm.stack[vm.sp]
+			}
+
+		case code.OpSetGlobalPop:
+			vm.sp--
+			vm.globals[code.ReadUint16(ins[ip+1:])] = vm.stack[vm.sp]
+			f.ip += 3
 
 		case code.OpInRange:
 			end := vm.pop()
@@ -668,6 +734,22 @@ func (vm *VM) loop(base int) object.Object {
 				if err := vm.step(f, ip); err != nil {
 					return err
 				}
+			}
+			// Calls of this VM's closures with the right number of
+			// arguments, the usual case, start here
+			if cl, ok := vm.stack[vm.sp-1-argc].(*object.Closure); ok && cl.Runner == vm &&
+				argc == cl.Fn.NumParams && !cl.Fn.Variadic && !cl.Fn.HasThis && len(vm.frames) <= evaluator.MaxCallDepth {
+				base := vm.sp - argc
+				vm.ensureStack(base + cl.Fn.NumLocals + 256)
+				for i := vm.sp; i < base+cl.Fn.NumLocals; i++ {
+					vm.stack[i] = nil
+				}
+				vm.receiver = nil
+				vm.sp = base + cl.Fn.NumLocals
+				f = vm.newFrame(cl, base)
+				vm.frames = append(vm.frames, f)
+				ins = cl.Fn.Instructions
+				continue
 			}
 			switched, err := vm.call(f, ip, argc)
 			if err != nil {
@@ -993,6 +1075,38 @@ func (vm *VM) binary(f *frame, ip int, op code.Opcode, left, right object.Object
 		return vm.positioned(f, ip, err)
 	}
 	return result
+}
+
+// compare gives the result of a comparison as a bool, for the jumps that
+// do one; ip is where an error is reported.
+func (vm *VM) compare(f *frame, ip int, op code.Opcode, left, right object.Object) (bool, *object.Error) {
+	if l, ok := left.(*object.Integer); ok {
+		if r, ok := right.(*object.Integer); ok {
+			return compareInts(op, l.Value, r.Value), nil
+		}
+	}
+	result := vm.binary(f, ip, op, left, right)
+	if err, ok := result.(*object.Error); ok {
+		return false, err
+	}
+	return evaluator.IsTruthy(result), nil
+}
+
+// compareInts compares two integers with a comparison operator.
+func compareInts(op code.Opcode, a, b int64) bool {
+	switch op {
+	case code.OpLessThan:
+		return a < b
+	case code.OpLessEqual:
+		return a <= b
+	case code.OpGreaterThan:
+		return a > b
+	case code.OpGreaterEqual:
+		return a >= b
+	case code.OpEqual:
+		return a == b
+	}
+	return a != b
 }
 
 // intBinary is the fast path of binary for integers small enough not to

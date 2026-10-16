@@ -1,0 +1,7 @@
+let points = []
+repeat i in 1..100000 { points.insert({x: i, y: i * 2, name: "p${i}"}) }
+let sum = 0
+repeat r in 1..10 {
+    repeat p in points { sum += p.x + p.y }
+}
+print(sum)

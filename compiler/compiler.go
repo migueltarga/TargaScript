@@ -239,11 +239,12 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 			continue
 		}
 
+		fuse(scope.instructions)
 		compiled := &object.CompiledFunction{
 			Instructions: scope.instructions,
 			NumLocals:    fn.numLocals,
 			NumParams:    len(params),
-			HasThis:      hasThis,
+			HasThis:      hasThis && fn.usesThis,
 			Name:         name,
 			Positions:    scope.positions,
 			LocalNames:   fn.localNames,
@@ -1187,6 +1188,14 @@ func (c *Compiler) compileIf(node *ast.IfExpression) error {
 
 // compileGet pushes the value of a variable.
 func (c *Compiler) compileGet(tok token.Token, name string) {
+	if name == "this" {
+		for fn := c.fn; fn != nil; fn = fn.outer {
+			if _, own := fn.lookupLocal("this"); own {
+				fn.usesThis = true
+				break
+			}
+		}
+	}
 	s, ok := c.resolve(name)
 	if !ok && name == "this" {
 		// Outside functions, this is null
