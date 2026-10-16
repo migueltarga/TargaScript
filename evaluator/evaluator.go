@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -916,11 +917,11 @@ func objectToString(obj object.Object) string {
 
 	switch obj.Type() {
 	case object.INTEGER_OBJ:
-		return fmt.Sprintf("%d", obj.(*object.Integer).Value)
+		return strconv.FormatInt(obj.(*object.Integer).Value, 10)
 	case object.FLOAT_OBJ:
 		return obj.Inspect()
 	case object.BOOLEAN_OBJ:
-		return fmt.Sprintf("%t", obj.(*object.Boolean).Value)
+		return strconv.FormatBool(obj.(*object.Boolean).Value)
 	case object.STRING_OBJ:
 		return obj.(*object.String).Value
 	case object.NULL_OBJ:

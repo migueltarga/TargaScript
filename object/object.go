@@ -61,7 +61,7 @@ type Integer struct {
 }
 
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
-func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
+func (i *Integer) Inspect() string  { return strconv.FormatInt(i.Value, 10) }
 func (i *Integer) HashKey() HashKey {
 	return HashKey{Kind: IntegerKey, Value: uint64(i.Value)}
 }
@@ -83,7 +83,7 @@ type Boolean struct {
 }
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
-func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
+func (b *Boolean) Inspect() string  { return strconv.FormatBool(b.Value) }
 func (b *Boolean) HashKey() HashKey {
 	var value uint64
 
