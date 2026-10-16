@@ -75,6 +75,13 @@
 
   let pending = new Uint8Array(0);
 
+  const mathFunctions = new Map();
+  const mathFunction = (ptr, len) => {
+    const fn = Math[text(ptr, len)];
+    mathFunctions.set(ptr, fn);
+    return fn;
+  };
+
   const host = {
     get: (h, p, n) => attempt(() => values[h][text(p, n)]),
     set: (h, p, n, v) => attempt(() => { values[h][text(p, n)] = values[v]; }),
@@ -109,6 +116,9 @@
       return encoded.length;
     },
     numberParse: (ptr, len) => Number(text(ptr, len)),
+    // sin, atan2 and the rest of Math, by the address of their name, which
+    // is a constant in the interpreter, so it's read only the first time
+    math: (ptr, len, a, b) => (mathFunctions.get(ptr) ?? mathFunction(ptr, len))(a, b),
     stringLength: (h) => (pending = encoder.encode(String(values[h]))).length,
     stringRead: (ptr) => { bytes(ptr, pending.length).set(pending); },
     makeString: (p, n) => handle(text(p, n)),
