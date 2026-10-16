@@ -552,7 +552,7 @@ func init() {
 				}
 
 				t := time.Unix(timestamp.Value, 0)
-				formatted := t.Format(format.Value)
+				formatted := t.Format(dateLayout(format.Value))
 
 				return &object.String{Value: formatted}
 			},

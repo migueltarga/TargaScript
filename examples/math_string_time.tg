@@ -93,10 +93,10 @@ print("    Current timestamp:", current_time)
 
 // Formatting Time
 print("  Time Formatting:")
-let formatted_time = timeFormat(current_time, "2006-01-02 15:04:05")
+let formatted_time = timeFormat(current_time, "YYYY-MM-DD HH:mm:ss")
 print("    Formatted time:", formatted_time)
-print("    Date only:", timeFormat(current_time, "2006-01-02"))
-print("    Time only:", timeFormat(current_time, "15:04:05"))
+print("    Date only:", timeFormat(current_time, "YYYY-MM-DD"))
+print("    Time only:", timeFormat(current_time, "HH:mm:ss"))
 
 // ===============================================================
 // 4. Combined Examples
@@ -114,8 +114,8 @@ print("    Rounded number:", round(num))
 // Time Calculation
 print("  Time Calculation:")
 let future_time = current_time + 3600  // Add one hour (3600 seconds)
-print("    Current time:", timeFormat(current_time, "15:04:05"))
-print("    One hour later:", timeFormat(future_time, "15:04:05"))
+print("    Current time:", timeFormat(current_time, "HH:mm:ss"))
+print("    One hour later:", timeFormat(future_time, "HH:mm:ss"))
 
 print("")
 print("Extended Built-in Functions demonstration completed!") 
