@@ -470,6 +470,8 @@ cat script.tg | targascript -     # run code from standard input
 
 Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
 
+A script whose first line is `#!/usr/bin/env targascript` runs like any program on macOS and Linux, after `chmod +x script.tg`: `./script.tg a b`.
+
 ### Executables
 
 `targascript build app.tg` makes an executable, `app`, with the program and every file it loads inside. It runs where TargaScript isn't installed, and every argument goes to the program's `args`:

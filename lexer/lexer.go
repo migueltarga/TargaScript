@@ -23,6 +23,13 @@ func New(input string) *Lexer {
 		column: 0,
 	}
 	l.readChar()
+	// A first line like #!/usr/bin/env targascript lets the system run
+	// the file as a program
+	if l.ch == '#' && l.peekChar() == '!' {
+		for l.ch != '\n' && l.ch != 0 {
+			l.readChar()
+		}
+	}
 	return l
 }
 
