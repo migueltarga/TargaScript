@@ -12,8 +12,8 @@ import (
 // A loop that takes too many steps fails at the loop, whatever its condition
 func TestLoopStepsPointAtTheLoop(t *testing.T) {
 	for _, input := range []string{
-		"let r = 1\n  repeat r {}",
-		"fn f() { let r = 1\n  repeat r {} }\nf()",
+		"let r = true\n  repeat r {}",
+		"fn f() { let r = true\n  repeat r {} }\nf()",
 		"fn f() { let s = 0\n  repeat i in 1..100000 { s += i } }\nf()",
 	} {
 		p := parser.New(lexer.New(input))

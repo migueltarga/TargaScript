@@ -280,7 +280,7 @@ let size = match n {
 print(size)                                   // → several
 
 repeat i in 1..3 { print(i) }                 // 1, 2, 3
-repeat 2 { print("twice") }                   // a number of times
+repeat 2 { print("twice") }                   // a number of times, also repeat n { }
 repeat i in 2 { print("time", i) }           // an integer n counts from 1 to n
 repeat i, name in ["a", "b"] { print(i, name) }        // index and element
 repeat key, value in {"x": 1} { print(key, value) }    // key and value
@@ -293,7 +293,7 @@ repeat i in 1..10 {
 }
 ```
 
-`if` and `match` are expressions. `match` compares each arm's values with `==`, a range matches the numbers between its ends, and `_` matches anything; without a match it's null. `repeat x in` works on ranges, arrays, strings (characters), objects (keys) and integers (`1..n`).
+`if` and `match` are expressions. `match` compares each arm's values with `==`, a range matches the numbers between its ends, and `_` matches anything; without a match it's null. `repeat n { }` runs `n` times when `n` is an integer at the start, even if `n` changes in the loop; anything else, like a comparison, a call or a list, is a condition checked before each round. `repeat x in` works on ranges, arrays, strings (characters), objects (keys) and integers (`1..n`).
 
 ## Functions
 

@@ -707,6 +707,18 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		// Values that can't be compared with the ends don't match
 		set(w.A(), nativeBool(object.Same(above, TRUE) && object.Same(below, TRUE)))
 
+	case code.RCountStart:
+		n, ok := r(w.B()).(*object.Integer)
+		if ok {
+			set(w.C(), n)
+		}
+		set(w.A(), nativeBool(!ok))
+
+	case code.RCountDown:
+		n := r(w.C()).(*object.Integer).Value
+		set(w.A(), nativeBool(n > 0))
+		set(w.C(), vm.ints.get(n-1))
+
 	case code.RMinus, code.RNot, code.RIncr:
 		value := r(w.B())
 		if value == nil {

@@ -43,7 +43,9 @@ const (
 	OpIn      // pop a collection and a value, push whether the value is in it
 	OpMinus
 	OpBang
-	OpIncrement // add 1 to the number on top, or subtract 1 when the operand is 1
+	OpIncrement  // add 1 to the number on top, or subtract 1 when the operand is 1
+	OpCountStart // replace the top with whether it isn't an integer, and set the local in the operand to it when it is
+	OpCountDown  // replace the top with whether the local in the operand is above 0, and subtract 1 from it
 
 	// Stack
 	OpPop

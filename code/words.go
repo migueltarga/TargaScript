@@ -86,10 +86,12 @@ const (
 	RAddI
 	RSubI
 
-	RInRange // R[A] = R[A] is in R[A+1]..R[A+2]
-	RMinus   // R[A] = -R[B]
-	RNot     // R[A] = !R[B]
-	RIncr    // R[A] = R[B] + 1, or - 1 when C is 1
+	RInRange    // R[A] = R[A] is in R[A+1]..R[A+2]
+	RMinus      // R[A] = -R[B]
+	RNot        // R[A] = !R[B]
+	RIncr       // R[A] = R[B] + 1, or - 1 when C is 1
+	RCountStart // R[A] = R[B] isn't an integer, and R[C] = R[B] when it is
+	RCountDown  // R[A] = R[C] > 0, R[C]--
 
 	// Jumps
 	RJump        // go to A
@@ -165,7 +167,7 @@ var opNames = [...]string{
 	RAdd: "ADD", RSub: "SUB", RMul: "MUL", RDiv: "DIV", RMod: "MOD", RPow: "POW", RXor: "XOR", RBitAnd: "AND", RBitOr: "OR", RShl: "SHL", RShr: "SHR",
 	REqual: "EQ", RNotEqual: "NE", RGreater: "GT", RGreaterEqual: "GE", RLess: "LT", RLessEqual: "LE",
 	RRange: "RANGE", RIn: "IN", RAddK: "ADDK", RSubK: "SUBK", RMulK: "MULK", RDivK: "DIVK", RModK: "MODK",
-	RAddI: "ADDI", RSubI: "SUBI", RInRange: "INRANGE", RMinus: "MINUS", RNot: "NOT", RIncr: "INCR",
+	RAddI: "ADDI", RSubI: "SUBI", RInRange: "INRANGE", RMinus: "MINUS", RNot: "NOT", RIncr: "INCR", RCountStart: "COUNTSTART", RCountDown: "COUNTDOWN",
 	RJump: "JMP", RJumpFalsy: "JFALSY", RJumpTruthy: "JTRUTHY", RJumpNull: "JNULL", RJumpNotNull: "JNOTNULL",
 	RJumpLess: "JLT", RJumpLessEqual: "JLE", RJumpGreater: "JGT", RJumpGreaterEqual: "JGE", RJumpEqual: "JEQ",
 	RJumpNotEqual: "JNE", RJumpLessI: "JLTI", RJumpLessEqualI: "JLEI", RJumpGreaterI: "JGTI",
@@ -243,6 +245,8 @@ var registers = [...]uint8{
 	RMinus:             3,
 	RNot:               3,
 	RIncr:              3,
+	RCountStart:        7,
+	RCountDown:         5,
 	RJumpFalsy:         1,
 	RJumpTruthy:        1,
 	RJumpNull:          1,
