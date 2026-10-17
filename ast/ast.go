@@ -2,9 +2,9 @@ package ast
 
 import (
 	"bytes"
-	"strconv"
 	"strings"
 
+	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
 )
 
@@ -777,7 +777,7 @@ func (p *Pattern) String() string {
 	for i, n := range p.Names {
 		name := n.Value
 		if key := p.Key(i); key != name {
-			name = strconv.Quote(key) + ": " + name
+			name = strfmt.Quote(key) + ": " + name
 		}
 		if d := p.Default(i); d != nil {
 			name += " = " + d.String()

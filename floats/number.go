@@ -8,6 +8,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/migueltarga/TargaScript/ints"
 )
 
 // digits is a decimal number 0.d[0]d[1]... × 10^dp, with no zeros at the
@@ -32,8 +34,8 @@ func parseExponent(s string) digits {
 			n.d = append(n.d, s[i])
 		}
 	}
-	exp, _ := strconv.Atoi(s[i+1:])
-	n.dp = exp + 1
+	exp, _, _ := ints.Parse(s[i+1:], 10)
+	n.dp = int(exp) + 1
 	for len(n.d) > 0 && n.d[len(n.d)-1] == '0' {
 		n.d = n.d[:len(n.d)-1]
 	}

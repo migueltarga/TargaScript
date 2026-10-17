@@ -1,9 +1,8 @@
 package evaluator
 
 import (
-	"strconv"
-
 	"github.com/migueltarga/TargaScript/object"
+	"github.com/migueltarga/TargaScript/strfmt"
 )
 
 func init() {
@@ -45,7 +44,7 @@ func assertEqualBuiltin(args ...object.Object) object.Object {
 // quoted shows a value as code would write it, with strings in quotes.
 func quoted(obj object.Object) string {
 	if str, ok := obj.(*object.String); ok {
-		return strconv.Quote(str.Value)
+		return strfmt.Quote(str.Value)
 	}
 	return obj.Inspect()
 }
