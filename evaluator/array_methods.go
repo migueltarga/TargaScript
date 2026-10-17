@@ -172,6 +172,10 @@ func valuesEqual(a, b object.Object, depth int) bool {
 		}
 		return true
 
+	case *object.Bytes:
+		b, ok := b.(*object.Bytes)
+		return ok && string(a.Value) == string(b.Value)
+
 	case *object.Hash:
 		b, ok := b.(*object.Hash)
 		if !ok || a.Len() != b.Len() || a.Struct() != b.Struct() {

@@ -58,7 +58,8 @@ fn readPixels(columns, rows) {
     // Mirrored, as people expect to see themselves
     smallContext.setTransform(-1, 0, 0, 1, columns, 0)
     smallContext.drawImage(video, 0, 0, columns, rows)
-    js.Array.from(smallContext.getImageData(0, 0, columns, rows).data)
+    // The pixels come as bytes, in one copy
+    smallContext.getImageData(0, 0, columns, rows).data
 }
 
 // Each character in the color of its cell, on a canvas

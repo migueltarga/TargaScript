@@ -125,6 +125,28 @@ print("a1b22c".splitPattern("\d+"))                       // → ["a", "b", "c"]
 
 String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`, and with patterns `matches`, `match`, `matchAll`, `replacePattern` and `splitPattern`. Positions count characters, and `str[i]` is `null` outside the string.
 
+## Bytes
+
+`bytes` holds binary data, such as the contents of a file or an image: numbers from 0 to 255, read and changed by position.
+
+```targascript
+let data = bytes("Hi")                  // the UTF-8 of a text
+print(data, data.length, data[0])       // → bytes(48 69) 2 72
+data[0] = 104
+print(data.text(), data.hex())          // → hi 6869
+
+let header = bytes(8)                   // eight zero bytes
+header.write(0, 4, 0x04034b50)          // a 4-byte number, little-endian
+header.writeBE(4, 2, 513)               // a 2-byte one, big-endian
+print(header, header.read(0, 4) == 0x04034b50, header.readBE(4, 2))
+// → bytes(50 4b 03 04 02 01 00 00) true 513
+print(bytes([1, 2]) + bytes([255]), bytes([1]) == bytes([1]))   // → bytes(01 02 ff) true
+```
+
+`bytes(n)` makes n zero bytes, `bytes(text)` the UTF-8 of a string, `bytes(list)` the bytes of a list of numbers from 0 to 255, and `bytes(data)` a copy.
+
+Bytes methods: `length`; `slice(start, end)`, a copy, with negative positions counting from the end; `text()`, the bytes read as UTF-8; `hex()`; `toArray()`; `read(position, size)` and `readBE(position, size)`, a number of 1, 2, 4 or 8 bytes, little-endian or big-endian; and `write(position, size, value)` and `writeBE(position, size, value)`, which store one. `repeat b in data` goes over the numbers, `+` joins bytes, and `==` compares them. `data[i]` is `null` outside the data, and storing anything other than a number from 0 to 255 is an error.
+
 ## Arrays
 
 ```targascript
@@ -461,11 +483,12 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `escapeHTML(text)` | text safe to put in HTML: `<`, `>`, `&` and quotes become entities |
 | `encodeURL(text)`, `decodeURL(text)` | text for a part of a URL, like a query value, and back |
+| `bytes(size or text or list)` | binary data, see [Bytes](#bytes) |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `exists(path)`, `deleteFile(path)`, `makeDir(path)` | whether a file or directory exists; delete a file or an empty directory; make a directory and the ones it is in. Command line only |
 | `exec(command)`, `exec(program, args)` | runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`: `exec("git", ["log", "-1"]).output`. Options come last: `{"dir": "src"}` runs it in another directory, `{"input": text}` gives it text to read, and `{"show": true}` shows its output as it comes instead of keeping it. A program that fails gives its exit code in `code`; one that can't start is an error. Command line only |
-| `input`, `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
+| `input`, `readFile`, `readBytes`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing
 
@@ -518,7 +541,7 @@ targascript fmt                   # indent the .tg files; --check only lists the
 cat script.tg | targascript -     # run code from standard input
 ```
 
-Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
+Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `readBytes(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory. `readBytes` gives a file as [bytes](#bytes), for files that aren't text, and `writeFile` and `appendFile` take bytes as well as text.
 
 A script whose first line is `#!/usr/bin/env targascript` runs like any program on macOS and Linux, after `chmod +x script.tg`: `./script.tg a b`.
 
@@ -609,7 +632,7 @@ button.addEventListener("click", () => {
   - `x.name`, `x.name = v`, `x.method(args)` and `x(args)` work on them;
   - `x.new(args)` is `new x(args)`;
   - a JavaScript exception is a TargaScript error.
-- **Conversions**: numbers, strings, booleans, `null` and arrays convert to TargaScript values. Arrays and objects passed to JavaScript are copied.
+- **Conversions**: numbers, strings, booleans, `null` and arrays convert to TargaScript values, and `Uint8Array`, `Uint8ClampedArray` and `ArrayBuffer` to [bytes](#bytes), in one copy, as the pixels of `getImageData(...).data` do. Arrays and objects passed to JavaScript are copied, and bytes become a `Uint8Array`.
 - **Functions**: TargaScript functions passed to JavaScript, like event handlers, can be called from JavaScript, and they return a promise if they await.
 - **`print`**: it goes to the console.
 

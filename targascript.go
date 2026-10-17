@@ -46,7 +46,7 @@ func New() *Script {
 	l := eventloop.NewRestricted()
 	machine := vm.New(c.Globals())
 	machine.SetHost(l)
-	machine.RestrictBuiltins("readFile", "writeFile", "appendFile", "listDir", "env", "exit", "input", "exec", "exists", "deleteFile", "makeDir", "staticFile", "serve")
+	machine.RestrictBuiltins("readFile", "readBytes", "writeFile", "appendFile", "listDir", "env", "exit", "input", "exec", "exists", "deleteFile", "makeDir", "staticFile", "serve")
 	return &Script{compiler: c, machine: machine, loop: l}
 }
 
