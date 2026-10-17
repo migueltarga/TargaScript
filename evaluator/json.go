@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/migueltarga/TargaScript/floats"
+	"github.com/migueltarga/TargaScript/ints"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -245,9 +246,13 @@ func (p *jsonParser) hex4() (rune, bool) {
 	if p.pos+4 > len(p.text) {
 		return 0, false
 	}
-	n, err := strconv.ParseUint(p.text[p.pos:p.pos+4], 16, 32)
-	if err != nil {
-		return 0, false
+	n := 0
+	for _, c := range []byte(p.text[p.pos : p.pos+4]) {
+		d := strings.IndexByte("0123456789abcdef", c|0x20)
+		if d < 0 || c < '0' {
+			return 0, false
+		}
+		n = n*16 + d
 	}
 	p.pos += 4
 	return rune(n), true
@@ -293,7 +298,7 @@ func (p *jsonParser) number() (object.Object, string) {
 
 	literal := p.text[start:p.pos]
 	if !isFloat {
-		if n, err := strconv.ParseInt(literal, 10, 64); err == nil {
+		if n, ok, tooLarge := ints.Parse(literal, 10); ok && !tooLarge {
 			return &object.Integer{Value: n}, ""
 		}
 	}

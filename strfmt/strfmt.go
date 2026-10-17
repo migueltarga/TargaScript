@@ -184,7 +184,7 @@ func verbText(s spec, verb rune, arg any) text {
 		// differs, quoting it
 		s.plus = false
 		if str, ok := arg.(string); ok && s.sharp {
-			return text{body: strconv.Quote(truncate(str, s.precision))}
+			return text{body: quote(truncate(str, s.precision), '"', false)}
 		}
 		s.sharp = false
 		switch arg.(type) {
@@ -210,21 +210,21 @@ func verbText(s spec, verb rune, arg any) text {
 		if !ok {
 			if n, isInt := toInt(arg); isInt && verb == 'q' {
 				if s.plus {
-					return text{body: strconv.QuoteRuneToASCII(toRune(n))}
+					return text{body: quote(string(toRune(n)), '\'', true)}
 				}
-				return text{body: strconv.QuoteRune(toRune(n))}
+				return text{body: quote(string(toRune(n)), '\'', false)}
 			}
 			return bad(verb, arg)
 		}
 		str = truncate(str, s.precision)
 		if verb == 'q' {
 			switch {
-			case s.sharp && strconv.CanBackquote(str):
+			case s.sharp && canBackquote(str):
 				return text{body: "`" + str + "`"}
 			case s.plus:
-				return text{body: strconv.QuoteToASCII(str)}
+				return text{body: quote(str, '"', true)}
 			}
-			return text{body: strconv.Quote(str)}
+			return text{body: quote(str, '"', false)}
 		}
 		return text{body: str, zeroable: true}
 	case 't':

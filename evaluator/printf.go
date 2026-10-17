@@ -1,10 +1,10 @@
 package evaluator
 
 import (
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/migueltarga/TargaScript/ints"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -90,12 +90,13 @@ func formatPrintf(format string, args []object.Object) (string, *object.Error) {
 				i++
 			}
 			if i > start {
-				if n, err := strconv.Atoi(format[start:i]); err != nil || n > maxStringLength {
+				if n, ok, tooLarge := ints.Parse(format[start:i], 10); !ok || tooLarge || n > maxStringLength {
 					return "", &object.Error{Message: "printf " + part + " " + format[start:i] + " is too large"}
 				}
 			}
 			if part == "width" && i > start {
-				width, _ = strconv.Atoi(format[start:i])
+				n, _, _ := ints.Parse(format[start:i], 10)
+				width = int(n)
 			} else {
 				spec += format[start:i]
 			}

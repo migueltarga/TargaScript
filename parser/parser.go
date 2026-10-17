@@ -1,12 +1,11 @@
 package parser
 
 import (
-	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/floats"
+	"github.com/migueltarga/TargaScript/ints"
 	"github.com/migueltarga/TargaScript/lexer"
 	"github.com/migueltarga/TargaScript/strfmt"
 	"github.com/migueltarga/TargaScript/token"
@@ -895,12 +894,12 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	} else {
 		text = strings.ReplaceAll(text, "_", "")
 	}
-	value, err := strconv.ParseInt(text, base, 64)
-	if errors.Is(err, strconv.ErrRange) {
+	value, ok, tooLarge := ints.Parse(text, base)
+	if tooLarge {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is too large for an integer, the limit is 9223372036854775807", p.curToken.Literal)
 		return nil
 	}
-	if err != nil {
+	if !ok {
 		p.errorAt(p.curToken.Line, p.curToken.Column, "%s is not a valid number", p.curToken.Literal)
 		return nil
 	}

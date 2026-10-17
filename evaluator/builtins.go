@@ -3,10 +3,10 @@ package evaluator
 import (
 	"io"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/floats"
+	"github.com/migueltarga/TargaScript/ints"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/strfmt"
 )
@@ -146,8 +146,8 @@ func init() {
 					}
 					return &object.Integer{Value: value}
 				case *object.String:
-					value, err := strconv.ParseInt(arg.Value, 10, 64)
-					if err != nil {
+					value, ok, tooLarge := ints.Parse(arg.Value, 10)
+					if !ok || tooLarge {
 						return &object.Error{
 							Message: strfmt.Sprintf("cannot convert %q to an integer", arg.Value),
 						}

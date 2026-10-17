@@ -303,7 +303,7 @@ func (h *Hash) inspect(parents []Object) string {
 func inspectNested(obj Object, parents []Object) string {
 	switch obj := obj.(type) {
 	case *String:
-		return strconv.Quote(obj.Value)
+		return strfmt.Quote(obj.Value)
 	case *Array:
 		return obj.inspect(parents)
 	case *Hash:
