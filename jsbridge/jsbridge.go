@@ -125,8 +125,9 @@ func fromResult(result uint32) object.Object {
 
 // fromHost converts a JavaScript value to TargaScript, taking over the
 // reference held by handle. Numbers with no fractional part become
-// integers, and arrays are copied into TargaScript arrays. Other objects and
-// functions are wrapped in a Value.
+// integers, arrays are copied into TargaScript arrays, and Uint8Array,
+// Uint8ClampedArray and ArrayBuffer into bytes, in one copy. Other objects
+// and functions are wrapped in a Value.
 func fromHost(handle uint32) object.Object {
 	switch hostKind(handle) {
 	case kindUndefined, kindNull:
@@ -147,6 +148,13 @@ func fromHost(handle uint32) object.Object {
 		text := readString(handle)
 		hostRelease(handle)
 		return &object.String{Value: text}
+	case kindBytes:
+		data := make([]byte, hostBytesLength(handle))
+		if len(data) > 0 {
+			hostStringRead(&data[0])
+		}
+		hostRelease(handle)
+		return &object.Bytes{Value: data}
 	case kindArray:
 		elements := make([]object.Object, hostLength(handle))
 		for i := range elements {
@@ -161,8 +169,9 @@ func fromHost(handle uint32) object.Object {
 
 // toHost converts a TargaScript value to JavaScript. When temporary is true
 // the caller must release the handle once JavaScript is done with it.
-// Arrays and hashes are copied, and functions become JavaScript functions
-// that call back into the script.
+// Arrays and hashes are copied, bytes become a Uint8Array with a copy of
+// them, and functions become JavaScript functions that call back into the
+// script.
 func toHost(obj object.Object) (handle uint32, temporary bool) {
 	return toHostSeen(obj, nil)
 }
@@ -198,6 +207,11 @@ func toHostSeen(obj object.Object, converting map[object.Identity]uint32) (handl
 		return handleFalse, false
 	case *object.Null:
 		return handleNull, false
+	case *object.Bytes:
+		if len(obj.Value) == 0 {
+			return hostMakeBytes(nil, 0), true
+		}
+		return hostMakeBytes(&obj.Value[0], uint32(len(obj.Value))), true
 	case *object.Array:
 		array := hostMakeArray()
 		converting[object.IdentityOf(obj)] = array

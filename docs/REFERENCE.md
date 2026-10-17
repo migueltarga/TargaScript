@@ -632,7 +632,7 @@ button.addEventListener("click", () => {
   - `x.name`, `x.name = v`, `x.method(args)` and `x(args)` work on them;
   - `x.new(args)` is `new x(args)`;
   - a JavaScript exception is a TargaScript error.
-- **Conversions**: numbers, strings, booleans, `null` and arrays convert to TargaScript values. Arrays and objects passed to JavaScript are copied.
+- **Conversions**: numbers, strings, booleans, `null` and arrays convert to TargaScript values, and `Uint8Array`, `Uint8ClampedArray` and `ArrayBuffer` to [bytes](#bytes), in one copy, as the pixels of `getImageData(...).data` do. Arrays and objects passed to JavaScript are copied, and bytes become a `Uint8Array`.
 - **Functions**: TargaScript functions passed to JavaScript, like event handlers, can be called from JavaScript, and they return a promise if they await.
 - **`print`**: it goes to the console.
 

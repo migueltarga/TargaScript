@@ -103,6 +103,7 @@
         case "string": return 4;
         case "function": return 7;
       }
+      if (v instanceof Uint8Array || v instanceof Uint8ClampedArray || v instanceof ArrayBuffer) return 8;
       return Array.isArray(v) ? 5 : 6;
     },
     number: (h) => values[h],
@@ -122,6 +123,9 @@
     stringLength: (h) => (pending = encoder.encode(String(values[h]))).length,
     stringRead: (ptr) => { bytes(ptr, pending.length).set(pending); },
     makeString: (p, n) => handle(text(p, n)),
+    // Bytes go across in one copy, read like strings with stringRead
+    bytesLength: (h) => (pending = new Uint8Array(values[h].buffer ?? values[h], values[h].byteOffset ?? 0, values[h].byteLength)).length,
+    makeBytes: (p, n) => handle(bytes(p, n).slice()),
     length: (h) => values[h].length,
     index: (h, i) => handle(values[h][i]),
     makeArray: () => handle([]),

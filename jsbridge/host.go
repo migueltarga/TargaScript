@@ -44,6 +44,17 @@ func hostStringRead(buffer *byte)
 //go:wasmimport targascript makeString
 func hostMakeString(text *byte, textLen uint32) uint32
 
+// hostBytesLength readies the bytes of a Uint8Array, Uint8ClampedArray or
+// ArrayBuffer to be read with hostStringRead, and returns how many there are.
+//
+//go:wasmimport targascript bytesLength
+func hostBytesLength(value uint32) uint32
+
+// hostMakeBytes makes a Uint8Array with a copy of the bytes.
+//
+//go:wasmimport targascript makeBytes
+func hostMakeBytes(data *byte, dataLen uint32) uint32
+
 //go:wasmimport targascript length
 func hostLength(value uint32) uint32
 
@@ -78,6 +89,7 @@ const (
 	kindArray
 	kindObject
 	kindFunction
+	kindBytes // a Uint8Array, Uint8ClampedArray or ArrayBuffer
 )
 
 const (
