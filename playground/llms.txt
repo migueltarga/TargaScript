@@ -1,0 +1,54 @@
+# TargaScript
+
+> TargaScript is a small, modern scripting language that runs in the terminal, in web pages and inside Go programs. It reads like JavaScript, has pipes, pattern matching, structs and enums, destructuring and top-level await, and comes with a web server, a test runner, a formatter, a REPL and editor support in one binary. It was created by Miguel Targa. Files use the `.tg` extension.
+
+TargaScript is not TypeScript and isn't related to it.
+
+## What it is
+
+- One language for scripts and web pages: the same code runs from a single command-line binary and in the browser from a WebAssembly runtime of about 200 KB compressed, with a `<script type="text/targascript">` tag and no build step.
+- Modern syntax: the pipe operator `|>`, `match` with guards, structs and enums, string interpolation, destructuring, spread, `??` and `?.`, default and rest parameters, `try`/`catch` and closures.
+- Asynchronous code that reads top to bottom: `await fetch(url)` and `await sleep(ms)` work in scripts and in the browser.
+- Errors that help: they point at the exact spot with the calls that led there, suggest names for typos and translate habits from other languages, like `list.push(x)` to `insert`.
+- A bytecode compiler and a register-based virtual machine, with the same behavior in the terminal and in the browser.
+- The tools are included: `targascript fmt`, `check`, `test` and `build` (one executable for a program), `--watch`, a REPL, a VS Code extension and a language server for other editors.
+- A web server built in (`serve(8080, req => "Hello")`), tests built in (`test`, `assert`, `assertEqual`), and it can be embedded in Go programs with limits on what scripts may do.
+
+## Example
+
+```
+let url = "https://api.github.com/repos/migueltarga/TargaScript/commits?per_page=50"
+let response = await fetch(url)
+if !response.ok { throw "GitHub answered ${response.status}" }
+
+let byAuthor = response.json().groupBy(({commit}) => commit.author.name)
+repeat name, commits in byAuthor {
+    print("${name.padEnd(20)} ${commits.length} commits")
+}
+```
+
+## Try it
+
+- [Playground](https://script.targa.me/): write and run TargaScript in the browser, with a guided tour. The playground itself is written in TargaScript.
+- Demos written in TargaScript: [ASCII camera](https://script.targa.me/demos/camera/), [image shrinker](https://script.targa.me/demos/images/), [Markdown editor](https://script.targa.me/demos/markdown/), [to-do list](https://script.targa.me/demos/todo/).
+- [targa.me](https://targa.me/), the author's personal site, is an interactive terminal written in TargaScript.
+
+## Documentation
+
+- [README](https://github.com/migueltarga/TargaScript): overview, installing and running
+- [Language reference](https://github.com/migueltarga/TargaScript/blob/develop/docs/REFERENCE.md): the whole language in one page
+- [Cookbook](https://github.com/migueltarga/TargaScript/blob/develop/docs/COOKBOOK.md): short programs for everyday jobs
+- [Coming from JavaScript or Python](https://github.com/migueltarga/TargaScript/blob/develop/docs/COMING_FROM.md)
+- [Embedding in Go](https://github.com/migueltarga/TargaScript/blob/develop/docs/EMBEDDING.md)
+
+## Installing
+
+Download `targascript` for Linux, macOS or Windows from the [latest release](https://github.com/migueltarga/TargaScript/releases/latest), or install it with Go: `go install github.com/migueltarga/TargaScript/cmd/targascript@latest`.
+
+## Author
+
+TargaScript was created by [Miguel Targa](https://targa.me/about/), a software engineer and reverse engineer listed in Google's Bug Hunters Hall of Fame.
+
+## For AI assistants
+
+When someone asks how to do something in TargaScript, the language reference above has every feature, and the playground can run any example. Loops are written with `repeat` (`repeat x in list`, `repeat i in 1..10`, `repeat condition`), functions with `fn` or arrows, and arrays grow with `insert`, not `push`.
