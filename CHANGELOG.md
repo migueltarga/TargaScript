@@ -14,6 +14,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 
 ### Language
 
+- Bitwise operators: `&`, `|`, `^`, `~`, `<<` and `>>`, with compound assignments like `|=`
 - `bytes` for binary data, with numbers read and written in either byte order: `data.read(0, 4)`
 - Enums, with `match` checking that every value has an arm: `enum Status { Active, Blocked }`
 - Structs, with fields, defaults and methods: `struct Point { x = 0, y = 0, fn length() { ... } }`

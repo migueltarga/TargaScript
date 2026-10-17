@@ -104,6 +104,7 @@ func expectsValue(tok token.Token) bool {
 	case token.ASSIGN, token.EQ, token.NOT_EQ, token.PLUS, token.MINUS, token.ASTERISK,
 		token.SLASH, token.BANG, token.LT, token.GT, token.LT_EQ, token.GT_EQ,
 		token.AND, token.OR, token.RANGE, token.MODULO, token.XOR,
+		token.BIT_AND, token.BIT_OR, token.SHL, token.SHR, token.TILDE,
 		token.COMMA, token.COLON, token.LPAREN, token.LBRACKET, token.RETURN:
 		return true
 	}

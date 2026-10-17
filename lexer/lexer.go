@@ -57,7 +57,7 @@ func (l *Lexer) NextToken() token.Token {
 			l.readChar()
 			tok = l.newToken(token.AND, string(ch)+string(l.ch), tokenLine, tokenColumn)
 		} else {
-			tok = l.newToken(token.ILLEGAL, string(l.ch), tokenLine, tokenColumn)
+			tok = l.newToken(token.BIT_AND, string(l.ch), tokenLine, tokenColumn)
 		}
 	case '|':
 		if l.peekChar() == '|' {
@@ -68,7 +68,7 @@ func (l *Lexer) NextToken() token.Token {
 			l.readChar()
 			tok = l.newToken(token.PIPE, "|>", tokenLine, tokenColumn)
 		} else {
-			tok = l.newToken(token.ILLEGAL, string(l.ch), tokenLine, tokenColumn)
+			tok = l.newToken(token.BIT_OR, string(l.ch), tokenLine, tokenColumn)
 		}
 	case '=':
 		if l.peekChar() == '=' {
@@ -123,6 +123,8 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	case '^':
 		tok = l.newToken(token.XOR, string(l.ch), tokenLine, tokenColumn)
+	case '~':
+		tok = l.newToken(token.TILDE, string(l.ch), tokenLine, tokenColumn)
 	case '.':
 		if l.peekChar() == '.' {
 			l.readChar()
@@ -160,6 +162,9 @@ func (l *Lexer) NextToken() token.Token {
 			ch := l.ch
 			l.readChar()
 			tok = l.newToken(token.LT_EQ, string(ch)+string(l.ch), tokenLine, tokenColumn)
+		} else if l.peekChar() == '<' {
+			l.readChar()
+			tok = l.newToken(token.SHL, "<<", tokenLine, tokenColumn)
 		} else {
 			tok = l.newToken(token.LT, string(l.ch), tokenLine, tokenColumn)
 		}
@@ -168,6 +173,9 @@ func (l *Lexer) NextToken() token.Token {
 			ch := l.ch
 			l.readChar()
 			tok = l.newToken(token.GT_EQ, string(ch)+string(l.ch), tokenLine, tokenColumn)
+		} else if l.peekChar() == '>' {
+			l.readChar()
+			tok = l.newToken(token.SHR, ">>", tokenLine, tokenColumn)
 		} else {
 			tok = l.newToken(token.GT, string(l.ch), tokenLine, tokenColumn)
 		}
@@ -245,7 +253,8 @@ func (l *Lexer) NextToken() token.Token {
 // compoundable reports the operators that form compound assignments, like +=.
 func compoundable(t token.TokenType) bool {
 	switch t {
-	case token.PLUS, token.MINUS, token.ASTERISK, token.SLASH, token.MODULO, token.POWER, token.NULLISH:
+	case token.PLUS, token.MINUS, token.ASTERISK, token.SLASH, token.MODULO, token.POWER, token.NULLISH,
+		token.XOR, token.BIT_AND, token.BIT_OR, token.SHL, token.SHR:
 		return true
 	}
 	return false
