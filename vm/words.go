@@ -213,7 +213,7 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 
 		case code.RJumpNull, code.RJumpNotNull:
-			if (r[w.A()] == NULL) == (op == code.RJumpNull) {
+			if object.Same(r[w.A()], NULL) == (op == code.RJumpNull) {
 				pc = w.B()
 			}
 
@@ -307,7 +307,7 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 			// Calls of this VM's closures with the right number of
 			// arguments, the usual case, start here
-			if cl, ok := vm.stack[fn].(*object.Closure); ok && cl.Runner == vm &&
+			if cl, ok := vm.stack[fn].(*object.Closure); ok && vm.runs(cl) &&
 				argc == cl.Fn.SimpleCall && len(vm.frames) <= evaluator.MaxCallDepth {
 				callee := fn + 1
 				top := callee + cl.Fn.NumRegisters
@@ -693,7 +693,7 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		above := evaluator.Infix(">=", value, start, 0, 0)
 		below := evaluator.Infix("<=", value, end, 0, 0)
 		// Values that can't be compared with the ends don't match
-		set(w.A(), nativeBool(above == TRUE && below == TRUE))
+		set(w.A(), nativeBool(object.Same(above, TRUE) && object.Same(below, TRUE)))
 
 	case code.RMinus, code.RNot, code.RIncr:
 		value := r(w.B())

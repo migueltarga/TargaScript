@@ -28,7 +28,7 @@ var (
 	// TargaScript functions passed to JavaScript, by callback id, and the
 	// handle of the JavaScript function made for each.
 	callbacks       []object.Object
-	callbackHandles = map[object.Object]uint32{}
+	callbackHandles = map[object.Identity]uint32{}
 
 	// Callback ids freed by one-shot functions, to reuse
 	freeCallbacks []uint32
@@ -170,14 +170,14 @@ func toHost(obj object.Object) (handle uint32, temporary bool) {
 // toHostSeen is toHost with the arrays and hashes being converted, the
 // ones that contain obj, so one inside itself becomes a JavaScript value
 // that refers to itself.
-func toHostSeen(obj object.Object, converting map[object.Object]uint32) (handle uint32, temporary bool) {
-	if h, ok := converting[obj]; ok {
+func toHostSeen(obj object.Object, converting map[object.Identity]uint32) (handle uint32, temporary bool) {
+	if h, ok := converting[object.IdentityOf(obj)]; ok {
 		return h, false
 	}
 	switch obj.(type) {
 	case *object.Array, *object.Hash:
 		if converting == nil {
-			converting = map[object.Object]uint32{}
+			converting = map[object.Identity]uint32{}
 		}
 	}
 
@@ -200,7 +200,7 @@ func toHostSeen(obj object.Object, converting map[object.Object]uint32) (handle 
 		return handleNull, false
 	case *object.Array:
 		array := hostMakeArray()
-		converting[obj] = array
+		converting[object.IdentityOf(obj)] = array
 		for _, element := range obj.Elements {
 			h, temporary := toHostSeen(element, converting)
 			hostPush(array, h)
@@ -208,11 +208,11 @@ func toHostSeen(obj object.Object, converting map[object.Object]uint32) (handle 
 				hostRelease(h)
 			}
 		}
-		delete(converting, obj)
+		delete(converting, object.IdentityOf(obj))
 		return array, true
 	case *object.Hash:
 		hash := hostMakeObject()
-		converting[obj] = hash
+		converting[object.IdentityOf(obj)] = hash
 		for _, pair := range obj.OrderedPairs() {
 			key := pair.Key.Inspect()
 			if s, ok := pair.Key.(*object.String); ok {
@@ -225,14 +225,14 @@ func toHostSeen(obj object.Object, converting map[object.Object]uint32) (handle 
 				hostRelease(h)
 			}
 		}
-		delete(converting, obj)
+		delete(converting, object.IdentityOf(obj))
 		return hash, true
 	case *object.Builtin, *object.Closure:
-		if h, ok := callbackHandles[obj]; ok {
+		if h, ok := callbackHandles[object.IdentityOf(obj)]; ok {
 			return h, false
 		}
 		h := hostMakeFunction(registerCallback(obj))
-		callbackHandles[obj] = h
+		callbackHandles[object.IdentityOf(obj)] = h
 		return h, false
 	case *object.Promise:
 		return toJSPromise(obj), true

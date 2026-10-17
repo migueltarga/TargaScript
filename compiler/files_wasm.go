@@ -2,10 +2,7 @@
 
 package compiler
 
-import (
-	"errors"
-	"path"
-)
+import "path"
 
 // The browser build has no files of its own, and leaves out the os package
 // with what it pulls in, like the time package.
@@ -16,9 +13,18 @@ import (
 var ReadFile = func(string) ([]byte, error) { return nil, ErrNotExist }
 
 // ErrNotExist is the error of ReadFile for a missing file.
-var ErrNotExist = errors.New("file not found")
+var ErrNotExist error = notExist{}
 
-func isNotExist(err error) bool { return err == ErrNotExist }
+type notExist struct{}
+
+func (notExist) Error() string { return "file not found" }
+
+// isNotExist tells ErrNotExist by its type, as comparing errors with ==
+// makes TinyGo compare them with reflection
+func isNotExist(err error) bool {
+	_, ok := err.(notExist)
+	return ok
+}
 
 var (
 	isAbs    = path.IsAbs

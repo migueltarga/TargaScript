@@ -233,13 +233,13 @@ func (vm *VM) ownMethod(obj object.Object, name *object.String, cache *object.Pr
 	if !ok {
 		// The methods of its struct come after its own properties
 		if typ := hash.Struct(); typ != nil {
-			if cl := typ.Methods[name.Value]; cl != nil && cl.Runner == vm {
+			if cl := typ.Methods[name.Value]; cl != nil && vm.runs(cl) {
 				return cl
 			}
 		}
 		return nil
 	}
-	if cl, ok := value.(*object.Closure); ok && cl.Runner == vm {
+	if cl, ok := value.(*object.Closure); ok && vm.runs(cl) {
 		return cl
 	}
 	return nil
@@ -356,7 +356,7 @@ func (vm *VM) loop(base int) object.Object {
 // continues in it; other functions run right away and leave their result.
 func (vm *VM) call(f *frame, ip int, argc int) (switched bool, err *object.Error) {
 	callee := vm.stack[vm.sp-1-argc]
-	if cl, ok := callee.(*object.Closure); ok && cl.Runner == vm {
+	if cl, ok := callee.(*object.Closure); ok && vm.runs(cl) {
 		if err := vm.callClosure(cl, argc); err != nil {
 			err.Line, err.Column = f.cl.Fn.PositionAt(ip)
 			return false, err
@@ -648,6 +648,13 @@ func (vm *VM) positioned(f *frame, ip int, err *object.Error) *object.Error {
 
 func smallInt(n int64) bool {
 	return n > -(1<<61) && n < 1<<61
+}
+
+// runs reports whether cl is a closure of this VM. Comparing the runner
+// with == would make TinyGo compare interfaces with reflection.
+func (vm *VM) runs(cl *object.Closure) bool {
+	r, ok := cl.Runner.(*VM)
+	return ok && r == vm
 }
 
 func nativeBool(b bool) object.Object {
