@@ -14,7 +14,6 @@ type Lexer struct {
 	ch           rune
 	line         int
 	column       int
-	names        map[string]string // see own
 }
 
 func New(input string) *Lexer {
@@ -201,7 +200,7 @@ func (l *Lexer) NextToken() token.Token {
 		case !terminated:
 			tok = l.newToken(token.ILLEGAL, "\""+literal, tokenLine, tokenColumn)
 		case interpolated:
-			tok = l.newToken(token.TEMPLATE, strings.Clone(l.input[start:l.position]), tokenLine, tokenColumn)
+			tok = l.newToken(token.TEMPLATE, l.own(l.input[start:l.position]), tokenLine, tokenColumn)
 		default:
 			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
 		}
@@ -317,20 +316,13 @@ func (l *Lexer) peekChar() rune {
 	return r
 }
 
-// own returns a copy of s, a part of the input, made once for each text.
-// Tokens keep their text after the input is gone, in the program's names
-// and constants, and TinyGo's collector takes time for every pointer into
-// the middle of an object as large as the input.
+// own returns a copy of s, a part of the input. Tokens keep their text
+// after the input is gone, in the program's names and constants, and
+// TinyGo's collector takes time for every pointer into the middle of an
+// object as large as the input. The conversion makes a smaller WebAssembly
+// build than strings.Clone.
 func (l *Lexer) own(s string) string {
-	if name, ok := l.names[s]; ok {
-		return name
-	}
-	if l.names == nil {
-		l.names = map[string]string{}
-	}
-	name := strings.Clone(s)
-	l.names[name] = name
-	return name
+	return string([]byte(s))
 }
 
 func (l *Lexer) readIdentifier() string {
