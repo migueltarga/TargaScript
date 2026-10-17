@@ -59,6 +59,30 @@ func toConsole(text string) {
 // returns null when the program finished, the error message as a string
 // when it failed, or a promise of one of those when it paused at an await.
 func run(source string, s *session, out writer) object.Object {
+	result, failure := execute(source, s, out)
+	if failure != "" {
+		return &object.String{Value: failure}
+	}
+	return outcome(source, result)
+}
+
+// evalValue runs source in a session like run, but returns the value of the
+// code, or an error with the message run would return.
+func evalValue(source string, s *session, out writer) object.Object {
+	result, failure := execute(source, s, out)
+	if failure != "" {
+		return &object.Error{Message: failure}
+	}
+	if e, ok := result.(*object.Error); ok {
+		return &object.Error{Message: diag.Format(source, evaluator.Diagnostic(e))}
+	}
+	return result
+}
+
+// execute parses, compiles and runs source in a session, returning the
+// result of the run, or the message of the errors that kept it from
+// running.
+func execute(source string, s *session, out writer) (object.Object, string) {
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) > 0 {
@@ -66,15 +90,14 @@ func run(source string, s *session, out writer) object.Object {
 		for _, e := range p.Diagnostics() {
 			diagnostics = append(diagnostics, diag.Diagnostic{Line: e.Line, Column: e.Column, Message: e.Message})
 		}
-		return &object.String{Value: diag.FormatAll(source, diagnostics)}
+		return nil, diag.FormatAll(source, diagnostics)
 	}
-
 	bytecode, err := s.compiler.Compile(program)
 	if err != nil {
-		return &object.String{Value: err.Error()}
+		return nil, err.Error()
 	}
 	s.machine.Output = out
-	return outcome(source, s.machine.Run(bytecode))
+	return s.machine.Run(bytecode), ""
 }
 
 // outcome turns the result of a run into what run returns.
@@ -95,31 +118,53 @@ func outcome(source string, result object.Object) object.Object {
 
 // targascriptObject is the `targascript` value scripts see. Its run function
 // runs another program in a fresh environment, as the playground does in a
-// worker, and returns the error message or null.
+// worker, and returns the error message or null. session() makes an
+// environment that keeps its variables between runs, for a REPL: its run
+// does the same, and its eval returns the value of the code, or fails with
+// the error message.
 func targascriptObject() *object.Hash {
 	hash := object.NewHash()
-	hash.Set(&object.String{Value: "run"}, &object.Builtin{
-		Name: "run",
+	hash.Set(&object.String{Value: "run"}, runner("targascript.run", nil, false))
+	hash.Set(&object.String{Value: "session"}, &object.Builtin{
+		Name: "session",
 		Fn: func(args ...object.Object) object.Object {
-			if len(args) != 2 {
-				return &object.Error{Message: "wrong number of arguments for targascript.run. got=" +
-					(&object.Integer{Value: int64(len(args))}).Inspect() + ", want=2"}
-			}
-			source, ok := args[0].(*object.String)
-			if !ok {
-				return &object.Error{Message: "first argument to targascript.run must be a STRING"}
-			}
-			onOutput := args[1]
-			if !evaluator.IsCallable(onOutput) {
-				return &object.Error{Message: "second argument to targascript.run must be a function"}
-			}
-			out := writer(func(text string) {
-				evaluator.CallFunction(onOutput, []object.Object{&object.String{Value: text}})
-			})
-			return run(source.Value, newSession(), out)
+			s := newSession()
+			session := object.NewHash()
+			session.Set(&object.String{Value: "run"}, runner("session.run", s, false))
+			session.Set(&object.String{Value: "eval"}, runner("session.eval", s, true))
+			return session
 		},
 	})
 	return hash
+}
+
+// runner is a builtin that runs code, given with a function for its output,
+// in s, or in a fresh environment each time when s is nil. With value set
+// it returns the value of the code, instead of null or the error message.
+func runner(name string, s *session, value bool) *object.Builtin {
+	return &object.Builtin{
+		Name: name,
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 2 {
+				return &object.Error{Message: name + " takes the code and a function for its output"}
+			}
+			source, ok := args[0].(*object.String)
+			if !ok || !evaluator.IsCallable(args[1]) {
+				return &object.Error{Message: name + " takes the code, as a string, and a function for its output"}
+			}
+			out := writer(func(text string) {
+				evaluator.CallFunction(args[1], []object.Object{&object.String{Value: text}})
+			})
+			target := s
+			if target == nil {
+				target = newSession()
+			}
+			if !value {
+				return run(source.Value, target, out)
+			}
+			return evalValue(source.Value, target, out)
+		},
+	}
 }
 
 // evaluate runs the string with handle source, sending output to the
