@@ -240,6 +240,18 @@
   const base = inWorker ? self.location.href : document.currentScript.src;
   const url = (path) => new URL(path, base).href;
 
+  // The version of the files, from ?v= in the address of this script, which
+  // the playground's build sets to a hash of targascript.wasm. Every file
+  // is fetched with it, so a browser never mixes a cached file of an older
+  // version with newer ones, which can fail as the two change together.
+  const version = new URL(base).searchParams.get("v");
+  const versioned = (href) => {
+    if (!version) return href;
+    const address = new URL(href);
+    address.searchParams.set("v", version);
+    return address.href;
+  };
+
   // print in page scripts goes to the console, one line at a time
   let line = "";
   const toConsole = (chunk) => {
@@ -248,7 +260,7 @@
     parts.forEach((part) => console.log(part));
   };
 
-  const fetchText = (src) => fetch(src).then((response) => {
+  const fetchText = (src) => fetch(versioned(src)).then((response) => {
     if (!response.ok) throw new Error(`could not load ${src}: HTTP ${response.status}`);
     return response.text();
   });
@@ -274,7 +286,7 @@
     for (const [, path] of source.matchAll(/\bload\s+"((?:\\.|[^"\\])*)"/g)) {
       const target = new URL(path, base);
       if (target.origin !== new URL(base).origin || files.has(target.pathname)) continue;
-      const response = await fetch(target);
+      const response = await fetch(versioned(target.href));
       if (!response.ok) continue; // the load reports the file as not found
       const text = await response.text();
       files.set(target.pathname, text);
@@ -289,7 +301,7 @@
     ? Promise.resolve()
     : new Promise((resolve) => document.addEventListener("DOMContentLoaded", resolve));
 
-  const instantiate = () => fetch(url("targascript.wasm"))
+  const instantiate = () => fetch(versioned(url("targascript.wasm")))
     .then((response) => response.arrayBuffer())
     .then((buffer) => WebAssembly.instantiate(buffer, imports));
 

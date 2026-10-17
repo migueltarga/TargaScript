@@ -28,3 +28,12 @@ for f in examples/*.tg; do
   cp "$f" "$out/examples/"
   basename "$f" >> "$out/examples/index.txt"
 done
+
+# A version for the files, from the content of the WebAssembly: pages load
+# targascript.js?v=..., which fetches everything else with it, so a browser
+# never mixes cached files from an older deploy with newer ones
+version=$(shasum "$out/targascript.wasm" | cut -c1-12)
+for page in "$out"/index.html "$out"/demos/*/index.html; do
+  sed -i.bak "s|targascript\.js\"|targascript.js?v=$version\"|" "$page" && rm "$page.bak"
+done
+sed -i.bak "s|targascript\.js?src=|targascript.js?v=$version\&src=|" "$out/playground.tg" && rm "$out/playground.tg.bak"
