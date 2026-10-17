@@ -185,7 +185,7 @@ func (op Op) String() string {
 func WordsString(code []Word) string {
 	var out strings.Builder
 	for i, w := range code {
-		strfmt.Fprintf(&out, "%04d %-12s %d %d %d\n", i, w.Op(), w.A(), int16(w.B()), int16(w.C()))
+		strfmt.Fprintf(&out, "%04d %-12s %d %d %d\n", i, w.Op().String(), w.A(), int16(w.B()), int16(w.C()))
 	}
 	return out.String()
 }

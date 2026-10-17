@@ -2,8 +2,10 @@
 // types TargaScript uses. It doesn't use reflection, which keeps fmt and
 // most of reflect out of the WebAssembly build.
 //
-// It knows strings, booleans, integers, floats, errors and values with a
-// String method. The verbs are %v %s %q %d %b %o %x %X %c %t %e %E %f %F
+// It knows strings, booleans, integers, floats and errors. Values with a
+// String method must be passed as its result: a case for them in a type
+// switch would keep every String method in the program, reflect's among
+// them, in the WebAssembly build. The verbs are %v %s %q %d %b %o %x %X %c %t %e %E %f %F
 // %g %G and %%, with the flags + - # 0 and space, a width and a precision,
 // either of which can be *.
 package strfmt
@@ -442,8 +444,6 @@ func toString(arg any) (string, bool) {
 		return string(v), true
 	case error:
 		return v.Error(), true
-	case interface{ String() string }:
-		return v.String(), true
 	}
 	return "", false
 }
