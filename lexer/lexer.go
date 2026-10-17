@@ -434,7 +434,8 @@ func (l *Lexer) readRawString() (text, template string, interpolated, terminated
 			l.readChar()
 			value.WriteRune('`')
 			quoted.WriteRune('`')
-		case l.ch == '\\' && l.peekChar() == '$':
+		case strings.HasPrefix(l.input[l.position:], "\\${"):
+			// \${ is a literal ${; a backslash before any other $ is text
 			l.readChar()
 			value.WriteRune('$')
 			quoted.WriteString("\\$")
