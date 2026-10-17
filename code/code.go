@@ -28,6 +28,10 @@ const (
 	OpMod
 	OpPow
 	OpXor
+	OpBitAnd
+	OpBitOr
+	OpShl
+	OpShr
 	OpEqual
 	OpNotEqual
 	OpGreaterThan

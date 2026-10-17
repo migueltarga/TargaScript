@@ -322,6 +322,20 @@ func evalIntegerInfixExpression(operator string, left, right object.Object, line
 		return &object.Integer{Value: leftVal % rightVal}
 	case "^":
 		return &object.Integer{Value: leftVal ^ rightVal}
+	case "&":
+		return &object.Integer{Value: leftVal & rightVal}
+	case "|":
+		return &object.Integer{Value: leftVal | rightVal}
+	case "<<", ">>":
+		// Shifts of 64 or more leave 0, or -1 for >> of a negative number
+		if rightVal < 0 {
+			return newError(line, column, "cannot shift by a negative number: %d", rightVal)
+		}
+		shift := uint64(rightVal)
+		if operator == "<<" {
+			return &object.Integer{Value: leftVal << shift}
+		}
+		return &object.Integer{Value: leftVal >> shift}
 	case "**":
 		if rightVal < 0 {
 			return &object.Float{Value: math.Pow(float64(leftVal), float64(rightVal))}

@@ -310,6 +310,14 @@ func binaryOp(op code.Opcode) (code.Op, code.Op) {
 		return code.RPow, 0
 	case code.OpXor:
 		return code.RXor, 0
+	case code.OpBitAnd:
+		return code.RBitAnd, 0
+	case code.OpBitOr:
+		return code.RBitOr, 0
+	case code.OpShl:
+		return code.RShl, 0
+	case code.OpShr:
+		return code.RShr, 0
 	case code.OpEqual:
 		return code.REqual, 0
 	case code.OpNotEqual:
@@ -705,7 +713,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.push(inRegister(r))
 
 	case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpPow, code.OpXor,
-		code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEqual,
+		code.OpBitAnd, code.OpBitOr, code.OpShl, code.OpShr, code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEqual,
 		code.OpLessThan, code.OpLessEqual, code.OpRange, code.OpIn:
 		return t.binary(at, op, next, d)
 

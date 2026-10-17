@@ -537,6 +537,19 @@ func (vm *VM) intBinary(op code.Opcode, a, b int64) object.Object {
 		if b != 0 {
 			return vm.ints.get(a % b)
 		}
+	case code.OpXor:
+		return vm.ints.get(a ^ b)
+	case code.OpBitAnd:
+		return vm.ints.get(a & b)
+	case code.OpBitOr:
+		return vm.ints.get(a | b)
+	case code.OpShl, code.OpShr:
+		if b >= 0 && b < 64 {
+			if op == code.OpShl {
+				return vm.ints.get(a << b)
+			}
+			return vm.ints.get(a >> b)
+		}
 	case code.OpLessThan:
 		return nativeBool(a < b)
 	case code.OpLessEqual:
@@ -570,6 +583,14 @@ func operator(op code.Opcode) string {
 		return "**"
 	case code.OpXor:
 		return "^"
+	case code.OpBitAnd:
+		return "&"
+	case code.OpBitOr:
+		return "|"
+	case code.OpShl:
+		return "<<"
+	case code.OpShr:
+		return ">>"
 	case code.OpEqual:
 		return "=="
 	case code.OpNotEqual:

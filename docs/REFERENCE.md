@@ -52,7 +52,7 @@ From loosest to tightest:
 
 | Operators | Meaning |
 |---|---|
-| `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` | assignment |
+| `=` `+=` `-=` `*=` `/=` `%=` `**=` `??=` `&=` `\|=` `^=` `<<=` `>>=` | assignment |
 | `\|>` | pipe: `x \|> f` is `f(x)` and `x \|> f(a)` is `f(x, a)`; when `f` isn't a function, they are the methods `x.f()` and `x.f(a)`, as in `xs \|> map(it * 2) \|> sum`; `x \|> it.trim()` uses `it` for `x` |
 | `??` | the right side when the left is null |
 | `\|\|` | or: the left side if truthy, else the right side |
@@ -60,13 +60,15 @@ From loosest to tightest:
 | `==` `!=` | equality; arrays and objects compare by content, and `1 == 1.0` |
 | `<` `>` `<=` `>=` `in` | comparison of numbers, strings, or arrays element by element; `x in list` (an element), `"key" in object`, `"part" in text`, `n in 1..10` (between the ends, without building the range) |
 | `..` | inclusive range of integers: `1..3` is `[1, 2, 3]` |
-| `+` `-` `^` | addition (and joining strings or arrays), subtraction, bitwise xor |
-| `*` `/` `%` | multiplication (and repeating strings: `"-" * 3`), division, remainder |
+| `+` `-` `\|` `^` | addition (and joining strings or arrays), subtraction, bitwise or and xor |
+| `*` `/` `%` `&` `<<` `>>` | multiplication (and repeating strings: `"-" * 3`), division, remainder, bitwise and, shifts |
 | `**` | power, grouping to the right: `2 ** 3 ** 2` is `512` |
-| `-x` `!x` | negation, not |
+| `-x` `!x` `~x` | negation, not, bitwise not |
 | `x++` `x--` `f()` `a[i]` `o.p` `o?.p` `a?.[i]` | increment, call, index, property, optional property and index |
 
 `false`, `null`, `0`, `0.0`, `""`, `[]` and `{}` are falsy; everything else is truthy.
+
+The bitwise operators take integers, which have 64 bits, and give one: `0xFF & 0x0F` is `15`, `1 << 10` is `1024`, `~0` is `-1`. Their precedence is Go's, so `a & b == c` compares `a & b` and `x << 2 + 1` is `(x << 2) + 1`. `>>` keeps the sign, shifting by 64 or more gives `0` (or `-1` for `>>` of a negative number), and a negative shift is an error. For 32-bit values, as in checksums, keep the result with `& 0xFFFFFFFF`.
 
 The pipe passes a value through functions from left to right, as the first argument, and a line can start with it:
 
