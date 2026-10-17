@@ -115,6 +115,12 @@ func setIndex(container, index, val object.Object, line, column int) object.Obje
 	return errorText(line, column, "cannot use [] on "+typeName(container))
 }
 
+// isTrue and isNull compare values as == does, without the reflection
+// TinyGo compares interfaces with.
+func isTrue(obj object.Object) bool { return object.Same(obj, TRUE) }
+
+func isNull(obj object.Object) bool { return object.Same(obj, NULL) }
+
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	if input {
 		return TRUE
@@ -206,7 +212,7 @@ func compareArrays(operator string, left, right *object.Array, line, column int)
 		if isError(less) {
 			return less
 		}
-		if less == TRUE {
+		if isTrue(less) {
 			return nativeBoolToBooleanObject(operator == "<" || operator == "<=")
 		}
 		return nativeBoolToBooleanObject(operator == ">" || operator == ">=")
@@ -263,16 +269,10 @@ func repeatString(text string, count int64, line, column int) object.Object {
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
-	switch right {
-	case TRUE:
-		return FALSE
-	case FALSE:
+	if isNull(right) || object.Same(right, FALSE) {
 		return TRUE
-	case NULL:
-		return TRUE
-	default:
-		return FALSE
 	}
+	return FALSE
 }
 
 func evalMinusPrefixOperatorExpression(right object.Object, line, column int) object.Object {
@@ -381,13 +381,11 @@ func toFloat(obj object.Object) *object.Float {
 }
 
 func isTruthy(obj object.Object) bool {
-	switch obj {
-	case NULL:
+	switch {
+	case isNull(obj), object.Same(obj, FALSE):
 		return false
-	case TRUE:
+	case isTrue(obj):
 		return true
-	case FALSE:
-		return false
 	default:
 		switch obj.Type() {
 		case object.INTEGER_OBJ:

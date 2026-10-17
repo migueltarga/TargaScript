@@ -314,7 +314,7 @@ func inspectNested(obj Object, parents []Object) string {
 
 func contains(objects []Object, obj Object) bool {
 	for _, o := range objects {
-		if o == obj {
+		if Same(o, obj) {
 			return true
 		}
 	}

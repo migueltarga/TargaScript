@@ -152,7 +152,7 @@ const maxEqualDepth = 100
 // equals 1.0, strings and booleans by value, arrays and objects by their
 // contents, and other values, like functions, only when they are the same.
 func valuesEqual(a, b object.Object, depth int) bool {
-	if a == b {
+	if object.Same(a, b) {
 		return true
 	}
 	if depth > maxEqualDepth {
@@ -189,7 +189,7 @@ func valuesEqual(a, b object.Object, depth int) bool {
 	case *object.Integer, *object.Float:
 		switch b.(type) {
 		case *object.Integer, *object.Float:
-			return evalInfixExpression("==", a, b, 0, 0) == TRUE
+			return isTrue(evalInfixExpression("==", a, b, 0, 0))
 		}
 	case *object.String:
 		b, ok := b.(*object.String)

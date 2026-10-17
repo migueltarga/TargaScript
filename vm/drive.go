@@ -43,7 +43,7 @@ func (vm *VM) drive(receiver object.Object, method string, argc, fn int) *driver
 		return nil
 	}
 	cl, ok := vm.stack[fn+1].(*object.Closure)
-	if !ok || cl.Runner != vm || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
+	if !ok || !vm.runs(cl) || cl.Fn.SimpleCall < 0 || cl.Fn.HasThis {
 		return nil
 	}
 	d := &driver{method: method, arr: arr, cl: cl, elems: arr.Elements}

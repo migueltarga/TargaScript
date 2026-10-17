@@ -419,7 +419,7 @@ func literalPattern(expression ast.Expression) *ast.Pattern {
 // object literal, which is only valid as a pattern.
 func patternDefault(pair ast.HashPair) (ast.Expression, bool) {
 	assign, ok := pair.Value.(*ast.AssignmentExpression)
-	if !ok || assign.Left != pair.Key {
+	if !ok || ast.IdentityOf(assign.Left) != ast.IdentityOf(pair.Key) {
 		return nil, false
 	}
 	return assign.Value, true

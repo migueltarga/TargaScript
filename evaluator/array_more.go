@@ -85,7 +85,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			if errObj, isErr := better.(*object.Error); isErr {
 				return errorText(line, column, "cannot find the "+method+": "+errObj.Message), true
 			}
-			if better == TRUE {
+			if isTrue(better) {
 				best = element
 			}
 		}
@@ -153,7 +153,7 @@ func evalMoreArrayMethod(arr *object.Array, method string, args []object.Object,
 			if pair, ok := groups.Get(hashable.HashKey()); ok {
 				group = pair.Value
 			}
-			if group == NULL {
+			if isNull(group) {
 				group = &object.Array{Elements: []object.Object{}}
 				groups.Set(hashable, group)
 			}

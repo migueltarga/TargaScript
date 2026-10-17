@@ -2,6 +2,7 @@
 package compiler
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/migueltarga/TargaScript/ast"
@@ -35,7 +36,7 @@ type Compiler struct {
 	scope *compilation
 
 	// Captured locals of each function, kept across recompilations
-	captured map[ast.Node]map[int]bool
+	captured map[ast.Identity]map[int]bool
 
 	// hoisted are the functions declared before their block runs, so the
 	// functions in it can call each other in any order
@@ -80,12 +81,15 @@ type Problem struct {
 
 // Problems returns the errors found by the last Compile, in source order.
 func (c *Compiler) Problems() []Problem {
-	seen := map[Problem]bool{}
+	// Keyed by text, as a struct with a string would make TinyGo hash
+	// keys with reflection
+	seen := map[string]bool{}
 	problems := []Problem{}
 	// Functions compiled more than once report their problems again
 	for _, p := range c.problems {
-		if !seen[p] {
-			seen[p] = true
+		key := strconv.Itoa(p.Line) + ":" + strconv.Itoa(p.Column) + ":" + p.Message
+		if !seen[key] {
+			seen[key] = true
 			problems = append(problems, p)
 		}
 	}
@@ -117,7 +121,7 @@ func New() *Compiler {
 	c := &Compiler{
 		globals:      NewGlobalTable(),
 		initialized:  map[string]bool{},
-		captured:     map[ast.Node]map[int]bool{},
+		captured:     map[ast.Identity]map[int]bool{},
 		hoisted:      map[*Symbol]bool{},
 		enums:        map[*Symbol]*object.Enum{},
 		builtinIndex: map[string]int{},
@@ -201,10 +205,10 @@ func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
 // closure in it turns out to capture a local the body already used without a
 // cell.
 func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Identifier, defaults []ast.Expression, patterns []*ast.Pattern, body func() error) (*object.CompiledFunction, error) {
-	captured := c.captured[node]
+	captured := c.captured[ast.IdentityOf(node)]
 	if captured == nil {
 		captured = map[int]bool{}
-		c.captured[node] = captured
+		c.captured[ast.IdentityOf(node)] = captured
 	}
 
 	constants := len(c.constants)

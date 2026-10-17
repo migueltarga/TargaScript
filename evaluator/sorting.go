@@ -30,7 +30,7 @@ func sortedOrder(keys []object.Object, line, column int) ([]int, *object.Error) 
 				sortErr = errorText(line, column, "cannot sort: "+err.Message)
 				return 0
 			}
-			if lt == TRUE {
+			if isTrue(lt) {
 				return result*2 - 1
 			}
 		}
