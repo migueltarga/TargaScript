@@ -201,6 +201,14 @@ func bindingNames(name *ast.Identifier, pattern *ast.Pattern) []string {
 	return names
 }
 
+func copySet(set map[string]bool) map[string]bool {
+	copied := make(map[string]bool, len(set))
+	for name := range set {
+		copied[name] = true
+	}
+	return copied
+}
+
 // compileFunction compiles a function body, compiling it again when a
 // closure in it turns out to capture a local the body already used without a
 // cell.
@@ -212,16 +220,17 @@ func (c *Compiler) compileFunction(node ast.Node, name string, params []*ast.Ide
 	}
 
 	constants := len(c.constants)
-	initialized := map[string]bool{}
-	for name := range c.initialized {
-		initialized[name] = true
+	// Only the program's own declarations make globals, so only its
+	// compile starts again from the globals declared before it
+	var initialized map[string]bool
+	if c.fn == nil {
+		initialized = copySet(c.initialized)
 	}
 
 	for attempt := 0; ; attempt++ {
 		c.constants = c.constants[:constants]
-		c.initialized = map[string]bool{}
-		for name := range initialized {
-			c.initialized[name] = true
+		if attempt > 0 && initialized != nil {
+			c.initialized = copySet(initialized)
 		}
 		c.fn = newFunctionScope(c.fn, captured)
 		if lit, ok := node.(*ast.FunctionLiteral); ok {
