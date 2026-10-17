@@ -2,7 +2,7 @@
   "abs": ["abs(x)", "The absolute value of a number."],
   "acos": ["acos(x)", "The angle, in radians, whose cosine is x."],
   "all": ["all(promises)", "A promise of the results of an array of promises, in order. Fails as soon as one fails: `await all(urls.map(u => fetch(u)))`."],
-  "appendFile": ["appendFile(path, text)", "Adds text to the end of a file, creating it if needed. Command line only."],
+  "appendFile": ["appendFile(path, text)", "Adds text or bytes to the end of a file, creating it if needed. Command line only."],
   "asin": ["asin(x)", "The angle, in radians, whose sine is x."],
   "assert": ["assert(condition, message?)", "Fails with `assertion failed: message` when the condition is falsy."],
   "assertEqual": ["assertEqual(actual, expected, message?)", "Fails when the values differ, comparing like `==`, and shows both."],
@@ -38,6 +38,7 @@
   "printf": ["printf(format, ...values)", "Prints values formatted with `%d`, `%s`, `%.2f`, `%5d`, `%-10s`, `%x`, `%v`..."],
   "random": ["random() / random(a, b) / random(list)", "A float from 0 to 1, an integer from a to b, or a random element."],
   "range": ["range(start, end, step?)", "The integers from start to end, both included, counting by step."],
+  "readBytes": ["readBytes(path)", "The content of a file as bytes, for files that aren't text, like images. Command line only."],
   "readFile": ["readFile(path)", "The content of a file, relative to the working directory. Command line only."],
   "response": ["response(body, {status, headers}?)", "A reply for `serve` with a status and headers."],
   "round": ["round(x, places?)", "The nearest integer, or a float with that many decimal places."],
@@ -61,5 +62,5 @@
   "toString": ["toString(value)", "The value as text, the way print shows it."],
   "trunc": ["trunc(x)", "x without its decimals, toward zero."],
   "type": ["type(value)", "`\"integer\"`, `\"float\"`, `\"string\"`, `\"boolean\"`, `\"null\"`, `\"array\"`, `\"object\"`, `\"function\"` or `\"promise\"`."],
-  "writeFile": ["writeFile(path, text)", "Replaces the content of a file, creating it if needed. Command line only."]
+  "writeFile": ["writeFile(path, text)", "Replaces the content of a file with text or bytes, creating it if needed. Command line only."]
 }

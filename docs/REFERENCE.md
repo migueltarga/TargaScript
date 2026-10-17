@@ -488,7 +488,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `exists(path)`, `deleteFile(path)`, `makeDir(path)` | whether a file or directory exists; delete a file or an empty directory; make a directory and the ones it is in. Command line only |
 | `exec(command)`, `exec(program, args)` | runs a command line in the shell, or a program with a list of arguments, and returns `{output, errors, code, ok}`: `exec("git", ["log", "-1"]).output`. Options come last: `{"dir": "src"}` runs it in another directory, `{"input": text}` gives it text to read, and `{"show": true}` shows its output as it comes instead of keeping it. A program that fails gives its exit code in `code`; one that can't start is an error. Command line only |
-| `input`, `readFile`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
+| `input`, `readFile`, `readBytes`, `writeFile`, `appendFile`, `listDir`, `env`, `exit`, `serve`, `response`, `staticFile` | [command line](#command-line) only |
 
 ## Testing
 
@@ -541,7 +541,7 @@ targascript fmt                   # indent the .tg files; --check only lists the
 cat script.tg | targascript -     # run code from standard input
 ```
 
-Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory.
+Scripts see their arguments in `args`, read what the user types with `input(prompt)`, and can use `readFile(path)`, `readBytes(path)`, `writeFile(path, text)`, `appendFile(path, text)`, `listDir(path)`, `env(name, default)` and `exit(code)`. Paths are relative to the working directory. `readBytes` gives a file as [bytes](#bytes), for files that aren't text, and `writeFile` and `appendFile` take bytes as well as text.
 
 A script whose first line is `#!/usr/bin/env targascript` runs like any program on macOS and Linux, after `chmod +x script.tg`: `./script.tg a b`.
 

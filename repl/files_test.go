@@ -26,3 +26,22 @@ print(try { deleteFile("missing.txt") } catch e { e.message })`
 		t.Errorf("got:\n%s\nwant:\n%s", out.String(), want)
 	}
 }
+
+// Files that aren't text are read and written as bytes, unchanged
+func TestFileBytes(t *testing.T) {
+	t.Chdir(t.TempDir())
+	code := `let data = bytes([0, 255, 0xc3, 10, 13])
+writeFile("data.bin", data)
+appendFile("data.bin", bytes([7]))
+let back = readBytes("data.bin")
+print(back, back == data + bytes([7]), type(readFile("data.bin")))`
+	want := "bytes(00 ff c3 0a 0d 07) true string\n"
+
+	var out bytes.Buffer
+	if err := EvalSource(code, &out, true, false, false); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out.String(), want)
+	}
+}

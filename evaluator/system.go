@@ -61,7 +61,12 @@ func SetSystem(s System) {
 }
 
 func init() {
-	builtins["readFile"] = &object.Builtin{Name: "readFile", Fn: readFileBuiltin}
+	builtins["readFile"] = &object.Builtin{Name: "readFile", Fn: func(args ...object.Object) object.Object {
+		return readFileBuiltin("readFile", args)
+	}}
+	builtins["readBytes"] = &object.Builtin{Name: "readBytes", Fn: func(args ...object.Object) object.Object {
+		return readFileBuiltin("readBytes", args)
+	}}
 	builtins["writeFile"] = &object.Builtin{Name: "writeFile", Fn: func(args ...object.Object) object.Object {
 		return writeFileBuiltin("writeFile", false, args)
 	}}
@@ -205,26 +210,34 @@ func stringArgs(name string, args []object.Object, count int) ([]string, *object
 	return values, nil
 }
 
-// readFile returns the content of a file, with a path relative to the
-// working directory.
-func readFileBuiltin(args ...object.Object) object.Object {
-	values, err := stringArgs("readFile", args, 1)
+// readFile returns the content of a file as text, and readBytes as bytes,
+// with a path relative to the working directory.
+func readFileBuiltin(name string, args []object.Object) object.Object {
+	values, err := stringArgs(name, args, 1)
 	if err != nil {
 		return err
 	}
 	if system == nil {
-		return noSystem("readFile")
+		return noSystem(name)
 	}
 	content, readErr := system.ReadFile(values[0])
 	if readErr != nil {
 		return &object.Error{Message: strfmt.Sprintf("cannot read %q: %s", values[0], readErr)}
 	}
+	if name == "readBytes" {
+		return &object.Bytes{Value: []byte(content)}
+	}
 	return &object.String{Value: content}
 }
 
 // writeFile replaces the content of a file, creating it if needed;
-// appendFile adds to its end.
+// appendFile adds to its end. The content is text or bytes.
 func writeFileBuiltin(name string, appendToFile bool, args []object.Object) object.Object {
+	if len(args) == 2 {
+		if data, ok := args[1].(*object.Bytes); ok {
+			args = []object.Object{args[0], &object.String{Value: string(data.Value)}}
+		}
+	}
 	values, err := stringArgs(name, args, 2)
 	if err != nil {
 		return err
