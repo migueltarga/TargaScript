@@ -54,6 +54,10 @@ func Increment(value object.Object, operator string, line, column int) object.Ob
 
 // IsTruthy reports whether a value counts as true in conditions.
 func IsTruthy(obj object.Object) bool {
+	// Conditions are mostly booleans, which this tells without a call
+	if b, ok := obj.(*object.Boolean); ok {
+		return b.Value
+	}
 	return isTruthy(obj)
 }
 
