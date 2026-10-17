@@ -1144,6 +1144,10 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 			c.emit(node.Token, code.OpBang)
 		case "-":
 			c.emit(node.Token, code.OpMinus)
+		case "~":
+			// The bits flipped, which is x ^ -1
+			c.emit(node.Token, code.OpConstant, c.addConstant(&object.Integer{Value: -1}))
+			c.emit(node.Token, code.OpXor)
 		default:
 			return strfmt.Errorf("unknown prefix operator %s", node.Operator)
 		}
@@ -1230,6 +1234,14 @@ func infixOpcode(k string) (code.Opcode, bool) {
 		return code.OpPow, true
 	case "^":
 		return code.OpXor, true
+	case "&":
+		return code.OpBitAnd, true
+	case "|":
+		return code.OpBitOr, true
+	case "<<":
+		return code.OpShl, true
+	case ">>":
+		return code.OpShr, true
 	case "in":
 		return code.OpIn, true
 	case "==":

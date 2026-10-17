@@ -40,9 +40,10 @@ func precedence(k token.TokenType) (int, bool) {
 		return LESSGREATER, true
 	case token.RANGE:
 		return RANGE, true
-	case token.PLUS, token.MINUS, token.XOR:
+	// As in Go, | and ^ add and & and the shifts multiply
+	case token.PLUS, token.MINUS, token.XOR, token.BIT_OR:
 		return SUM, true
-	case token.SLASH, token.ASTERISK, token.MODULO:
+	case token.SLASH, token.ASTERISK, token.MODULO, token.BIT_AND, token.SHL, token.SHR:
 		return PRODUCT, true
 	case token.POWER:
 		return POWER, true
@@ -646,7 +647,7 @@ func (p *Parser) prefix() (ast.Expression, bool) {
 		return p.parseIntegerLiteral(), true
 	case token.FLOAT:
 		return p.parseFloatLiteral(), true
-	case token.BANG, token.MINUS:
+	case token.BANG, token.MINUS, token.TILDE:
 		return p.parsePrefixExpression(), true
 	case token.AWAIT:
 		return p.parseAwaitExpression(), true
@@ -684,7 +685,8 @@ func (p *Parser) prefix() (ast.Expression, bool) {
 // on with the current token, and reports whether a token like it can.
 func (p *Parser) infix(left ast.Expression) (ast.Expression, bool) {
 	switch p.curToken.Type {
-	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.NULLISH:
+	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.NULLISH,
+		token.BIT_AND, token.BIT_OR, token.SHL, token.SHR:
 		return p.parseInfixExpression(left), true
 	case token.LPAREN:
 		return p.parseCallExpression(left), true
@@ -705,7 +707,8 @@ func (p *Parser) infix(left ast.Expression) (ast.Expression, bool) {
 // infixes reports whether an expression can go on with a token of type t.
 func infixes(t token.TokenType) bool {
 	switch t {
-	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.LPAREN, token.LBRACKET, token.DOT, token.OPTIONAL, token.NULLISH, token.PIPE, token.ASSIGN, token.OP_ASSIGN, token.INCREMENT, token.DECREMENT:
+	case token.PLUS, token.MINUS, token.SLASH, token.ASTERISK, token.POWER, token.MODULO, token.XOR, token.RANGE, token.EQ, token.NOT_EQ, token.LT, token.IN, token.GT, token.GT_EQ, token.LT_EQ, token.AND, token.OR, token.LPAREN, token.LBRACKET, token.DOT, token.OPTIONAL, token.NULLISH, token.PIPE, token.ASSIGN, token.OP_ASSIGN, token.INCREMENT, token.DECREMENT,
+		token.BIT_AND, token.BIT_OR, token.SHL, token.SHR:
 		return true
 	}
 	return false

@@ -13,6 +13,7 @@ import (
 var wordOperators = [...]code.Opcode{
 	code.RAdd: code.OpAdd, code.RSub: code.OpSub, code.RMul: code.OpMul, code.RDiv: code.OpDiv,
 	code.RMod: code.OpMod, code.RPow: code.OpPow, code.RXor: code.OpXor, code.REqual: code.OpEqual,
+	code.RBitAnd: code.OpBitAnd, code.RBitOr: code.OpBitOr, code.RShl: code.OpShl, code.RShr: code.OpShr,
 	code.RNotEqual: code.OpNotEqual, code.RGreater: code.OpGreaterThan, code.RGreaterEqual: code.OpGreaterEqual,
 	code.RLess: code.OpLessThan, code.RLessEqual: code.OpLessEqual, code.RRange: code.OpRange, code.RIn: code.OpIn,
 	code.RAddK: code.OpAdd, code.RSubK: code.OpSub, code.RMulK: code.OpMul, code.RDivK: code.OpDiv, code.RModK: code.OpMod,
@@ -79,7 +80,7 @@ func (vm *VM) loopWords(base int) object.Object {
 			}
 			fallthrough
 
-		case code.RMul, code.RDiv, code.RMod, code.RPow, code.RXor,
+		case code.RMul, code.RDiv, code.RMod, code.RPow, code.RXor, code.RBitAnd, code.RBitOr, code.RShl, code.RShr,
 			code.REqual, code.RNotEqual, code.RGreater, code.RGreaterEqual, code.RLess, code.RLessEqual,
 			code.RRange, code.RIn:
 			left, right := r[w.B()], r[w.C()]

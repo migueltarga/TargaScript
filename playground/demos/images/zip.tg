@@ -8,17 +8,16 @@
 let crcTable = range(0, 255).map(n => {
     let c = n
     repeat 8 {
-        c = if c % 2 == 1 { 0xEDB88320 ^ (c / 2) } else { c / 2 }
+        c = if c & 1 == 1 { 0xEDB88320 ^ (c >> 1) } else { c >> 1 }
     }
     c
 })
 
-// crc32 is the CRC-32 of data. Without & and >>, % 256 takes the lowest
-// byte and / 256 shifts the rest down, as the numbers are never negative.
+// crc32 is the CRC-32 of data
 fn crc32(data) {
     let crc = 0xFFFFFFFF
     repeat b in data {
-        crc = crcTable[(crc ^ b) % 256] ^ (crc / 256)
+        crc = crcTable[(crc ^ b) & 0xFF] ^ (crc >> 8)
     }
     crc ^ 0xFFFFFFFF
 }

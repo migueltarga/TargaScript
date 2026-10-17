@@ -66,6 +66,10 @@ const (
 	RMod
 	RPow
 	RXor
+	RBitAnd
+	RBitOr
+	RShl
+	RShr
 	REqual
 	RNotEqual
 	RGreater
@@ -158,7 +162,7 @@ var opNames = [...]string{
 	RMove: "MOVE", RLoadK: "LOADK", RLoadI: "LOADI", RLoadNull: "LOADNULL", RLoadTrue: "LOADTRUE", RLoadFalse: "LOADFALSE",
 	RGetGlobal: "GETGLOBAL", RSetGlobal: "SETGLOBAL", RGetBuiltin: "GETBUILTIN", RGetCell: "GETCELL", RSetCell: "SETCELL",
 	RNewCell: "NEWCELL", RGetFree: "GETFREE", RSetFree: "SETFREE", RFreeCell: "FREECELL", RLocalCell: "LOCALCELL",
-	RAdd: "ADD", RSub: "SUB", RMul: "MUL", RDiv: "DIV", RMod: "MOD", RPow: "POW", RXor: "XOR",
+	RAdd: "ADD", RSub: "SUB", RMul: "MUL", RDiv: "DIV", RMod: "MOD", RPow: "POW", RXor: "XOR", RBitAnd: "AND", RBitOr: "OR", RShl: "SHL", RShr: "SHR",
 	REqual: "EQ", RNotEqual: "NE", RGreater: "GT", RGreaterEqual: "GE", RLess: "LT", RLessEqual: "LE",
 	RRange: "RANGE", RIn: "IN", RAddK: "ADDK", RSubK: "SUBK", RMulK: "MULK", RDivK: "DIVK", RModK: "MODK",
 	RAddI: "ADDI", RSubI: "SUBI", RInRange: "INRANGE", RMinus: "MINUS", RNot: "NOT", RIncr: "INCR",
@@ -216,6 +220,10 @@ var registers = [...]uint8{
 	RMod:               7,
 	RPow:               7,
 	RXor:               7,
+	RBitAnd:            7,
+	RBitOr:             7,
+	RShl:               7,
+	RShr:               7,
 	REqual:             7,
 	RNotEqual:          7,
 	RGreater:           7,

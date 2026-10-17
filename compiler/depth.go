@@ -23,7 +23,7 @@ func stackEffect(op code.Opcode, args [3]int) (int, bool) {
 		return 0, true
 	case code.OpPop, code.OpAppend, code.OpHashMerge, code.OpIndex, code.OpSetProperty,
 		code.OpCallArray, code.OpCallMethodArray, code.OpRangeIter,
-		code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpPow, code.OpXor,
+		code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpPow, code.OpXor, code.OpBitAnd, code.OpBitOr, code.OpShl, code.OpShr,
 		code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEqual,
 		code.OpLessThan, code.OpLessEqual, code.OpRange, code.OpIn:
 		return -1, true
