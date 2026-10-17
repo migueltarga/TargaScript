@@ -125,6 +125,28 @@ print("a1b22c".splitPattern("\d+"))                       // → ["a", "b", "c"]
 
 String methods: `length`, `upper`, `lower`, `trim`, `trimStart`, `trimEnd`, `split(sep)`, `replace(old, new)`, `contains(sub)`, `startsWith(prefix)`, `endsWith(suffix)`, `indexOf(sub)`, `count(sub)`, `slice(start, end)`, `chars()`, `lines()`, `repeat(n)`, `padStart(width, fill)`, `padEnd(width, fill)`, `reverse()`, `capitalize()`, and with patterns `matches`, `match`, `matchAll`, `replacePattern` and `splitPattern`. Positions count characters, and `str[i]` is `null` outside the string.
 
+## Bytes
+
+`bytes` holds binary data, such as the contents of a file or an image: numbers from 0 to 255, read and changed by position.
+
+```targascript
+let data = bytes("Hi")                  // the UTF-8 of a text
+print(data, data.length, data[0])       // → bytes(48 69) 2 72
+data[0] = 104
+print(data.text(), data.hex())          // → hi 6869
+
+let header = bytes(8)                   // eight zero bytes
+header.write(0, 4, 0x04034b50)          // a 4-byte number, little-endian
+header.writeBE(4, 2, 513)               // a 2-byte one, big-endian
+print(header, header.read(0, 4) == 0x04034b50, header.readBE(4, 2))
+// → bytes(50 4b 03 04 02 01 00 00) true 513
+print(bytes([1, 2]) + bytes([255]), bytes([1]) == bytes([1]))   // → bytes(01 02 ff) true
+```
+
+`bytes(n)` makes n zero bytes, `bytes(text)` the UTF-8 of a string, `bytes(list)` the bytes of a list of numbers from 0 to 255, and `bytes(data)` a copy.
+
+Bytes methods: `length`; `slice(start, end)`, a copy, with negative positions counting from the end; `text()`, the bytes read as UTF-8; `hex()`; `toArray()`; `read(position, size)` and `readBE(position, size)`, a number of 1, 2, 4 or 8 bytes, little-endian or big-endian; and `write(position, size, value)` and `writeBE(position, size, value)`, which store one. `repeat b in data` goes over the numbers, `+` joins bytes, and `==` compares them. `data[i]` is `null` outside the data, and storing anything other than a number from 0 to 255 is an error.
+
 ## Arrays
 
 ```targascript
@@ -461,6 +483,7 @@ It's downloaded each time the program runs. Load only code you trust: it runs wi
 | `assert(condition, message)`, `assertEqual(actual, expected, message)` | fail with `assertion failed: ...` when the condition is falsy or the values differ; the message is optional |
 | `escapeHTML(text)` | text safe to put in HTML: `<`, `>`, `&` and quotes become entities |
 | `encodeURL(text)`, `decodeURL(text)` | text for a part of a URL, like a query value, and back |
+| `bytes(size or text or list)` | binary data, see [Bytes](#bytes) |
 | `parseJSON(text)`, `toJSON(value, indent)` | JSON, keeping the order of keys |
 | `sleep(ms)`, `fetch(url, options)`, `all(promises)` | promises for `await` |
 | `exists(path)`, `deleteFile(path)`, `makeDir(path)` | whether a file or directory exists; delete a file or an empty directory; make a directory and the ones it is in. Command line only |

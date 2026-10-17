@@ -30,6 +30,7 @@
   "max": ["max(a, b, ...) / max(list)", "The largest number; integers stay integers. `null` for an empty array."],
   "min": ["min(a, b, ...) / min(list)", "The smallest number; integers stay integers. `null` for an empty array."],
   "now": ["now()", "The current Unix time in seconds."],
+  "bytes": ["bytes(size or text or list)", "Binary data: `bytes(4)` is four zero bytes, `bytes(\"hi\")` the UTF-8 of a text and `bytes([1, 255])` the bytes of a list of numbers from 0 to 255."],
   "parseJSON": ["parseJSON(text)", "The value a JSON text holds, keeping the order of keys."],
   "parseTime": ["parseTime(text, layout)", "The Unix time of a text written in a layout like timeFormat's: `parseTime(\"16/10/2026\", \"DD/MM/YYYY\")`."],
   "pow": ["pow(x, y)", "x to the power y; the same as `x ** y`."],

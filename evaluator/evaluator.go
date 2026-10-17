@@ -79,6 +79,9 @@ func setProperty(obj object.Object, propertyName string, val object.Object, line
 
 // setIndex stores val in container[index].
 func setIndex(container, index, val object.Object, line, column int) object.Object {
+	if data, ok := container.(*object.Bytes); ok {
+		return setBytesIndex(data, index, val, line, column)
+	}
 	if array, ok := container.(*object.Array); ok {
 		if idx, ok := index.(*object.Integer); ok {
 			arrayLen := int64(len(array.Elements))
@@ -182,6 +185,9 @@ func evalInfixExpression(operator string, left, right object.Object, line, colum
 		elements := make([]object.Object, 0, len(leftElements)+len(rightElements))
 		elements = append(append(elements, leftElements...), rightElements...)
 		return &object.Array{Elements: elements}
+	case left.Type() == object.BYTES_OBJ && right.Type() == object.BYTES_OBJ && operator == "+":
+		a, b := left.(*object.Bytes).Value, right.(*object.Bytes).Value
+		return &object.Bytes{Value: append(append(make([]byte, 0, len(a)+len(b)), a...), b...)}
 	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
 		return evalBooleanInfixExpression(operator, left, right, line, column)
 	case operator == "==":
@@ -490,6 +496,9 @@ func evalIndexExpression(left, index object.Object, line, column int) object.Obj
 		return withPosition(external.Get(name), line, column)
 	}
 
+	if data, ok := left.(*object.Bytes); ok {
+		return bytesIndex(data, index, line, column)
+	}
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
@@ -556,6 +565,11 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 		default:
 			return newError(line, column, "arrays have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 		}
+	case *object.Bytes:
+		if propertyName == "length" {
+			return &object.Integer{Value: int64(len(obj.Value))}
+		}
+		return newError(line, column, "bytes have no property %q%s", propertyName, suggestion(propertyName, []string{"length"}))
 	case *object.String:
 		switch propertyName {
 		case "length":
@@ -599,6 +613,8 @@ func getProperty(obj object.Object, propertyName string, line, column int) objec
 
 func evalMethodCallExpression(obj object.Object, method string, args []object.Object, line, column int) object.Object {
 	switch obj := obj.(type) {
+	case *object.Bytes:
+		return bytesMethod(obj, method, args, line, column)
 	case *object.Enum:
 		if method == "values" && len(args) == 0 {
 			values := make([]object.Object, len(obj.Values))

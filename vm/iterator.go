@@ -37,6 +37,12 @@ func newIterator(collection object.Object, ints *ints) (iterator, error) {
 		return &listIterator{values: values, ints: ints}, nil
 	case *object.Array:
 		return &listIterator{values: c.Elements, ints: ints}, nil
+	case *object.Bytes:
+		values := make([]object.Object, len(c.Value))
+		for i, b := range c.Value {
+			values[i] = ints.get(int64(b))
+		}
+		return &listIterator{values: values, ints: ints}, nil
 	case *object.Hash:
 		n := c.Len()
 		it := &listIterator{keysFirst: true, keys: make([]object.Object, n), values: make([]object.Object, n)}

@@ -641,6 +641,17 @@ func (vm *VM) loopWords(base int) object.Object {
 				container, index = r[w.A()], r[w.B()]
 			}
 			switch c := container.(type) {
+			case *object.Bytes:
+				if i, ok := index.(*object.Integer); ok && i.Value >= 0 && i.Value < int64(len(c.Value)) {
+					if op == code.RIndex {
+						r[w.A()] = smallInts[int(c.Value[i.Value])-smallIntMin]
+						continue
+					}
+					if v, ok := r[w.C()].(*object.Integer); ok && v.Value >= 0 && v.Value <= 255 {
+						c.Value[i.Value] = byte(v.Value)
+						continue
+					}
+				}
 			case *object.Array:
 				if i, ok := index.(*object.Integer); ok && i.Value >= 0 && i.Value < int64(len(c.Elements)) {
 					if op == code.RIndex {
