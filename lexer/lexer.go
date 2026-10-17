@@ -200,7 +200,7 @@ func (l *Lexer) NextToken() token.Token {
 		case !terminated:
 			tok = l.newToken(token.ILLEGAL, "\""+literal, tokenLine, tokenColumn)
 		case interpolated:
-			tok = l.newToken(token.TEMPLATE, l.input[start:l.position], tokenLine, tokenColumn)
+			tok = l.newToken(token.TEMPLATE, l.own(l.input[start:l.position]), tokenLine, tokenColumn)
 		default:
 			tok = l.newToken(token.STRING, literal, tokenLine, tokenColumn)
 		}
@@ -222,7 +222,7 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.newToken(token.EOF, "", tokenLine, tokenColumn)
 	default:
 		if isLetter(l.ch) {
-			literal := l.readIdentifier()
+			literal := l.own(l.readIdentifier())
 			tokenType := token.LookupIdent(literal)
 			tok = l.newToken(tokenType, literal, tokenLine, tokenColumn)
 			return tok
@@ -233,7 +233,7 @@ func (l *Lexer) NextToken() token.Token {
 				return tok
 			}
 			tokenType, literal := l.readNumber()
-			tok = l.newToken(tokenType, literal, tokenLine, tokenColumn)
+			tok = l.newToken(tokenType, l.own(literal), tokenLine, tokenColumn)
 			return tok
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.ch), tokenLine, tokenColumn)
@@ -314,6 +314,15 @@ func (l *Lexer) peekChar() rune {
 	}
 	r, _ := utf8.DecodeRuneInString(l.input[l.readPosition:])
 	return r
+}
+
+// own returns a copy of s, a part of the input. Tokens keep their text
+// after the input is gone, in the program's names and constants, and
+// TinyGo's collector takes time for every pointer into the middle of an
+// object as large as the input. The conversion makes a smaller WebAssembly
+// build than strings.Clone.
+func (l *Lexer) own(s string) string {
+	return string([]byte(s))
 }
 
 func (l *Lexer) readIdentifier() string {
