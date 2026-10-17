@@ -7,10 +7,6 @@ import (
 	"testing"
 )
 
-type named struct{}
-
-func (named) String() string { return "named" }
-
 // Sprintf gives what fmt.Sprintf gives, for every verb, flag and precision
 // it knows. printf in TargaScript passes these on, and applies a width
 // itself.
@@ -19,7 +15,7 @@ func TestLikeFmt(t *testing.T) {
 		0, 7, -7, 42, 255, -255, int64(math.MaxInt64), int64(math.MinInt64), int32('é'),
 		0.0, 1.5, -1.5, 1234.5678, 1e21, 1e-7, math.Inf(1), math.Inf(-1), math.NaN(), float32(2.5),
 		"", "a", "héllo", "say \"hi\"\n", "tab\there", "`back`",
-		true, false, errors.New("an error"), named{},
+		true, false, errors.New("an error"),
 	}
 	verbs := []string{"v", "s", "q", "d", "b", "o", "x", "X", "c", "t", "e", "E", "f", "F", "g", "G"}
 	flags := []string{"", "+", "-", "#", " ", "0", "+0", "-0", "#0", "+#"}
@@ -29,7 +25,7 @@ func TestLikeFmt(t *testing.T) {
 		switch v.(type) {
 		case string:
 			return verb == "v" || verb == "s" || verb == "q" || verb == "x" || verb == "X"
-		case error, named:
+		case error:
 			// %#v of these is Go syntax, which nothing uses
 			return verb == "s" || verb == "q" || verb == "x" || verb == "X"
 		case bool:
@@ -123,5 +119,17 @@ func TestMessages(t *testing.T) {
 	}
 	if err := Errorf("x %d", 1); err.Error() != "x 1" {
 		t.Errorf("Errorf gave %q", err)
+	}
+}
+
+type named struct{}
+
+func (named) String() string { return "named" }
+
+// Values with a String method aren't formatted with it, which would keep
+// every String method in the WebAssembly build
+func TestNoStringMethods(t *testing.T) {
+	if got := Sprintf("%s", named{}); got == "named" {
+		t.Errorf("got %q", got)
 	}
 }
