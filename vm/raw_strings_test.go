@@ -16,6 +16,9 @@ func TestBacktickStrings(t *testing.T) {
 		{"`a \\` b`", "a ` b"},
 		{"let n = 2; `${n} + ${n} = ${n + n}`", "2 + 2 = 4"},
 		{"`\\${kept}`", "${kept}"},
+		// A backslash before a $ that doesn't start ${ is text, as in a shell prompt
+		{"`PS1='\\w \\$ '`", `PS1='\w \$ '`},
+		{"let n = 1; `${n} \\$`", `1 \$`},
 		{"let who = \"Ana\"; `<p class=\"x\">${who}</p>`", `<p class="x">Ana</p>`},
 		{"`${\"in quotes\"}`", "in quotes"},
 		{"`${`nested`}`", "nested"},
