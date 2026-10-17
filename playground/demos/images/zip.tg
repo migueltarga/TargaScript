@@ -1,0 +1,78 @@
+// zip.tg
+// Makes .zip files from bytes. Plain TargaScript with nothing from the
+// browser, so it runs from the command line too. Files are stored as they
+// are, which suits images that are compressed already.
+
+// The CRC-32 of each byte value, worked out once. A CRC is a checksum that
+// zip readers use to check the files they take out.
+let crcTable = range(0, 255).map(n => {
+    let c = n
+    repeat 8 {
+        c = if c % 2 == 1 { 0xEDB88320 ^ (c / 2) } else { c / 2 }
+    }
+    c
+})
+
+// crc32 is the CRC-32 of data. Without & and >>, % 256 takes the lowest
+// byte and / 256 shifts the rest down, as the numbers are never negative.
+fn crc32(data) {
+    let crc = 0xFFFFFFFF
+    repeat b in data {
+        crc = crcTable[(crc ^ b) % 256] ^ (crc / 256)
+    }
+    crc ^ 0xFFFFFFFF
+}
+
+// The time and date of a file, in the format of MS-DOS that zip files use
+fn dosTime(seconds) {
+    let [year, month, day, hour, minute, second] = timeFormat(seconds, "YYYY MM DD HH mm ss").split(" ").map(toInt)
+    [hour * 2048 + minute * 32 + second / 2, (year - 1980) * 512 + month * 32 + day]
+}
+
+// zip makes a .zip file of a list of {name, data}, with data as bytes, and
+// returns its bytes
+fn zip(files, seconds = now()) {
+    let [time, date] = dosTime(seconds)
+    let parts = []
+    let directory = []
+    let offset = 0
+    repeat file in files {
+        let name = bytes(file.name)
+        let crc = crc32(file.data)
+
+        // The fields both headers have, from the version needed on
+        let common = bytes(26)
+        common.write(0, 2, 20)              // version 2.0
+        common.write(2, 2, 0x0800)          // names are UTF-8
+        common.write(4, 2, 0)               // stored, not compressed
+        common.write(6, 2, time)
+        common.write(8, 2, date)
+        common.write(10, 4, crc)
+        common.write(14, 4, file.data.length)
+        common.write(18, 4, file.data.length)
+        common.write(22, 2, name.length)
+        common.write(24, 2, 0)              // no extra fields
+
+        let local = bytes(4)
+        local.write(0, 4, 0x04034b50)
+        parts.insert(local + common + name)
+        parts.insert(file.data)
+
+        let entry = bytes(6)
+        entry.write(0, 4, 0x02014b50)
+        entry.write(4, 2, 20)               // made by version 2.0
+        let rest = bytes(14)                // no comment, disk 0, no attributes
+        rest.write(10, 4, offset)           // where its local header is
+        directory.insert(entry + common + rest + name)
+        offset += 4 + common.length + name.length + file.data.length
+    }
+
+    let size = directory.reduce((total, entry) => total + entry.length, 0)
+    let end = bytes(22)
+    end.write(0, 4, 0x06054b50)
+    end.write(8, 2, files.length)
+    end.write(10, 2, files.length)
+    end.write(12, 4, size)
+    end.write(16, 4, offset)
+    (parts + directory + [end]).reduce((all, part) => all + part, bytes(0))
+}

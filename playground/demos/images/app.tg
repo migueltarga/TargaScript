@@ -1,0 +1,194 @@
+// app.tg
+// Shrinks and converts images in the browser, written in TargaScript. The
+// browser decodes and encodes the pictures; this script runs the rest, and
+// zip.tg packs the results into a .zip, byte by byte. No image leaves the
+// page.
+
+load "zip.tg"
+
+let doc = js.document
+let drop = doc.getElementById("drop")
+let picker = doc.getElementById("picker")
+let list = doc.getElementById("list")
+let summary = doc.getElementById("summary")
+let formatInput = doc.getElementById("format")
+let qualityInput = doc.getElementById("quality")
+let qualityText = doc.getElementById("quality-value")
+let widthInput = doc.getElementById("width")
+let zipButton = doc.getElementById("zip")
+
+const EXTENSIONS = {"image/webp": "webp", "image/jpeg": "jpg", "image/png": "png"}
+
+// The images given, each {file, bitmap, name, row} with its result
+// {data, url} once converted
+let images = []
+let generation = 0
+
+fn sizeText(n) {
+    match true {
+        _ if n >= 1_000_000 => format("%.1f MB", n / 1_000_000.0)
+        _ if n >= 1000 => format("%.0f KB", n / 1000.0)
+        _ => "${n} B"
+    }
+}
+
+// A file name without its extension: my.photo.png becomes my.photo
+fn baseName(name) {
+    let parts = name.split(".")
+    if parts.length > 1 { parts.slice(0, -1).join(".") } else { name }
+}
+
+// The name of a converted file: photo.HEIC becomes photo.webp
+fn outputName(name) {
+    baseName(name) + "." + EXTENSIONS[formatInput.value]
+}
+
+// The size to draw a picture at, no wider than the width chosen
+fn fit(width, height) {
+    let limit = toInt(widthInput.value)
+    if limit == 0 || width <= limit {
+        return [width, height]
+    }
+    [limit, max(1, round(height * limit / toFloat(width)))]
+}
+
+fn element(tag, className, text = "") {
+    let e = doc.createElement(tag)
+    e.className = className
+    e.textContent = text
+    e
+}
+
+// Converts one image with the format, quality and width chosen, and shows
+// how it went in its row
+fn convert(image, run) {
+    let [width, height] = fit(image.bitmap.width, image.bitmap.height)
+    let canvas = js.OffscreenCanvas.new(width, height)
+    let context = canvas.getContext("2d")
+    context.drawImage(image.bitmap, 0, 0, width, height)
+    let blob = await canvas.convertToBlob({"type": formatInput.value, "quality": toInt(qualityInput.value) / 100.0})
+    let data = await blob.arrayBuffer()
+    if run != generation {
+        return null // the settings changed while it ran
+    }
+
+    if image.url != null {
+        js.URL.revokeObjectURL(image.url)
+    }
+    image.data = data
+    image.url = js.URL.createObjectURL(blob)
+    image.preview.src = image.url
+
+    // Rounded toward 0, so a smaller file never shows as 100% smaller
+    let saved = (image.file.size - data.length) * 100 / max(1, image.file.size)
+    image.sizes.textContent = "${sizeText(image.file.size)} → ${sizeText(data.length)}"
+    image.saving.textContent = if saved >= 0 { "${saved}% smaller" } else { "${-saved}% larger" }
+    image.saving.className = if saved >= 0 { "saving" } else { "saving worse" }
+    image.dimensions.textContent = "${width}×${height}"
+    image.link.href = image.url
+    image.link.download = outputName(image.name)
+}
+
+fn convertAll() {
+    generation += 1
+    let run = generation
+    repeat image in images {
+        await convert(image, run)
+    }
+    if run == generation {
+        showSummary()
+    }
+}
+
+fn showSummary() {
+    let before = images.reduce((total, image) => total + image.file.size, 0)
+    let after = images.reduce((total, image) => total + (image.data?.length ?? 0), 0)
+    zipButton.disabled = images.length == 0
+    summary.textContent = if images.length == 0 {
+        ""
+    } else {
+        "${images.length} images: ${sizeText(before)} → ${sizeText(after)}"
+    }
+}
+
+// Adds the rows for new files and converts them
+fn add(files) {
+    repeat i in 0..files.length - 1 {
+        let file = files[i]
+        if !file.type.startsWith("image/") {
+            continue
+        }
+        let row = element("li", "image")
+        let image = {
+            file: file, name: file.name, bitmap: null, data: null, url: null,
+            preview: element("img", "preview"), sizes: element("span", "sizes", "Reading..."),
+            saving: element("span", "saving"), dimensions: element("span", "dimensions"),
+            link: element("a", "download", "Download"),
+        }
+        let info = element("div", "info")
+        info.append(element("strong", "name", file.name), image.sizes, image.dimensions, image.saving)
+        row.append(image.preview, info, image.link)
+        list.append(row)
+        image.bitmap = await js.createImageBitmap(file)
+        images.insert(image)
+    }
+    await convertAll()
+}
+
+// Packs every converted image into a .zip, in TargaScript, and downloads it
+fn downloadZip() {
+    let started = clock()
+    let names = {}
+    let files = images.filter(it.data != null).map(image => {
+        // Two photo.webp become photo.webp and photo-2.webp
+        let name = outputName(image.name)
+        names[name] = (names[name] ?? 0) + 1
+        if names[name] > 1 {
+            name = baseName(image.name) + "-" + names[name] + "." + EXTENSIONS[formatInput.value]
+        }
+        {name: name, data: image.data}
+    })
+    let data = zip(files)
+    let took = round(clock() - started)
+
+    let url = js.URL.createObjectURL(js.Blob.new([data], {"type": "application/zip"}))
+    let link = doc.createElement("a")
+    link.href = url
+    link.download = "images.zip"
+    link.click()
+    js.setTimeout(() => js.URL.revokeObjectURL(url), 1000)
+    summary.textContent = "Made images.zip, ${sizeText(data.length)}, in ${took} ms of TargaScript"
+}
+
+drop.addEventListener("dragover", event => {
+    event.preventDefault()
+    drop.classList.add("over")
+})
+drop.addEventListener("dragleave", () => drop.classList.remove("over"))
+drop.addEventListener("drop", event => {
+    event.preventDefault()
+    drop.classList.remove("over")
+    add(event.dataTransfer.files)
+})
+picker.addEventListener("change", () => {
+    add(picker.files)
+    picker.value = ""
+})
+repeat input in [formatInput, widthInput] {
+    input.addEventListener("change", () => convertAll())
+}
+qualityInput.addEventListener("input", () => {
+    qualityText.textContent = qualityInput.value
+})
+qualityInput.addEventListener("change", () => convertAll())
+zipButton.addEventListener("click", () => downloadZip())
+doc.getElementById("clear").addEventListener("click", () => {
+    repeat image in images {
+        if image.url != null {
+            js.URL.revokeObjectURL(image.url)
+        }
+    }
+    images = []
+    list.textContent = ""
+    showSummary()
+})

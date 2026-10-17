@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image shrinker in TargaScript</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #dddcd7; --text: #1f1f1d; --muted: #6b6a65;
+    --brand: #266ca4; --brand-dark: #16405b; --brand-text: #ffffff; --link: #266ca4;
+    --good: #2f7d3b; --bad: #b3412e; --over: #e8f0f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161614; --panel: #1e1e1c; --border: #33332f; --text: #ececea; --muted: #9a9993; --link: #7fb3e6; --good: #7bc88a; --bad: #e98a76; --over: #1f2a33; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  #drop { display: block; border: 2px dashed var(--border); border-radius: 10px; padding: 28px 16px; text-align: center; background: var(--panel); cursor: pointer; color: var(--muted); }
+  #drop.over { border-color: var(--brand); background: var(--over); }
+  #drop strong { color: var(--text); }
+  #picker { display: none; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 16px 0; font-size: 14px; }
+  .controls label { display: inline-flex; align-items: center; gap: 6px; }
+  select, button { font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); padding: 6px 10px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--brand); border-color: var(--brand-dark); color: var(--brand-text); font-weight: 600; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #quality { width: 110px; }
+  #quality-value { font-variant-numeric: tabular-nums; min-width: 2ch; }
+  ul { list-style: none; padding: 0; margin: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+  ul:empty { display: none; }
+  li.image { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  li.image:last-child { border-bottom: 0; }
+  .preview { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; background: var(--border); flex: none; }
+  .info { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 14px; }
+  .info .name { flex-basis: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sizes, .dimensions { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .saving { color: var(--good); font-weight: 600; }
+  .saving.worse { color: var(--bad); }
+  a { color: var(--link); }
+  .download { font-size: 14px; flex: none; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--muted); }
+  footer { margin-top: 24px; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Image shrinker</h1>
+  <p class="lead">Shrink and convert images to WebP, JPEG or PNG, then download them one by one or in a .zip that TargaScript writes byte by byte. Everything runs in your browser; no image is uploaded.</p>
+  <label id="drop" for="picker">
+    <strong>Drop images here</strong> or click to choose them
+    <input id="picker" type="file" accept="image/*" multiple>
+  </label>
+  <div class="controls">
+    <label>Format
+      <select id="format">
+        <option value="image/webp">WebP</option>
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/png">PNG</option>
+      </select>
+    </label>
+    <label>Quality <input id="quality" type="range" min="10" max="100" value="80"> <span id="quality-value">80</span></label>
+    <label>Max width
+      <select id="width">
+        <option value="0">Original</option>
+        <option value="2560">2560 px</option>
+        <option value="1920" selected>1920 px</option>
+        <option value="1280">1280 px</option>
+        <option value="800">800 px</option>
+        <option value="400">400 px</option>
+      </select>
+    </label>
+  </div>
+  <ul id="list"></ul>
+  <div class="bar">
+    <span id="summary"></span>
+    <span>
+      <button id="clear">Clear</button>
+      <button id="zip" class="primary" disabled>Download all as .zip</button>
+    </span>
+  </div>
+  <footer>
+    <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/images/app.tg">See app.tg</a>
+    and <a href="https://github.com/migueltarga/TargaScript/blob/develop/playground/demos/images/zip.tg">zip.tg</a>
+    &middot; <a href="../../">Playground</a>
+  </footer>
+</main>
+<script src="../../targascript.js"></script>
+<script type="text/targascript" src="app.tg"></script>
+</body>
+</html>
