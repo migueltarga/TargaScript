@@ -325,6 +325,8 @@ print(fact(20))          // → 2432902008176640000
 
 Missing arguments are `null` (or their default), and extra ones are ignored. Recursion can go 10,000 calls deep.
 
+Functions declared with `fn` can be used above their declaration, in the same block: a program can call `main()` on its first line, or keep functions in a table, `let handlers = {start: onStart}`, before declaring them. A name declared more than once at the top of a program keeps the order of its declarations.
+
 ## Taking values apart
 
 ```targascript

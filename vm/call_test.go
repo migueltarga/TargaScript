@@ -43,3 +43,17 @@ func TestCallErrorsHavePosition(t *testing.T) {
 		t.Errorf("wrong line. got=%d, want=3", errObj.Line)
 	}
 }
+
+// Functions at the top of a program can be used above their declaration
+func TestTopLevelFunctionsFirst(t *testing.T) {
+	tests := []struct{ input, expected string }{
+		{"let x = f()\nfn f() { 3 }\nx", "3"},
+		{"let t = {g: f}\nfn f() { 2 }\nt.g()", "2"},
+		{"fn f() { 1 }\nlet a = f()\nfn f() { 2 }\n[a, f()]", "[1, 2]"},
+	}
+	for _, tt := range tests {
+		if got := testEval(tt.input).Inspect(); got != tt.expected {
+			t.Errorf("%s: got %s, want %s", tt.input, got, tt.expected)
+		}
+	}
+}

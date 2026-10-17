@@ -346,6 +346,10 @@ func (c *Compiler) emitClosure(fn *object.CompiledFunction, free []*Symbol) {
 // last one on the stack, or null when there are none.
 func (c *Compiler) compileStatements(statements []ast.Statement) error {
 	c.hoistFunctions(statements)
+	made, err := c.makeTopLevelFunctions(statements)
+	if err != nil {
+		return err
+	}
 	compiled := 0
 	for _, stmt := range statements {
 		if stmt == nil {
@@ -354,7 +358,10 @@ func (c *Compiler) compileStatements(statements []ast.Statement) error {
 		if compiled > 0 {
 			c.emit(token.Token{}, code.OpPop)
 		}
-		if err := c.compileStatement(stmt); err != nil {
+		if fn, ok := stmt.(*ast.FunctionStatement); ok && made[fn] {
+			// Made already; its value is the function, as when declared
+			c.compileGet(fn.Token, fn.Name.Value)
+		} else if err := c.compileStatement(stmt); err != nil {
 			return err
 		}
 		compiled++
@@ -384,6 +391,37 @@ func (c *Compiler) hoistFunctions(statements []ast.Statement) {
 		c.emitCellBeforeClosure(s)
 		c.hoisted[s] = true
 	}
+}
+
+// makeTopLevelFunctions makes the functions declared at the top level of the
+// program before the rest of its code, so the code can call them, or keep
+// them in a table, above where they're declared. Their names are globals
+// from the start; this gives them their values. A name declared more than
+// once, as a function declared again or a constant, keeps its order. It
+// returns the functions made.
+func (c *Compiler) makeTopLevelFunctions(statements []ast.Statement) (map[*ast.FunctionStatement]bool, error) {
+	if !c.atTopLevel() {
+		return nil, nil
+	}
+	declared := map[string]int{}
+	for _, stmt := range statements {
+		for _, name := range declaredNames(stmt) {
+			declared[name]++
+		}
+	}
+	made := map[*ast.FunctionStatement]bool{}
+	for _, stmt := range statements {
+		fn, ok := stmt.(*ast.FunctionStatement)
+		if !ok || declared[fn.Name.Value] > 1 {
+			continue
+		}
+		if err := c.compileStatement(fn); err != nil {
+			return nil, err
+		}
+		c.emit(token.Token{}, code.OpPop)
+		made[fn] = true
+	}
+	return made, nil
 }
 
 // compileBlock compiles a block in its own scope.
