@@ -787,7 +787,7 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 			counted.Iterator = &ast.Identifier{Token: count.Token, Value: "\x00count"}
 			return c.compileRepeat(&counted)
 		}
-		return c.compileWhile(stmt)
+		return c.compileWhile(stmt, !isCondition(stmt.Collection))
 	}
 
 	if r, ok := stmt.Collection.(*ast.InfixExpression); ok && r.Operator == ".." {
@@ -964,13 +964,55 @@ func (c *Compiler) leaveTries(loops int) error {
 	return nil
 }
 
-func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
+// isCondition reports whether node is a comparison or a call, which repeat
+// tests before each round; other values can be numbers, which count rounds.
+func isCondition(node ast.Expression) bool {
+	switch node := node.(type) {
+	case *ast.Boolean, *ast.CallExpression, *ast.MethodCallExpression:
+		return true
+	case *ast.PrefixExpression:
+		return node.Operator == "!"
+	case *ast.InfixExpression:
+		switch node.Operator {
+		case "==", "!=", "<", "<=", ">", ">=", "&&", "||", "in":
+			return true
+		}
+	}
+	return false
+}
+
+// compileWhile compiles repeat x { }. When x may be a number, it's taken
+// once at the start: a local notes whether it's a condition, and another
+// keeps the rounds left when it's an integer, as in repeat n { }.
+func (c *Compiler) compileWhile(stmt *ast.RepeatStatement, count bool) error {
+	c.fn.pushBlock()
+	defer c.fn.popBlock()
+	condition, rounds := -1, -1
+	if count {
+		condition = c.fn.defineLocal("\x00condition", false).Index
+		rounds = c.fn.defineLocal("\x00rounds", false).Index
+		if err := c.compileExpression(stmt.Collection); err != nil {
+			return err
+		}
+		c.emit(token.Token{}, code.OpCountStart, rounds)
+		c.emit(token.Token{}, code.OpSetLocal, condition)
+		c.emit(token.Token{}, code.OpPop)
+	}
 	enter := c.emit(token.Token{}, code.OpLoopEnter, 9999, 9999)
 	start := len(c.scope.instructions)
 	c.scope.flow.markTarget(start)
 
+	counting := -1
+	if count {
+		c.emit(token.Token{}, code.OpGetLocal, condition)
+		counting = c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+	}
 	if err := c.compileExpression(stmt.Collection); err != nil {
 		return err
+	}
+	test := len(c.scope.instructions)
+	if count {
+		c.scope.flow.markTarget(test)
 	}
 	exit := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
 
@@ -982,6 +1024,13 @@ func (c *Compiler) compileWhile(stmt *ast.RepeatStatement) error {
 	}
 	c.emit(token.Token{}, code.OpPop)
 	c.emit(stmt.Token, code.OpJump, start)
+	if count {
+		// Counting is out of the way of conditions, which are more common
+		c.changeOperands(counting, len(c.scope.instructions))
+		c.emit(token.Token{}, code.OpGetLocal, rounds)
+		c.emit(token.Token{}, code.OpCountDown, rounds)
+		c.emit(token.Token{}, code.OpJump, test)
+	}
 
 	end := len(c.scope.instructions)
 	c.changeOperands(enter, end, start)

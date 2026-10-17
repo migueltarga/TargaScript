@@ -725,7 +725,7 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.emit(at, code.RInRange, t.own(d-3), 0, 0)
 		t.push(inRegister(t.own(d - 3)))
 
-	case code.OpMinus, code.OpBang, code.OpIncrement:
+	case code.OpMinus, code.OpBang, code.OpIncrement, code.OpCountStart, code.OpCountDown:
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))
 		t.keep(at, t.own(d-1))
@@ -735,6 +735,10 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 			rop = code.RNot
 		case code.OpIncrement:
 			rop, c = code.RIncr, t.u16(at, 0)
+		case code.OpCountStart:
+			rop, c = code.RCountStart, t.u16(at, 0)
+		case code.OpCountDown:
+			rop, c = code.RCountDown, t.u16(at, 0)
 		}
 		t.emitWrite(at, rop, t.own(d-1), r, c)
 		t.push(inRegister(t.own(d - 1)))

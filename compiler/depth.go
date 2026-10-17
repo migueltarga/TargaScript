@@ -17,7 +17,7 @@ func stackEffect(op code.Opcode, args [3]int) (int, bool) {
 		return 1, true
 	case code.OpDup2:
 		return 2, true
-	case code.OpWithout, code.OpMinus, code.OpBang, code.OpIncrement,
+	case code.OpWithout, code.OpMinus, code.OpBang, code.OpIncrement, code.OpCountStart, code.OpCountDown,
 		code.OpSetGlobal, code.OpSetLocal, code.OpNewCell, code.OpSetFree,
 		code.OpGetProperty, code.OpAwait, code.OpTryEnd, code.OpIterStart:
 		return 0, true
