@@ -83,3 +83,10 @@ test("arrow functions see the this of the method around them", fn() {
     fn outside() { this }
     assertEqual(outside(), null)
 })
+
+test("list comprehensions build arrays from loops", fn() {
+    assertEqual([n * n repeat n in 1..5 if n % 2 == 1], [1, 9, 25])
+    assertEqual([k repeat k, v in {a: 1, b: 2} if v > 1], ["b"])
+    assertEqual([x + y repeat [x, y] in [[1, 2], [3, 4]]], [3, 7])
+    assertEqual([[x, y] repeat x in 1..2 repeat y in 1..2 if x != y], [[1, 2], [2, 1]])
+})
