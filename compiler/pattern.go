@@ -1,8 +1,6 @@
 package compiler
 
 import (
-	"strings"
-
 	"github.com/migueltarga/TargaScript/ast"
 	"github.com/migueltarga/TargaScript/object"
 	"github.com/migueltarga/TargaScript/parser"
@@ -15,7 +13,7 @@ import (
 type matchPattern struct {
 	root   *object.Pattern
 	values []ast.Expression
-	names  []*ast.Identifier
+	names  []string
 }
 
 // isStructural reports whether the pattern of a match arm takes the
@@ -33,13 +31,11 @@ func isStructural(pattern ast.Expression) bool {
 // pattern.
 func (c *Compiler) buildPattern(expr ast.Expression) *matchPattern {
 	mp := &matchPattern{}
-	whole := expr.String()
-	tok := tokenOf(expr)
-	root := c.buildPart(mp, expr, tok, whole)
+	root := c.buildPart(mp, expr, tokenOf(expr))
 	if root == nil {
 		return nil
 	}
-	root.Values, root.Binds, root.Source = len(mp.values), len(mp.names), whole
+	root.Values, root.Binds = len(mp.values), len(mp.names)
 	mp.root = root
 	return mp
 }
@@ -47,35 +43,36 @@ func (c *Compiler) buildPattern(expr ast.Expression) *matchPattern {
 // buildPart builds one part of a pattern: a name binds, _ matches anything,
 // a literal array or object takes the value apart, a range matches what's
 // between its ends, and any other expression must be equal to the value.
-func (c *Compiler) buildPart(mp *matchPattern, expr ast.Expression, tok token.Token, whole string) *object.Pattern {
+func (c *Compiler) buildPart(mp *matchPattern, expr ast.Expression, tok token.Token) *object.Pattern {
 	switch node := expr.(type) {
 	case *ast.Identifier:
 		if node.Value == "_" {
 			return &object.Pattern{Kind: object.PatternAny}
 		}
 		for _, name := range mp.names {
-			if name.Value == node.Value {
-				c.emitError(tok, "%s is bound twice in %s", node.Value, whole)
+			if name == node.Value {
+				c.emitError(tok, "%s is bound twice in the pattern", name)
 				return nil
 			}
 		}
-		mp.names = append(mp.names, node)
+		mp.names = append(mp.names, node.Value)
 		return &object.Pattern{Kind: object.PatternBind, Index: len(mp.names) - 1}
 
 	case *ast.ArrayLiteral:
 		pattern := &object.Pattern{Kind: object.PatternArray}
 		for i, element := range node.Elements {
 			if spread, ok := element.(*ast.SpreadExpression); ok {
-				if i != len(node.Elements)-1 {
-					c.emitError(tok, "%s must be the last element in %s", spread.String(), whole)
+				if _, isName := spread.Value.(*ast.Identifier); !isName || i != len(node.Elements)-1 {
+					c.emitError(tok, "... in a pattern takes a name, at the end, like [first, ...rest]")
 					return nil
 				}
-				if pattern.Rest = c.buildRest(mp, spread, tok, whole); pattern.Rest == nil {
+				pattern.Rest = c.buildPart(mp, spread.Value, tok)
+				if pattern.Rest == nil {
 					return nil
 				}
 				break
 			}
-			part := c.buildPart(mp, element, tok, whole)
+			part := c.buildPart(mp, element, tok)
 			if part == nil {
 				return nil
 			}
@@ -85,16 +82,22 @@ func (c *Compiler) buildPart(mp *matchPattern, expr ast.Expression, tok token.To
 
 	case *ast.HashLiteral:
 		pattern := &object.Pattern{Kind: object.PatternObject}
+		keys := &object.Array{}
 		for _, name := range node.Order {
 			pair := node.Pairs[name]
 			if spread, ok := pair.Key.(*ast.SpreadExpression); ok {
-				if pattern.Rest = c.buildRest(mp, spread, tok, whole); pattern.Rest == nil {
+				if _, isName := spread.Value.(*ast.Identifier); !isName {
+					c.emitError(tok, "... in a pattern takes a name, like {name, ...rest}")
+					return nil
+				}
+				pattern.Rest = c.buildPart(mp, spread.Value, tok)
+				if pattern.Rest == nil {
 					return nil
 				}
 				continue
 			}
 			if parser.PatternOnly(pair) {
-				c.emitError(tok, "a match pattern can't give a default, %s takes the property as it is", whole)
+				c.emitError(tok, "a match pattern can't give a default, it takes the value as it is")
 				return nil
 			}
 			var key string
@@ -104,21 +107,22 @@ func (c *Compiler) buildPart(mp *matchPattern, expr ast.Expression, tok token.To
 			case *ast.StringLiteral:
 				key = k.Value
 			default:
-				c.emitError(tok, "a match pattern names the properties it takes, and %s isn't a name in %s", pair.Key.String(), whole)
+				c.emitError(tok, "a match pattern names the properties it takes, like {name, age}")
 				return nil
 			}
-			part := c.buildPart(mp, pair.Value, tok, whole)
+			part := c.buildPart(mp, pair.Value, tok)
 			if part == nil {
 				return nil
 			}
-			pattern.Keys = append(pattern.Keys, &object.String{Value: key})
+			keys.Elements = append(keys.Elements, &object.String{Value: key})
 			pattern.Parts = append(pattern.Parts, part)
 		}
+		pattern.Keys = keys
 		return pattern
 
 	case *ast.AssignmentExpression:
 		if node.Operator == "" {
-			c.emitError(tok, "a match pattern can't give a default, %s takes the element as it is", whole)
+			c.emitError(tok, "a match pattern can't give a default, it takes the value as it is")
 			return nil
 		}
 
@@ -131,27 +135,6 @@ func (c *Compiler) buildPart(mp *matchPattern, expr ast.Expression, tok token.To
 
 	mp.values = append(mp.values, expr)
 	return &object.Pattern{Kind: object.PatternValue, Index: len(mp.values) - 1}
-}
-
-// buildRest builds the part that takes the rest, from `...rest` or `..._`.
-func (c *Compiler) buildRest(mp *matchPattern, spread *ast.SpreadExpression, tok token.Token, whole string) *object.Pattern {
-	if _, ok := spread.Value.(*ast.Identifier); !ok {
-		c.emitError(tok, "... takes a name in a pattern, like [first, ...rest], not %s", spread.Value.String())
-		return nil
-	}
-	return c.buildPart(mp, spread.Value, tok, whole)
-}
-
-// nameList prints the names a pattern binds, for errors.
-func nameList(names []*ast.Identifier) string {
-	if len(names) == 0 {
-		return "nothing"
-	}
-	list := []string{}
-	for _, name := range names {
-		list = append(list, name.Value)
-	}
-	return strings.Join(list, ", ")
 }
 
 // tokenOf returns the token an expression starts with.

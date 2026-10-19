@@ -46,9 +46,7 @@ func matchPattern(pattern *object.Pattern, value object.Object, values, binds []
 			}
 		}
 		if pattern.Rest != nil && pattern.Rest.Kind == object.PatternBind {
-			rest := make([]object.Object, len(array.Elements)-len(pattern.Parts))
-			copy(rest, array.Elements[len(pattern.Parts):])
-			binds[pattern.Rest.Index] = &object.Array{Elements: rest}
+			binds[pattern.Rest.Index] = &object.Array{Elements: append([]object.Object(nil), array.Elements[len(pattern.Parts):]...)}
 		}
 		return true
 
@@ -58,26 +56,30 @@ func matchPattern(pattern *object.Pattern, value object.Object, values, binds []
 			return false
 		}
 		for i, part := range pattern.Parts {
-			pair, found := hash.Get(pattern.Keys[i].HashKey())
+			pair, found := hash.Get(pattern.Keys.Elements[i].(*object.String).HashKey())
 			if !found || !matchPattern(part, pair.Value, values, binds) {
 				return false
 			}
 		}
 		if pattern.Rest != nil && pattern.Rest.Kind == object.PatternBind {
-			rest := object.NewHash()
-		pairs:
-			for _, pair := range hash.OrderedPairs() {
-				key := pair.Key.(object.Hashable)
-				for _, taken := range pattern.Keys {
-					if key.HashKey() == taken.HashKey() {
-						continue pairs
-					}
-				}
-				rest.Set(key, pair.Value)
-			}
-			binds[pattern.Rest.Index] = rest
+			binds[pattern.Rest.Index] = without(hash, pattern.Keys)
 		}
 		return true
 	}
 	return false
+}
+
+// without returns a copy of an object without the keys in names, Strings.
+func without(from *object.Hash, names *object.Array) *object.Hash {
+	rest := object.NewHash()
+pairs:
+	for _, pair := range from.OrderedPairs() {
+		for _, name := range names.Elements {
+			if pair.Key.(object.Hashable).HashKey() == name.(*object.String).HashKey() {
+				continue pairs
+			}
+		}
+		rest.Set(pair.Key.(object.Hashable), pair.Value)
+	}
+	return rest
 }

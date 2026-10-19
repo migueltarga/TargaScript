@@ -1746,8 +1746,7 @@ func (c *Compiler) buildArm(node *ast.MatchExpression, arm *ast.MatchArm) []*mat
 			if at.Line == 0 {
 				at = node.Token
 			}
-			c.emitError(at, "the patterns of an arm must bind the same names, %s binds %s and %s binds %s",
-				arm.Patterns[0].String(), nameList(namesOf(built[0])), arm.Patterns[i].String(), nameList(namesOf(built[i])))
+			c.emitError(at, "the patterns of an arm must bind the same names")
 			return nil
 		}
 	}
@@ -1762,7 +1761,7 @@ func (c *Compiler) compileArm(node *ast.MatchExpression, arm *ast.MatchArm, buil
 	bound := map[string]*Symbol{}
 	if len(built) > 0 {
 		for _, name := range namesOf(built[0]) {
-			bound[name.Value] = c.fn.defineLocal(name.Value, false)
+			bound[name] = c.fn.defineLocal(name, false)
 		}
 	}
 
@@ -1780,7 +1779,7 @@ func (c *Compiler) compileArm(node *ast.MatchExpression, arm *ast.MatchArm, buil
 			miss := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
 			// The values the names take are on the stack, the last on top
 			for j := len(mp.names) - 1; j >= 0; j-- {
-				c.emitDefine(bound[mp.names[j].Value])
+				c.emitDefine(bound[mp.names[j]])
 				c.emit(token.Token{}, code.OpPop)
 			}
 			toBody = append(toBody, c.emit(token.Token{}, code.OpJump, 9999))
@@ -1854,7 +1853,7 @@ func sameNames(a, b *matchPattern) bool {
 	for _, name := range other {
 		found := false
 		for _, known := range first {
-			if known.Value == name.Value {
+			if known == name {
 				found = true
 			}
 		}
@@ -1866,7 +1865,7 @@ func sameNames(a, b *matchPattern) bool {
 }
 
 // namesOf returns the names a pattern binds, none for a nil one.
-func namesOf(mp *matchPattern) []*ast.Identifier {
+func namesOf(mp *matchPattern) []string {
 	if mp == nil {
 		return nil
 	}

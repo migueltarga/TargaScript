@@ -44,11 +44,11 @@ func TestMatchPatterns(t *testing.T) {
 		{"match [1, [2, 3]] { [a, pair] => match pair { [b, c] => a + b + c } }", "6"},
 		{"let p = [1, 2]\n[match p { [x, y] => x }, match p { [x, y] => y }]", "[1, 2]"},
 		{"match [1] { [x] => x }\nx", `ERROR at line 2, column 1: "x" is not defined`},
-		{"match [1] { [x], [y] => 1 }", `ERROR at line 1, column 18: the patterns of an arm must bind the same names, [x] binds x and [y] binds y`},
-		{"match [1, 2] { [x, x] => x }", `ERROR at line 1, column 16: x is bound twice in [x, x]`},
-		{"match [1] { [x] => x, [y, y] => 1 }", `ERROR at line 1, column 23: y is bound twice in [y, y]`},
-		{"match [1] { 0, [x] => x }", `ERROR at line 1, column 16: the patterns of an arm must bind the same names, 0 binds nothing and [x] binds x`},
-		{"match [1] { [x = 2] => x }", `ERROR at line 1, column 13: a match pattern can't give a default, [x = 2] takes the element as it is`},
+		{"match [1] { [x], [y] => 1 }", `ERROR at line 1, column 18: the patterns of an arm must bind the same names`},
+		{"match [1, 2] { [x, x] => x }", `ERROR at line 1, column 16: x is bound twice in the pattern`},
+		{"match [1] { [x] => x, [y, y] => 1 }", `ERROR at line 1, column 23: y is bound twice in the pattern`},
+		{"match [1] { 0, [x] => x }", `ERROR at line 1, column 16: the patterns of an arm must bind the same names`},
+		{"match [1] { [x = 2] => x }", `ERROR at line 1, column 13: a match pattern can't give a default, it takes the value as it is`},
 	}
 
 	for _, tt := range tests {

@@ -834,17 +834,7 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		if !ok {
 			return vm.errorAt(f, ip, "cannot take the rest of %s, only of an object", evaluator.TypeName(r(w.B())))
 		}
-		rest := object.NewHash()
-	pairs:
-		for _, pair := range from.OrderedPairs() {
-			for _, name := range names.Elements {
-				if pair.Key.(object.Hashable).HashKey() == name.(*object.String).HashKey() {
-					continue pairs
-				}
-			}
-			rest.Set(pair.Key.(object.Hashable), pair.Value)
-		}
-		set(w.A(), rest)
+		set(w.A(), without(from, names))
 
 	case code.RIndex:
 		container, index := r(w.B()), r(w.C())

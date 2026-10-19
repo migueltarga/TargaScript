@@ -26,7 +26,7 @@ type Pattern struct {
 	Index int
 
 	Parts []*Pattern
-	Keys  []*String // the property each part of an object pattern matches
+	Keys  *Array // the property (a String) each part of an object pattern matches
 
 	// Rest is nil, or an Any or Bind that takes the elements or properties
 	// the parts don't, from `...rest`
@@ -35,9 +35,7 @@ type Pattern struct {
 	// On the whole pattern: how many values come with it, and how many
 	// names it binds
 	Values, Binds int
-
-	Source string // the pattern as written
 }
 
 func (p *Pattern) Type() ObjectType { return PATTERN_OBJ }
-func (p *Pattern) Inspect() string  { return "pattern " + p.Source }
+func (p *Pattern) Inspect() string  { return "pattern" }
