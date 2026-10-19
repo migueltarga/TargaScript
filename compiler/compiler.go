@@ -1690,67 +1690,29 @@ func restName(pattern *ast.Pattern) []*ast.Identifier {
 // compileMatch compiles a match expression. The subject stays on the stack
 // while the arms test it, and the chosen arm replaces it with its value.
 func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
+	// The patterns are built before any code, so an error in one leaves
+	// no half-compiled match behind
+	built := make([][]*matchPattern, len(node.Arms))
+	for i, arm := range node.Arms {
+		if built[i] = c.buildArm(node, arm); built[i] == nil && arm.Patterns != nil {
+			return nil
+		}
+	}
+
 	if err := c.compileOperand(node.Subject); err != nil {
 		return err
 	}
 
 	ends := []int{}
-	for _, arm := range node.Arms {
-		toBody := []int{}
-		nextArm := -1
-		for _, pattern := range arm.Patterns {
-			c.emit(token.Token{}, code.OpDup)
-			if r, ok := pattern.(*ast.InfixExpression); ok && r.Operator == ".." {
-				// A range matches the values between its ends
-				if err := c.compileOperand(r.Left); err != nil {
-					return err
-				}
-				if err := c.compileOperand(r.Right); err != nil {
-					return err
-				}
-				c.emit(r.Token, code.OpInRange)
-			} else {
-				if err := c.compileOperand(pattern); err != nil {
-					return err
-				}
-				c.emit(node.Token, code.OpEqual)
-			}
-			miss := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
-			toBody = append(toBody, c.emit(token.Token{}, code.OpJump, 9999))
-			c.changeOperands(miss, len(c.scope.instructions))
-		}
-		if arm.Patterns != nil {
-			nextArm = c.emit(token.Token{}, code.OpJump, 9999)
-		}
-
-		for _, jump := range toBody {
-			c.changeOperands(jump, len(c.scope.instructions))
-		}
-		guardMiss := -1
-		if arm.Guard != nil {
-			if err := c.compileOperand(arm.Guard); err != nil {
-				return err
-			}
-			guardMiss = c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
-		}
-		c.emit(token.Token{}, code.OpPop) // the subject
-		var err error
-		if block, ok := arm.Body.(*ast.BlockStatement); ok {
-			err = c.compileBlock(block)
-		} else {
-			err = c.compileOperand(arm.Body.(ast.Expression))
-		}
+	for i, arm := range node.Arms {
+		// The names an arm's patterns bind belong to the arm
+		c.fn.pushBlock()
+		end, err := c.compileArm(node, arm, built[i])
+		c.fn.popBlock()
 		if err != nil {
 			return err
 		}
-		ends = append(ends, c.emit(token.Token{}, code.OpJump, 9999))
-
-		if nextArm >= 0 {
-			c.changeOperands(nextArm, len(c.scope.instructions))
-		}
-		if guardMiss >= 0 {
-			c.changeOperands(guardMiss, len(c.scope.instructions))
-		}
+		ends = append(ends, end)
 	}
 
 	// No arm matched
@@ -1763,6 +1725,152 @@ func (c *Compiler) compileMatch(node *ast.MatchExpression) error {
 		c.changeOperands(jump, len(c.scope.instructions))
 	}
 	return nil
+}
+
+// buildArm builds the patterns of an arm that take the subject apart, one
+// for each pattern and nil for the others, and checks that they all bind
+// the same names. It emits an error and returns nil for an arm that
+// can't be compiled.
+func (c *Compiler) buildArm(node *ast.MatchExpression, arm *ast.MatchArm) []*matchPattern {
+	built := make([]*matchPattern, len(arm.Patterns))
+	for i, pattern := range arm.Patterns {
+		if isStructural(pattern) {
+			if built[i] = c.buildPattern(pattern); built[i] == nil {
+				return nil
+			}
+		}
+	}
+	for i := 1; i < len(built); i++ {
+		if !sameNames(built[0], built[i]) {
+			at := tokenOf(arm.Patterns[i])
+			if at.Line == 0 {
+				at = node.Token
+			}
+			c.emitError(at, "the patterns of an arm must bind the same names, %s binds %s and %s binds %s",
+				arm.Patterns[0].String(), nameList(namesOf(built[0])), arm.Patterns[i].String(), nameList(namesOf(built[i])))
+			return nil
+		}
+	}
+	return built
+}
+
+// compileArm compiles one arm of a match, with the subject on the stack
+// and its patterns built, and returns the jump to the end of the match
+// after its body. Each pattern is tried in turn; an array or object
+// pattern binds its names for the guard and the body.
+func (c *Compiler) compileArm(node *ast.MatchExpression, arm *ast.MatchArm, built []*matchPattern) (int, error) {
+	bound := map[string]*Symbol{}
+	if len(built) > 0 {
+		for _, name := range namesOf(built[0]) {
+			bound[name.Value] = c.fn.defineLocal(name.Value, false)
+		}
+	}
+
+	toBody := []int{}
+	nextArm := -1
+	for i, pattern := range arm.Patterns {
+		c.emit(token.Token{}, code.OpDup)
+		if mp := built[i]; mp != nil {
+			for _, value := range mp.values {
+				if err := c.compileOperand(value); err != nil {
+					return 0, err
+				}
+			}
+			c.emit(tokenOf(pattern), code.OpMatch, c.addConstant(mp.root), len(mp.values), len(mp.names))
+			miss := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+			// The values the names take are on the stack, the last on top
+			for j := len(mp.names) - 1; j >= 0; j-- {
+				c.emitDefine(bound[mp.names[j].Value])
+				c.emit(token.Token{}, code.OpPop)
+			}
+			toBody = append(toBody, c.emit(token.Token{}, code.OpJump, 9999))
+			c.changeOperands(miss, len(c.scope.instructions))
+			for range mp.names {
+				c.emit(token.Token{}, code.OpPop)
+			}
+			continue
+		}
+		if r, ok := pattern.(*ast.InfixExpression); ok && r.Operator == ".." {
+			// A range matches the values between its ends
+			if err := c.compileOperand(r.Left); err != nil {
+				return 0, err
+			}
+			if err := c.compileOperand(r.Right); err != nil {
+				return 0, err
+			}
+			c.emit(r.Token, code.OpInRange)
+		} else {
+			if err := c.compileOperand(pattern); err != nil {
+				return 0, err
+			}
+			c.emit(node.Token, code.OpEqual)
+		}
+		miss := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+		toBody = append(toBody, c.emit(token.Token{}, code.OpJump, 9999))
+		c.changeOperands(miss, len(c.scope.instructions))
+	}
+	if arm.Patterns != nil {
+		nextArm = c.emit(token.Token{}, code.OpJump, 9999)
+	}
+
+	for _, jump := range toBody {
+		c.changeOperands(jump, len(c.scope.instructions))
+	}
+	guardMiss := -1
+	if arm.Guard != nil {
+		if err := c.compileOperand(arm.Guard); err != nil {
+			return 0, err
+		}
+		guardMiss = c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+	}
+	c.emit(token.Token{}, code.OpPop) // the subject
+	var err error
+	if block, ok := arm.Body.(*ast.BlockStatement); ok {
+		err = c.compileBlock(block)
+	} else {
+		err = c.compileOperand(arm.Body.(ast.Expression))
+	}
+	if err != nil {
+		return 0, err
+	}
+	end := c.emit(token.Token{}, code.OpJump, 9999)
+
+	if nextArm >= 0 {
+		c.changeOperands(nextArm, len(c.scope.instructions))
+	}
+	if guardMiss >= 0 {
+		c.changeOperands(guardMiss, len(c.scope.instructions))
+	}
+	return end, nil
+}
+
+// sameNames reports whether two patterns of an arm bind the same names;
+// a nil pattern compares by value and binds none.
+func sameNames(a, b *matchPattern) bool {
+	first, other := namesOf(a), namesOf(b)
+	if len(first) != len(other) {
+		return false
+	}
+	for _, name := range other {
+		found := false
+		for _, known := range first {
+			if known.Value == name.Value {
+				found = true
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// namesOf returns the names a pattern binds, none for a nil one.
+func namesOf(mp *matchPattern) []*ast.Identifier {
+	if mp == nil {
+		return nil
+	}
+	return mp.names
 }
 
 // compileCompoundAssignment compiles x op= value, which reads the target

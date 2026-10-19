@@ -54,6 +54,10 @@ type VM struct {
 
 	frames []*frame
 
+	// binds holds the values the names of a match pattern take while it's
+	// matched, reused across matches
+	binds []object.Object
+
 	modules *modules
 
 	// pendingError stops a resumed run right away, when the promise it

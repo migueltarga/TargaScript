@@ -83,3 +83,20 @@ test("arrow functions see the this of the method around them", fn() {
     fn outside() { this }
     assertEqual(outside(), null)
 })
+
+test("match arms take arrays and objects apart", fn() {
+    fn describe(shape) {
+        match shape {
+            [0, 0] => "origin"
+            [x, 0], [0, x] => "axis ${x}"
+            [x, y] if x == y => "diagonal"
+            {type: "circle", radius: r} => "circle ${r}"
+            {type, ...rest} => "${type} ${rest.keys()}"
+            _ => "other"
+        }
+    }
+    let shapes = [[0, 0], [0, 3], [2, 2], {type: "circle", radius: 1}, {type: "square", side: 2}, 7]
+    assertEqual(shapes.map(describe), ["origin", "axis 3", "diagonal", "circle 1", `square ["side"]`, "other"])
+    let [head, tail] = match [1, 2, 3] { [first, ...rest] => [first, rest] }
+    assertEqual([head, tail], [1, [2, 3]])
+})

@@ -52,6 +52,11 @@ func Increment(value object.Object, operator string, line, column int) object.Ob
 	return increment(value, operator, line, column)
 }
 
+// Equal reports whether two values are equal, as == does.
+func Equal(left, right object.Object) bool {
+	return valuesEqual(left, right, 0)
+}
+
 // IsTruthy reports whether a value counts as true in conditions.
 func IsTruthy(obj object.Object) bool {
 	// Conditions are mostly booleans, which this tells without a call

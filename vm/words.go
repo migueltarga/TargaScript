@@ -719,6 +719,25 @@ func (vm *VM) wordRare(f *frame, ip int, w code.Word, base int) object.Object {
 		set(w.A(), nativeBool(n > 0))
 		set(w.C(), vm.ints.get(n-1))
 
+	case code.RMatch:
+		pattern := vm.constants[w.C()].(*object.Pattern)
+		base := regs + w.A()
+		// The names' values are collected apart, as they go where the
+		// subject and the pattern's values are
+		if cap(vm.binds) < pattern.Binds {
+			vm.binds = make([]object.Object, pattern.Binds)
+		}
+		binds := vm.binds[:pattern.Binds]
+		ok := matchPattern(pattern, r(w.B()), vm.stack[base+1:base+1+pattern.Values], binds)
+		for i, value := range binds {
+			if value == nil {
+				value = NULL
+			}
+			vm.stack[base+i] = value
+			binds[i] = nil
+		}
+		vm.stack[base+pattern.Binds] = nativeBool(ok)
+
 	case code.RMinus, code.RNot, code.RIncr:
 		value := r(w.B())
 		if value == nil {

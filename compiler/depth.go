@@ -35,6 +35,10 @@ func stackEffect(op code.Opcode, args [3]int) (int, bool) {
 		return 1 - 2*args[0], true
 	case code.OpSlide:
 		return -args[0], true
+	case code.OpMatch:
+		// The value and the pattern's values go, its bindings and whether
+		// it matched come
+		return args[2] - args[1], true
 	case code.OpCall:
 		return -args[0], true
 	case code.OpCallMethod:

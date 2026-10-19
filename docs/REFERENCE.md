@@ -295,6 +295,23 @@ repeat i in 1..10 {
 
 `if` and `match` are expressions. `match` compares each arm's values with `==`, a range matches the numbers between its ends, and `_` matches anything; without a match it's null. `repeat n { }` runs `n` times when `n` is an integer at the start, even if `n` changes in the loop; anything else, like a comparison, a call or a list, is a condition checked before each round. `repeat x in` works on ranges, arrays, strings (characters), objects (keys) and integers (`1..n`).
 
+An arm can also take the subject apart, like a declaration does: `[x, y]` matches an array of two elements and names them, `[first, ...rest]` one with at least one, and `{name, age}` an object with those properties, whatever else it has. Inside, a name takes the value, `_` takes anything, a literal or a range must match, and `key: pattern` reaches into a property. The names are there for the guard and the body:
+
+```targascript
+fn describe(shape) {
+    match shape {
+        [0, 0] => "the origin"
+        [x, 0], [0, x] => "on an axis, ${x} away"
+        [x, y] if x == y => "on the diagonal"
+        {type: "circle", radius: r} => "a circle of area ${3.14 * r * r}"
+        {type, ...rest} => "a ${type} with ${rest.keys()}"
+        _ => "something else"
+    }
+}
+print(describe([3, 0]), describe({type: "square", side: 2}))
+// → on an axis, 3 away a square with ["side"]
+```
+
 ## Functions
 
 ```targascript
