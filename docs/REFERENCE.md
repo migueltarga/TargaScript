@@ -166,7 +166,10 @@ print([["Rio", "Bia"], ["SP", "Ana"], ["Rio", "Ana"]].sort())  // arrays sort el
 print([1, 2, 3].chunk(2), ["a", "b"].zip([1, 2]))   // → [[1, 2], [3]] [["a", 1], ["b", 2]]
 print(["apple", "avocado", "kiwi"].groupBy(w => w[0]))
 // → {"a": ["apple", "avocado"], "k": ["kiwi"]}
+print([n * n repeat n in 1..6 if n % 2 == 0])     // → [4, 16, 36]
 ```
+
+A comprehension builds an array from a loop, `[element repeat x in collection if condition]`, and takes the same names as `repeat`: `key, value`, a pattern like `[a, b]`, a range. The `if` is optional, and more `repeat` clauses run inside the first: `[[x, y] repeat x in 1..2 repeat y in 1..2 if x != y]` is `[[1, 2], [2, 1]]`. It does the work of `filter` and `map` in one pass, without calling a function for each element.
 
 Array methods:
 

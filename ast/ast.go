@@ -919,3 +919,44 @@ func (es *EnumStatement) TokenLiteral() string { return es.Token.Literal }
 func (es *EnumStatement) String() string {
 	return "enum " + es.Name.Value + " { " + strings.Join(ParameterStrings(es.Values, nil, false), ", ") + " }"
 }
+
+// ComprehensionExpression builds an array from the values of a loop:
+// `[x * 2 repeat x in list if x > 0]`. Each clause is a loop, and the ones
+// after the first run inside it; a clause's condition keeps the values
+// that make it true.
+type ComprehensionExpression struct {
+	Token   token.Token // the [
+	Element Expression
+	Clauses []*ComprehensionClause
+}
+
+// ComprehensionClause is one `repeat ... in collection if condition` of a
+// comprehension. Loop has what the loop goes over and its names, and no
+// body; Condition is nil without an if.
+type ComprehensionClause struct {
+	Loop      *RepeatStatement
+	Condition Expression
+}
+
+func (ce *ComprehensionExpression) expressionNode()      {}
+func (ce *ComprehensionExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *ComprehensionExpression) String() string {
+	out := "[" + ce.Element.String()
+	for _, clause := range ce.Clauses {
+		out += " " + clause.String()
+	}
+	return out + "]"
+}
+
+func (cc *ComprehensionClause) String() string {
+	loop := cc.Loop
+	out := "repeat "
+	if loop.Key != nil {
+		out += loop.Key.String() + ", "
+	}
+	out += loop.Iterator.String() + " in " + loop.Collection.String()
+	if cc.Condition != nil {
+		out += " if " + cc.Condition.String()
+	}
+	return out
+}

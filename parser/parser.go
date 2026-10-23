@@ -1462,7 +1462,26 @@ func (p *Parser) parseThrowStatement() ast.Statement {
 
 func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 	stmt := &ast.RepeatStatement{Token: p.curToken}
+	if !p.parseRepeatHeader(stmt) {
+		return nil
+	}
 
+	if !p.peekTokenIs(token.LBRACE) {
+		p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected \"{\" to start the repeat body, found %s", describe(p.peekToken))
+		return nil
+	}
+
+	p.nextToken()
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+// parseRepeatHeader parses what a repeat goes over, after the repeat
+// keyword: `x in list`, `key, value in list`, `[a, b] in pairs`, or a
+// condition or a count, with no names. It ends on the last token of the
+// collection.
+func (p *Parser) parseRepeatHeader(stmt *ast.RepeatStatement) bool {
 	p.nextToken()
 
 	if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.COMMA) {
@@ -1471,17 +1490,17 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 		if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
 			p.nextToken()
 			if stmt.Pattern = p.parsePattern(); stmt.Pattern == nil {
-				return nil
+				return false
 			}
 			stmt.Iterator = &ast.Identifier{Token: stmt.Pattern.Token, Value: stmt.Pattern.String()}
 		} else {
 			if !p.expectPeek(token.IDENT) {
-				return nil
+				return false
 			}
 			stmt.Iterator = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 		}
 		if !p.expectPeek(token.IN) {
-			return nil
+			return false
 		}
 		p.nextToken()
 		stmt.Collection = p.parseExpression(LOWEST)
@@ -1504,20 +1523,11 @@ func (p *Parser) parseRepeatStatement() *ast.RepeatStatement {
 				stmt.Collection = in.Right
 			case isLiteral(in.Left):
 				p.errorAt(in.Token.Line, in.Token.Column, "expected a name or a pattern like [a, b] before \"in\"")
-				return nil
+				return false
 			}
 		}
 	}
-
-	if !p.peekTokenIs(token.LBRACE) {
-		p.errorAt(p.peekToken.Line, p.peekToken.Column, "expected \"{\" to start the repeat body, found %s", describe(p.peekToken))
-		return nil
-	}
-
-	p.nextToken()
-	stmt.Body = p.parseBlockStatement()
-
-	return stmt
+	return stmt.Collection != nil
 }
 
 // isLiteral reports whether node is an array or object literal.
@@ -1532,9 +1542,61 @@ func isLiteral(node ast.Expression) bool {
 func (p *Parser) parseArrayLiteral() ast.Expression {
 	array := &ast.ArrayLiteral{Token: p.curToken}
 
+	// [x * 2 repeat x in list] builds the array from a loop
+	if !p.peekTokenIs(token.RBRACKET) {
+		p.nextToken()
+		first := p.parseExpression(LOWEST)
+		if first == nil {
+			return nil
+		}
+		if p.peekTokenIs(token.REPEAT) {
+			return p.parseComprehension(array.Token, first)
+		}
+		array.Elements = append(array.Elements, first)
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+			array.Elements = append(array.Elements, p.parseExpressionList(token.RBRACKET)...)
+			return array
+		}
+		if !p.expectPeek(token.RBRACKET) {
+			return nil
+		}
+		return array
+	}
+
 	array.Elements = p.parseExpressionList(token.RBRACKET)
 
 	return array
+}
+
+// parseComprehension parses the clauses of [element repeat x in list if
+// condition ...], with the element parsed and repeat as the next token.
+func (p *Parser) parseComprehension(tok token.Token, element ast.Expression) ast.Expression {
+	expression := &ast.ComprehensionExpression{Token: tok, Element: element}
+	for p.peekTokenIs(token.REPEAT) {
+		p.nextToken()
+		loop := &ast.RepeatStatement{Token: p.curToken}
+		if !p.parseRepeatHeader(loop) {
+			return nil
+		}
+		if loop.Iterator == nil {
+			p.errorAt(loop.Token.Line, loop.Token.Column, "expected a name before \"in\" in the list comprehension, like [x * 2 repeat x in list]")
+			return nil
+		}
+		c := &ast.ComprehensionClause{Loop: loop}
+		if p.peekTokenIs(token.IF) {
+			p.nextToken()
+			p.nextToken()
+			if c.Condition = p.parseExpression(LOWEST); c.Condition == nil {
+				return nil
+			}
+		}
+		expression.Clauses = append(expression.Clauses, c)
+	}
+	if !p.expectPeek(token.RBRACKET) {
+		return nil
+	}
+	return expression
 }
 
 func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
