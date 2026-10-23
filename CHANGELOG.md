@@ -21,6 +21,7 @@ The first release. TargaScript went from a tree-walking interpreter to a languag
 - Structs, with fields, defaults and methods: `struct Point { x = 0, y = 0, fn length() { ... } }`
 - `match` with ranges, several values per arm and guards: `_ if n > 100 => ...`
 - `match` arms that take arrays and objects apart and name their parts: `[x, 0] => ...`, `{name, ...rest} => ...`
+- List comprehensions: `[n * n repeat n in 1..10 if n % 2 == 0]`
 - Destructuring of arrays and objects, with rest, defaults and renaming: `let {port = 8080, host: h, ...rest} = config`
 - Spread in arrays, objects and calls; rest parameters
 - Arrow functions, default parameters, and `this` in methods

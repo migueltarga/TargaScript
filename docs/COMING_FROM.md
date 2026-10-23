@@ -65,7 +65,7 @@ TargaScript adds:
 | `None`, `True`, `False` | `null`, `true`, `false` |
 | `len(x)` | `x.length` |
 | `items.append(x)` | `items.insert(x)` |
-| `[f(x) for x in xs if p(x)]` | `xs.filter(p).map(f)` |
+| `[f(x) for x in xs if p(x)]` | `[f(x) repeat x in xs if p(x)]`, or `xs.filter(p).map(f)` |
 | `", ".join(words)` | `words.join(", ")` |
 | `sorted(xs, key=lambda p: p.age)` | `xs.sortBy(p => p.age)` |
 | `x in items`, `"k" in d` | the same |

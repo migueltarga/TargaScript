@@ -799,6 +799,22 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 		return c.compileWhile(stmt, !isCondition(stmt.Collection))
 	}
 
+	err := c.compileLoop(stmt, func() error {
+		if err := c.compileStatements(stmt.Body.Statements); err != nil {
+			return err
+		}
+		c.emit(token.Token{}, code.OpPop)
+		return nil
+	})
+	c.emit(token.Token{}, code.OpNull)
+	return err
+}
+
+// compileLoop compiles a loop over a collection, with body compiling what
+// runs for each value, in a block with the loop's names, leaving nothing
+// on the stack. The collection is on the stack when it's called, and the
+// loop leaves nothing.
+func (c *Compiler) compileLoop(stmt *ast.RepeatStatement, body func() error) error {
 	if r, ok := stmt.Collection.(*ast.InfixExpression); ok && r.Operator == ".." {
 		if err := c.compileExpression(r.Left); err != nil {
 			return err
@@ -838,13 +854,12 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 		c.emitDestructure(stmt.Pattern, false)
 		c.emit(token.Token{}, code.OpPop)
 	}
-	err := c.compileStatements(stmt.Body.Statements)
+	err := body()
 	c.fn.popBlock()
 	c.fn.loops--
 	if err != nil {
 		return err
 	}
-	c.emit(token.Token{}, code.OpPop)
 	// The jump back counts a step, which errors point at the loop for
 	c.emit(stmt.Token, code.OpJump, next)
 
@@ -855,7 +870,51 @@ func (c *Compiler) compileRepeat(stmt *ast.RepeatStatement) error {
 	c.scope.flow.endLoop(end, next)
 	c.emit(token.Token{}, code.OpLoopExit)
 	c.emit(token.Token{}, code.OpPop) // the iterator
-	c.emit(token.Token{}, code.OpNull)
+	return nil
+}
+
+// compileComprehension compiles [element repeat x in list if condition]:
+// the loops run with the array in a hidden local, and each element that
+// passes the conditions is added to it.
+func (c *Compiler) compileComprehension(node *ast.ComprehensionExpression) error {
+	c.fn.pushBlock()
+	defer c.fn.popBlock()
+	c.emit(node.Token, code.OpArray, 0)
+	result := c.fn.defineLocal("\x00result", false)
+	c.emitDefine(result)
+	c.emit(token.Token{}, code.OpPop)
+
+	var compileClause func(i int) error
+	compileClause = func(i int) error {
+		if i == len(node.Clauses) {
+			c.emit(token.Token{}, code.OpGetLocal, result.Index)
+			if err := c.compileOperand(node.Element); err != nil {
+				return err
+			}
+			c.emit(node.Token, code.OpAppend, 0)
+			c.emit(token.Token{}, code.OpPop)
+			return nil
+		}
+		clause := node.Clauses[i]
+		return c.compileLoop(clause.Loop, func() error {
+			if clause.Condition == nil {
+				return compileClause(i + 1)
+			}
+			if err := c.compileOperand(clause.Condition); err != nil {
+				return err
+			}
+			skip := c.emit(token.Token{}, code.OpJumpNotTruthy, 9999)
+			if err := compileClause(i + 1); err != nil {
+				return err
+			}
+			c.changeOperands(skip, len(c.scope.instructions))
+			return nil
+		})
+	}
+	if err := compileClause(0); err != nil {
+		return err
+	}
+	c.emit(token.Token{}, code.OpGetLocal, result.Index)
 	return nil
 }
 
@@ -1265,6 +1324,9 @@ func (c *Compiler) compileOther(node ast.Expression) error {
 
 	case *ast.TryExpression:
 		return c.compileTry(node)
+
+	case *ast.ComprehensionExpression:
+		return c.compileComprehension(node)
 
 	case *ast.MatchExpression:
 		return c.compileMatch(node)
