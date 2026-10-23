@@ -41,6 +41,7 @@ const (
 	OpRange   // pop end and start, push the array start..end
 	OpInRange // pop end, start and a value, push whether start <= value <= end
 	OpIn      // pop a collection and a value, push whether the value is in it
+	OpMatch   // pop the values of pattern constants[index] and a value; push what its names take, then whether it matched
 	OpMinus
 	OpBang
 	OpIncrement  // add 1 to the number on top, or subtract 1 when the operand is 1

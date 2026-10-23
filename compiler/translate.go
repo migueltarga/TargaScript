@@ -725,6 +725,20 @@ func (t *translation) instruction(at int, op code.Opcode, next int, d int) int {
 		t.emit(at, code.RInRange, t.own(d-3), 0, 0)
 		t.push(inRegister(t.own(d - 3)))
 
+	case code.OpMatch:
+		values, binds := t.u16(at, 1), t.u16(at, 2)
+		base := d - values - 1
+		// The value is read where it is, often the register of the one
+		// it's a copy of; the pattern's values follow its own place
+		t.keepBelow(at, base, t.own(base))
+		t.place(at, base+1)
+		subject := t.register(at, t.stack[base], t.own(base))
+		t.stack = t.stack[:base]
+		t.emit(at, code.RMatch, t.own(base), subject, t.u16(at, 0))
+		for i := 0; i <= binds; i++ {
+			t.push(inRegister(t.own(base + i)))
+		}
+
 	case code.OpMinus, code.OpBang, code.OpIncrement, code.OpCountStart, code.OpCountDown:
 		value := t.pop()
 		r := t.register(at, value, t.own(d-1))

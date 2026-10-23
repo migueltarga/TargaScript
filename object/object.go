@@ -29,6 +29,8 @@ const (
 
 	ARRAY_OBJ = "ARRAY"
 	HASH_OBJ  = "HASH"
+
+	PATTERN_OBJ = "PATTERN" // a match pattern, as a constant
 )
 
 // HashKey identifies a key of an object: its kind and a number from its

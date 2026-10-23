@@ -73,6 +73,7 @@ TargaScript adds:
 | `{**a, "b": 1}` | `{...a, b: 1}` |
 | `a, *rest = items` | `let [a, ...rest] = items` |
 | `match x: case 1: ...` | `match x { 1 => ... }` |
+| `case [x, y]:`, `case {"name": n}:`, `case _ if cond:` | `[x, y] => ...`, `{name: n} => ...`, `_ if cond => ...` |
 | `try: ... except Exception as e:` | `try { ... } catch e { e.message }` |
 | `raise ValueError("bad")` | `throw "bad"` |
 | `import json; json.loads(s)` | `parseJSON(s)` |
